@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .glass-card {
+            background: rgba(21, 26, 34, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        }
+        .glass-card:hover {
+            border-color: rgba(117, 255, 158, 0.25);
+            box-shadow: 0 0 15px rgba(117, 255, 158, 0.05);
+        }
+        .cyber-glow-text {
+            text-shadow: 0 0 10px rgba(117, 255, 158, 0.3);
+        }
+        .glow-border-focus:focus-within {
+            border-color: #75ff9e;
+            box-shadow: 0 0 10px rgba(117, 255, 158, 0.1);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0e11;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1d2023;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #75ff9e;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-primary": "#006d35",
+                        "on-tertiary-fixed": "#410001",
+                        "primary": "#75ff9e",
+                        "on-secondary-fixed-variant": "#004c6b",
+                        "background": "#111417",
+                        "on-error-container": "#ffdad6",
+                        "primary-container": "#00e676",
+                        "surface-container-lowest": "#0b0e11",
+                        "on-primary": "#003918",
+                        "outline": "#859585",
+                        "on-tertiary": "#690002",
+                        "on-background": "#e1e2e7",
+                        "on-primary-container": "#00612e",
+                        "inverse-surface": "#e1e2e7",
+                        "tertiary-fixed-dim": "#ffb4a9",
+                        "surface-container": "#1d2023",
+                        "primary-fixed": "#62ff96",
+                        "tertiary": "#ffdcd8",
+                        "on-primary-fixed": "#00210b",
+                        "secondary": "#81cfff",
+                        "error-container": "#93000a",
+                        "surface-container-high": "#272a2e",
+                        "surface-container-highest": "#323538",
+                        "on-tertiary-fixed-variant": "#930005",
+                        "on-primary-fixed-variant": "#005226",
+                        "secondary-fixed-dim": "#81cfff",
+                        "on-secondary-container": "#003952",
+                        "primary-fixed-dim": "#00e475",
+                        "inverse-on-surface": "#2e3134",
+                        "secondary-container": "#00a9e8",
+                        "surface-variant": "#323538",
+                        "on-tertiary-container": "#ab0309",
+                        "surface": "#111417",
+                        "on-surface": "#e1e2e7",
+                        "on-secondary": "#00344b",
+                        "tertiary-container": "#ffb6ac",
+                        "on-error": "#690005",
+                        "on-secondary-fixed": "#001e2d",
+                        "surface-tint": "#00e475",
+                        "on-surface-variant": "#bacbb9",
+                        "surface-bright": "#37393d",
+                        "tertiary-fixed": "#ffdad5",
+                        "error": "#ffb4ab",
+                        "secondary-fixed": "#c6e7ff",
+                        "surface-container-low": "#191c1f",
+                        "outline-variant": "#3b4a3d",
+                        "surface-dim": "#111417"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "base": "8px",
+                        "margin-desktop": "48px",
+                        "sm": "12px",
+                        "xs": "4px",
+                        "md": "24px",
+                        "margin-mobile": "16px",
+                        "lg": "40px",
+                        "xl": "64px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "label-md": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "display": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "500"}]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md overflow-x-hidden">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 w-full bg-surface/40 backdrop-blur-xl border-b border-white/10 shadow-[0_0_15_px_rgba(117,255,158,0.05)] z-50">
+<div class="flex justify-between items-center h-16 px-gutter max-w-[1440px] mx-auto">
+<a class="font-display text-headline-md text-primary tracking-tight" href="#">Borsa Academy</a>
+<nav class="hidden md:flex gap-lg items-center">
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200 font-body-md text-body-md" href="#">Home</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200 font-body-md text-body-md" href="#">Courses</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-body-md text-body-md" href="#">About Us</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200 font-body-md text-body-md" href="#">Contact</a>
+</nav>
+<div class="flex items-center gap-md">
+<button class="active:scale-95 transition-transform text-primary font-body-md text-body-md">Sign In</button>
+</div>
+</div>
+</header>
+<main class="pt-32 pb-xl px-gutter max-w-[1440px] mx-auto">
+<!-- About Section: Mission -->
+<section class="mb-xl">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-lg items-center">
+<div class="md:col-span-7">
+<span class="font-label-md text-label-md text-primary tracking-widest uppercase mb-sm block">Our Mission</span>
+<h1 class="font-display text-display mb-md leading-tight">Democratizing <span class="text-primary cyber-glow-text">High-Frequency</span> Trading Knowledge.</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-lg max-w-2xl">
+                        At Borsa Academy, we believe that elite financial education should not be locked behind institutional walls. Our curriculum combines the mathematical rigor of quantitative analysis with the practical experience of veteran floor traders to provide a comprehensive mastery of modern markets.
+                    </p>
+<div class="grid grid-cols-2 gap-md">
+<div class="glass-card p-md">
+<h3 class="font-headline-md text-headline-md text-primary mb-xs">98.4%</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Course Completion Rate</p>
+</div>
+<div class="glass-card p-md">
+<h3 class="font-headline-md text-headline-md text-primary mb-xs">$12M+</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Simulated Capital Managed</p>
+</div>
+</div>
+</div>
+<div class="md:col-span-5">
+<div class="relative group">
+<div class="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+<div class="relative bg-surface-container aspect-square rounded overflow-hidden">
+<img alt="Borsa Academy Tech" class="w-full h-full object-cover grayscale contrast-125 opacity-80" data-alt="A futuristic, high-tech trading terminal environment featuring multiple holographic displays showing complex financial charts and data streams. The lighting is dominated by deep obsidian tones with sharp neon green and electric blue accents, creating a mood of digital mastery and precision. The overall aesthetic is sleek, cinematic, and minimalist, emphasizing technological advancement." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRJiin-kcnHIw7YlhMrukf8QBqC9SKmWkAmhgMOQlYKYyyE5pRtiDKp88ON-87Zf2kwj1VLnOX7B6l3UA1fRN13-bbS5Cnw2jpvpoPE5RhF8x4xNiucUkuXEef4HAGMzHqGcO3GmDiN6T5RLtyiULHKirZ5od38-6oN8ejeL6y_F90y3kP0MRicmihlkoeXu2esWHH7AyHmmXTWkUPVxGS2qC23CY9QuWGwU9EtPrbpWVdrx8AvPhiBaAEUj-WSNhj5nl9kGspXs-v"/>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Meet the Mentors: Bento Grid -->
+<section class="mb-xl">
+<div class="flex flex-col md:flex-row justify-between items-end mb-lg gap-md">
+<h2 class="font-display text-headline-lg max-w-md">Precision Guidance from <span class="text-primary italic">Market Masters</span>.</h2>
+<p class="text-on-surface-variant max-w-sm font-body-md text-body-md">Learn from experts who have navigated volatile market cycles and high-stakes environments.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-md h-full md:h-[600px]">
+<!-- Lead Mentor -->
+<div class="md:col-span-2 md:row-span-2 glass-card relative group overflow-hidden">
+<img alt="Lead Mentor" class="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700 grayscale" data-alt="A professional male mentor in a sharp dark suit standing in a modern, glass-walled office overlooking a city at night. The atmosphere is sophisticated and authoritative, with soft reflections of digital data on the window. The color palette is cool and dark with focused lighting on the subject to project confidence and expertise." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFKCh-WhIyGnNJw-V_R8gTHXtac-DV4opKmcQcLNNonRQPUt0znBuHuEmmGyNrLyZMt4Zo2KTNewGPoizdJUcJhBG8MKatgrlOFy3Sn7387TxNBmZd2wPNXYU9bhMhXtOGH80fPcS2h_6RRsn_rQEucXRf9wPNjx68fRCnk7yEYWKrG4V-lpA_lirq-jBhnj5qcJSrQqIRtMRqWtPh4G5hM6cPpywsjq93zlXF1SL7iCzjPsbgzndUlK6cqP8FYMu2eI8YKMbbpsrm"/>
+<div class="absolute bottom-0 left-0 p-lg w-full bg-gradient-to-t from-background to-transparent">
+<p class="text-primary font-label-md text-label-md mb-xs">CHIEF QUANT</p>
+<h4 class="font-headline-lg text-headline-lg mb-xs">Dr. Elias Thorne</h4>
+<p class="text-on-surface-variant font-body-md">Former HFT algorithm developer at Goldman Sachs.</p>
+</div>
+</div>
+<!-- Mentor 2 -->
+<div class="glass-card relative group overflow-hidden">
+<img alt="Mentor 2" class="w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-700 grayscale" data-alt="A focused female financial expert with short hair, wearing a high-neck professional top. She is positioned against a background of blurred green data screens. The mood is intense and professional, with a crisp cyber-minimalist aesthetic. Lighting is sharp, highlighting her determination and analytical mindset." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBulgA0euK19ymeQV1YGcRvPdqsSgZkbbHtaszFUoCWG7K997irwrWCTd3eHUSNJQCk_9Y59DZpWOdrAvvEkcipsrGXblke69xcSQkIaf80-Oz3nnsQRkTLUBNKNfAJ7MNN-DA9KbES2Id_hMZZYgAUKvmfqzASX79SZRW2WiY0krl2Qdav2v-p2SXLm4Rg_YWod2346TjRrLP3c3wfDr6QJnMinsVjwWaI5z2OKmZfwnWD2VAyP3pEUk3eM4yXxuhsZP18EPBhWdnB"/>
+<div class="absolute bottom-0 left-0 p-md w-full bg-gradient-to-t from-background to-transparent">
+<h4 class="font-headline-md text-headline-md mb-xs">Sarah Chen</h4>
+<p class="text-on-surface-variant font-label-sm text-label-sm">Risk Management Specialist</p>
+</div>
+</div>
+<!-- Mentor 3 -->
+<div class="glass-card relative group overflow-hidden">
+<img alt="Mentor 3" class="w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-700 grayscale" data-alt="A senior trading mentor with a calm and wise expression, wearing a minimalist gray sweater. He is sitting in a library filled with economic journals and technical monitors. The setting conveys years of experience and deep wisdom. Warm but low-key lighting creates a sense of trust and mentorship." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKJa6Ye3REM_Q1QVBdG0CAZcSWYBV9EDqXT2UWn3AtqeRsD5sM3l8SbPmF1NYVlTYAdIlPIqHMrld6vGVTvzgQHVfR7yb20k4Ew8F_6lsBDWqNxtddDNZn422Ct7-Z1SH-Zb800xmBwIGkRQeSq8S173nTQx2U-c3bv69e6Fd66bBjsyY7XNlPkV0HccA5QVkmCfU8ckVTZ7BXKCWWjOjtAmtwrv6bWcco5QMMhbFptjwI0w3jftf_VHPvqeAhQjYKBVZbmupTTpcf"/>
+<div class="absolute bottom-0 left-0 p-md w-full bg-gradient-to-t from-background to-transparent">
+<h4 class="font-headline-md text-headline-md mb-xs">Marcus Volt</h4>
+<p class="text-on-surface-variant font-label-sm text-label-sm">Macro Strategy Expert</p>
+</div>
+</div>
+<!-- Mentor 4 (Spans wide) -->
+<div class="md:col-span-2 glass-card flex items-center p-md gap-md overflow-hidden group">
+<div class="w-24 h-24 shrink-0 rounded overflow-hidden">
+<img alt="Mentor 4" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" data-alt="Close up portrait of a young, dynamic male trader with a tech-focused appearance. Minimalist studio lighting with blue and green ambient glow. He is looking directly at the camera with sharp, intelligent eyes, representing the next generation of digital mastery." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBO9EFJg5XJIvEKFqsCmj259MRDXv38hFZhm5kU-UpaEylSEZemV9cHJGV0vPJ1NYHIMKgakOrPys79teqDnl6CEI-wdxn6A0gwh2PZ5Tg0qrewq1TyOQ4m7rhFQ921w4o0Yrj8Fq32YetJw4_wnZhwYf9eL3kX3uvCZD_-9MRWrn6H5JyD4jIYtQtKa4mfpzN0ejAtvU61aAQcG9LB6h7-UOniOcsCV5kG5PNinJ5raDzwt2b3asXjm1HNkt0zM4i5ZktU0W5sz-3h"/>
+</div>
+<div>
+<h4 class="font-headline-md text-headline-md text-on-surface mb-xs">Julian Vance</h4>
+<p class="text-on-surface-variant font-body-md">Volatility &amp; Crypto Assets lead. Specializing in high-frequency derivatives.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Contact Section -->
+<section class="pt-xl" id="contact">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-xl">
+<!-- Info Blocks -->
+<div class="md:col-span-5 space-y-md">
+<div>
+<span class="font-label-md text-label-md text-primary tracking-widest uppercase mb-sm block">Contact Support</span>
+<h2 class="font-display text-headline-lg mb-md">Direct Access to the <span class="text-primary cyber-glow-text">Control Center</span>.</h2>
+<p class="text-on-surface-variant font-body-md mb-lg">Have technical questions or need institutional partnership information? Our team of analysts is ready to assist you.</p>
+</div>
+<div class="space-y-sm">
+<div class="glass-card p-md flex items-center gap-md group cursor-pointer hover:bg-primary/5 transition-colors">
+<div class="w-12 h-12 flex items-center justify-center rounded bg-surface-container-high text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-xs">ENCRYPTED EMAIL</p>
+<p class="font-label-md text-label-md text-on-surface">ops@borsa-academy.com</p>
+</div>
+</div>
+<div class="glass-card p-md flex items-center gap-md group cursor-pointer hover:bg-secondary/5 transition-colors">
+<div class="w-12 h-12 flex items-center justify-center rounded bg-surface-container-high text-secondary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="location_on">location_on</span>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-xs">GLOBAL HQ</p>
+<p class="font-label-md text-label-md text-on-surface">Fintech Hub, Zurich, CH</p>
+</div>
+</div>
+<div class="glass-card p-md flex items-center gap-md group cursor-pointer hover:bg-primary/5 transition-colors">
+<div class="w-12 h-12 flex items-center justify-center rounded bg-surface-container-high text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="forum">forum</span>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-xs">LIVE TRADING DESK</p>
+<p class="font-label-md text-label-md text-on-surface">+41 (0) 44 202 9900</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Contact Form -->
+<div class="md:col-span-7">
+<form class="glass-card p-lg space-y-md">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<div class="space-y-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant ml-xs">FULL NAME</label>
+<input class="w-full bg-surface-container-lowest border border-white/10 p-md rounded font-body-md text-on-surface focus:outline-none focus:border-primary glow-border-focus transition-all" placeholder="John Doe" type="text"/>
+</div>
+<div class="space-y-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant ml-xs">EMAIL ADDRESS</label>
+<input class="w-full bg-surface-container-lowest border border-white/10 p-md rounded font-body-md text-on-surface focus:outline-none focus:border-primary glow-border-focus transition-all" placeholder="j.doe@terminal.io" type="email"/>
+</div>
+</div>
+<div class="space-y-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant ml-xs">SUBJECT</label>
+<select class="w-full bg-surface-container-lowest border border-white/10 p-md rounded font-body-md text-on-surface focus:outline-none focus:border-primary glow-border-focus transition-all appearance-none">
+<option>Institutional Partnership</option>
+<option>Technical Support</option>
+<option>Course Curriculum</option>
+<option>Other Inquiry</option>
+</select>
+</div>
+<div class="space-y-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant ml-xs">MESSAGE</label>
+<textarea class="w-full bg-surface-container-lowest border border-white/10 p-md rounded font-body-md text-on-surface focus:outline-none focus:border-primary glow-border-focus transition-all" placeholder="Inquire about advanced quant methodologies..." rows="5"></textarea>
+</div>
+<button class="w-full bg-primary text-on-primary font-label-md text-label-md py-md rounded font-bold hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(117,255,158,0.2)] flex items-center justify-center gap-sm uppercase tracking-widest" type="submit">
+                            Initialize Inquiry
+                            <span class="material-symbols-outlined text-[18px]" data-icon="send">send</span>
+</button>
+</form>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-xl bg-surface-container-lowest border-t border-white/10">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter px-gutter max-w-[1440px] mx-auto">
+<div class="md:col-span-6">
+<h3 class="font-display text-headline-md text-primary mb-md">Borsa Academy</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant max-w-md">
+                    © 2024 Borsa Academy. High-precision trading education. Financial Risk Warning: Trading involves significant risk. Leverage can lead to losses exceeding your initial investment.
+                </p>
+</div>
+<div class="md:col-span-2">
+<h4 class="font-label-md text-label-md text-on-surface mb-md">RESOURCES</h4>
+<ul class="space-y-sm">
+<li><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Privacy Policy</a></li>
+<li><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Terms of Service</a></li>
+</ul>
+</div>
+<div class="md:col-span-2">
+<h4 class="font-label-md text-label-md text-on-surface mb-md">LEGAL</h4>
+<ul class="space-y-sm">
+<li><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Risk Disclosure</a></li>
+<li><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Sitemap</a></li>
+</ul>
+</div>
+<div class="md:col-span-2 flex flex-col items-end">
+<h4 class="font-label-md text-label-md text-on-surface mb-md">TERMINAL STATUS</h4>
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<span class="font-label-sm text-label-sm text-primary">LIVE DATA FEED</span>
+</div>
+</div>
+</div>
+</footer>
+<script>
+        // Simple micro-interaction for form focus
+        const inputs = document.querySelectorAll('input, textarea, select');
+        inputs.forEach(input => {
+            input.addEventListener('focus', () => {
+                input.parentElement.querySelector('label').classList.add('text-primary');
+            });
+            input.addEventListener('blur', () => {
+                input.parentElement.querySelector('label').classList.remove('text-primary');
+            });
+        });
+
+        // Sticky header behavior
+        let lastScroll = 0;
+        const header = document.querySelector('header');
+        window.addEventListener('scroll', () => {
+            const currentScroll = window.pageYOffset;
+            if (currentScroll > lastScroll && currentScroll > 100) {
+                header.style.transform = 'translateY(-100%)';
+            } else {
+                header.style.transform = 'translateY(0)';
+            }
+            lastScroll = currentScroll;
+        });
+    </script>
+</body></html>

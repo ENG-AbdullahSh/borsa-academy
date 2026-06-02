@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;family=JetBrains+Mono:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(21, 26, 34, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .hover-glow:hover {
+            border-color: rgba(117, 255, 158, 0.25);
+            box-shadow: 0 0 15px rgba(117, 255, 158, 0.05);
+        }
+        @keyframes scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-ticker {
+            display: flex;
+            width: max-content;
+            animation: scroll 30s linear infinite;
+        }
+        .hero-gradient {
+            background: radial-gradient(circle at 50% 50%, rgba(117, 255, 158, 0.08) 0%, transparent 70%);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-primary": "#006d35",
+                        "on-tertiary-fixed": "#410001",
+                        "primary": "#75ff9e",
+                        "on-secondary-fixed-variant": "#004c6b",
+                        "background": "#0B0E11",
+                        "on-error-container": "#ffdad6",
+                        "primary-container": "#00e676",
+                        "surface-container-lowest": "#0b0e11",
+                        "on-primary": "#003918",
+                        "outline": "#859585",
+                        "on-tertiary": "#690002",
+                        "on-background": "#e1e2e7",
+                        "on-primary-container": "#00612e",
+                        "inverse-surface": "#e1e2e7",
+                        "tertiary-fixed-dim": "#ffb4a9",
+                        "surface-container": "#1d2023",
+                        "primary-fixed": "#62ff96",
+                        "tertiary": "#ffdcd8",
+                        "on-primary-fixed": "#00210b",
+                        "secondary": "#81cfff",
+                        "error-container": "#93000a",
+                        "surface-container-high": "#272a2e",
+                        "surface-container-highest": "#323538",
+                        "on-tertiary-fixed-variant": "#930005",
+                        "on-primary-fixed-variant": "#005226",
+                        "secondary-fixed-dim": "#81cfff",
+                        "on-secondary-container": "#003952",
+                        "primary-fixed-dim": "#00e475",
+                        "inverse-on-surface": "#2e3134",
+                        "secondary-container": "#00a9e8",
+                        "surface-variant": "#323538",
+                        "on-tertiary-container": "#ab0309",
+                        "surface": "#111417",
+                        "on-surface": "#e1e2e7",
+                        "on-secondary": "#00344b",
+                        "tertiary-container": "#ffb6ac",
+                        "on-error": "#690005",
+                        "on-secondary-fixed": "#001e2d",
+                        "surface-tint": "#00e475",
+                        "on-surface-variant": "#bacbb9",
+                        "surface-bright": "#37393d",
+                        "tertiary-fixed": "#ffdad5",
+                        "error": "#ffb4ab",
+                        "secondary-fixed": "#c6e7ff",
+                        "surface-container-low": "#191c1f",
+                        "outline-variant": "#3b4a3d",
+                        "surface-dim": "#111417"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "base": "8px",
+                        "margin-desktop": "48px",
+                        "sm": "12px",
+                        "xs": "4px",
+                        "md": "24px",
+                        "margin-mobile": "16px",
+                        "lg": "40px",
+                        "xl": "64px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "label-md": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "display": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background selection:bg-primary selection:text-on-primary">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 w-full bg-surface/40 backdrop-blur-xl border-b border-white/10 z-50 shadow-[0_0_15_px_rgba(117,255,158,0.05)]">
+<nav class="flex justify-between items-center h-16 px-gutter max-w-[1440px] mx-auto">
+<div class="font-display text-headline-md text-primary tracking-tight">Borsa Academy</div>
+<div class="hidden md:flex items-center space-x-lg">
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-body-md text-body-md transition-colors duration-200" href="#">Home</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200 font-body-md text-body-md" href="#">Courses</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200 font-body-md text-body-md" href="#">About Us</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200 font-body-md text-body-md" href="#">Contact</a>
+</div>
+<div class="flex items-center space-x-md">
+<button class="active:scale-95 transition-transform text-primary font-body-md text-body-md font-bold">Sign In</button>
+<button class="bg-primary text-on-primary px-md py-xs font-label-md text-label-md rounded hover:opacity-90 active:scale-95 transition-all">JOIN NOW</button>
+</div>
+</nav>
+</header>
+<main class="pt-16">
+<!-- Hero Section -->
+<section class="relative min-h-[921px] flex items-center justify-center overflow-hidden">
+<div class="absolute inset-0 z-0">
+<img class="w-full h-full object-cover opacity-20 grayscale brightness-50" data-alt="A sophisticated abstract visual of glowing financial data points and interconnected web structures against a deep obsidian background. The scene is illuminated by sharp neon green and blue streaks that represent market momentum and technical analysis precision. The atmosphere is futuristic and minimalist, capturing the essence of digital financial mastery with soft depth of field effects." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDl7Scdp_MO3ApG771hhXrgEhj0_kA0-Y__yBIgDG6xC6L5mqcfHKPCg-w_O9m4OOop8SQyCx1oFfSZ4Y5jX7xEoBT2EbLVgBjv5xpUKhRJXIv42JzxXSfcCDs0R8QYliKLu382QMmrFXmTCvJNjipSQyLa_BYreK6HHnRUlAAyDNiV4LkN5ugJ5z1Q-KdcA5op-8Ylxe5STyYTN97mhcCXkFqVemeVI1KYsOwlDOc1Ck-QtqyRsU0NPBOIxOMTbs6uUoBdV1HVmay5"/>
+<div class="absolute inset-0 hero-gradient"></div>
+</div>
+<div class="relative z-10 text-center px-gutter max-w-[800px]">
+<div class="inline-flex items-center space-x-xs mb-md px-sm py-1 border border-primary/20 bg-primary/5 rounded-full">
+<span class="material-symbols-outlined text-primary text-[18px]" style="font-variation-settings: 'FILL' 1;">stars</span>
+<span class="font-label-sm text-label-sm text-primary tracking-wider uppercase">Trusted by 10k+ Students</span>
+</div>
+<h1 class="font-display text-display md:text-[72px] mb-md leading-none">Master the <span class="text-primary italic">Markets</span></h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-xl max-w-[600px] mx-auto">
+                    Professional trading education for the digital age. Learn high-precision strategies from industry veterans and master market psychology.
+                </p>
+<div class="flex flex-col md:flex-row items-center justify-center gap-md">
+<button class="w-full md:w-auto bg-primary text-on-primary px-xl py-md font-label-md text-label-md rounded active:scale-95 transition-all hover:shadow-[0_0_20px_rgba(117,255,158,0.3)]">EXPLORE COURSES</button>
+<button class="w-full md:w-auto px-xl py-md font-label-md text-label-md border border-white/10 rounded hover:bg-white/5 active:scale-95 transition-all">JOIN THE COMMUNITY</button>
+</div>
+</div>
+</section>
+<!-- Market Ticker -->
+<section class="bg-surface-container-low border-y border-white/5 overflow-hidden py-sm">
+<div class="animate-ticker">
+<!-- Repeat content to loop -->
+<div class="flex items-center space-x-xl px-xl">
+<div class="flex items-center space-x-sm">
+<span class="font-label-md text-label-md text-on-surface">BTCUSD</span>
+<span class="font-label-md text-label-md text-primary tracking-tighter">64,281.50</span>
+<span class="font-label-sm text-label-sm text-primary">+2.45%</span>
+</div>
+<div class="flex items-center space-x-sm">
+<span class="font-label-md text-label-md text-on-surface">GOLD</span>
+<span class="font-label-md text-label-md text-error tracking-tighter">2,341.20</span>
+<span class="font-label-sm text-label-sm text-error">-0.12%</span>
+</div>
+<div class="flex items-center space-x-sm">
+<span class="font-label-md text-label-md text-on-surface">EURUSD</span>
+<span class="font-label-md text-label-md text-primary tracking-tighter">1.0824</span>
+<span class="font-label-sm text-label-sm text-primary">+0.05%</span>
+</div>
+<div class="flex items-center space-x-sm">
+<span class="font-label-md text-label-md text-on-surface">ETHUSD</span>
+<span class="font-label-md text-label-md text-primary tracking-tighter">3,450.12</span>
+<span class="font-label-sm text-label-sm text-primary">+1.89%</span>
+</div>
+</div>
+<!-- Duplicate for seamless scroll -->
+<div class="flex items-center space-x-xl px-xl">
+<div class="flex items-center space-x-sm">
+<span class="font-label-md text-label-md text-on-surface">BTCUSD</span>
+<span class="font-label-md text-label-md text-primary tracking-tighter">64,281.50</span>
+<span class="font-label-sm text-label-sm text-primary">+2.45%</span>
+</div>
+<div class="flex items-center space-x-sm">
+<span class="font-label-md text-label-md text-on-surface">GOLD</span>
+<span class="font-label-md text-label-md text-error tracking-tighter">2,341.20</span>
+<span class="font-label-sm text-label-sm text-error">-0.12%</span>
+</div>
+<div class="flex items-center space-x-sm">
+<span class="font-label-md text-label-md text-on-surface">EURUSD</span>
+<span class="font-label-md text-label-md text-primary tracking-tighter">1.0824</span>
+<span class="font-label-sm text-label-sm text-primary">+0.05%</span>
+</div>
+<div class="flex items-center space-x-sm">
+<span class="font-label-md text-label-md text-on-surface">ETHUSD</span>
+<span class="font-label-md text-label-md text-primary tracking-tighter">3,450.12</span>
+<span class="font-label-sm text-label-sm text-primary">+1.89%</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Features Section -->
+<section class="py-xl px-gutter max-w-[1440px] mx-auto">
+<div class="text-center mb-xl">
+<h2 class="font-display text-headline-lg mb-sm">Why Borsa Academy?</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">The tools and guidance you need to dominate the markets.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<div class="glass-card p-xl hover-glow transition-all duration-300">
+<div class="w-12 h-12 rounded bg-primary/10 flex items-center justify-center mb-md border border-primary/20">
+<span class="material-symbols-outlined text-primary">live_tv</span>
+</div>
+<h3 class="font-headline-md mb-sm text-on-surface">Live Sessions</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Trade alongside experts in real-time as we break down current market setups and execute high-probability trades.</p>
+</div>
+<div class="glass-card p-xl hover-glow transition-all duration-300">
+<div class="w-12 h-12 rounded bg-primary/10 flex items-center justify-center mb-md border border-primary/20">
+<span class="material-symbols-outlined text-primary">psychology</span>
+</div>
+<h3 class="font-headline-md mb-sm text-on-surface">Expert Mentorship</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Get direct feedback on your journal and trading plan from mentors with decades of institutional experience.</p>
+</div>
+<div class="glass-card p-xl hover-glow transition-all duration-300">
+<div class="w-12 h-12 rounded bg-primary/10 flex items-center justify-center mb-md border border-primary/20">
+<span class="material-symbols-outlined text-primary">monitoring</span>
+</div>
+<h3 class="font-headline-md mb-sm text-on-surface">Data-Driven Tools</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Access proprietary indicators and volatility scanners built specifically for our signature trading frameworks.</p>
+</div>
+</div>
+</section>
+<!-- Testimonials Bento Grid -->
+<section class="py-xl bg-surface-container-lowest">
+<div class="max-w-[1440px] mx-auto px-gutter">
+<div class="text-center mb-xl">
+<h2 class="font-display text-headline-lg mb-sm">Trader Success Stories</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Real results from our dedicated community.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter auto-rows-[280px]">
+<!-- Main Feature -->
+<div class="md:col-span-8 md:row-span-2 glass-card p-xl flex flex-col justify-between relative overflow-hidden group">
+<img class="absolute inset-0 w-full h-full object-cover opacity-10 group-hover:scale-105 transition-transform duration-700" data-alt="A portrait of a focused trader in a high-tech home office environment, multiple curved monitors in the background showing complex candle charts and financial indicators. The lighting is low-key with cool blue and green accents from the screens. Minimalist desk setup, professional atmosphere, conveying success and digital mastery." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCn0F8cLETwz2m0vxcGTxCSLGY2BZGaihibvvPz5645iW8BvceR-WQiIceqaadme-wUCGbZn2VqVNJM8GokZpMfZYF8GjE_hbmo7rf1nZSKlAYfT6HZ76Mo86ddycpMmkUzV9Mjs6Smn9MvrNLrlV3ysGoI3r_wKmPAz2PHib7RMhF8Nq1TOcUJ0p-YLNS1zCbB27KO-i09hVCCz3DXB5eTgo1S0Ju4AdrP_FNyzNay4bO6GeTBbHQind3hoijkt7BgPY2vcOVTk0Q"/>
+<div class="relative">
+<span class="material-symbols-outlined text-primary text-[48px]" style="font-variation-settings: 'FILL' 1;">format_quote</span>
+<h4 class="font-headline-lg mt-md leading-tight max-w-[500px]">"Borsa Academy didn't just give me a strategy; they gave me a profession. I went from gambling to consistent profitability in 6 months."</h4>
+</div>
+<div class="relative flex items-center space-x-md">
+<div class="w-12 h-12 rounded-full border border-primary/40 bg-surface"></div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Marcus Chen</p>
+<p class="font-label-sm text-label-sm text-primary uppercase">Full-Time Forex Trader</p>
+</div>
+</div>
+</div>
+<!-- Small Case 1 -->
+<div class="md:col-span-4 glass-card p-lg flex flex-col justify-between border-primary/10">
+<p class="font-body-md text-body-md italic text-on-surface-variant">"The psychology module was the missing piece for me. Understanding my own biases changed everything."</p>
+<div class="flex items-center space-x-sm">
+<div class="w-8 h-8 rounded-full bg-secondary-container"></div>
+<span class="font-label-sm text-label-sm text-on-surface">Sarah J.</span>
+</div>
+</div>
+<!-- Small Case 2 -->
+<div class="md:col-span-4 glass-card p-lg flex flex-col justify-between">
+<p class="font-body-md text-body-md italic text-on-surface-variant">"The Discord community is worth the price alone. Institutional-level insights every single day."</p>
+<div class="flex items-center space-x-sm">
+<div class="w-8 h-8 rounded-full bg-primary-container"></div>
+<span class="font-label-sm text-label-sm text-on-surface">David L.</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA Section -->
+<section class="py-xl relative">
+<div class="absolute inset-0 overflow-hidden pointer-events-none">
+<div class="absolute -top-1/2 -right-1/4 w-[600px] h-[600px] bg-primary/5 blur-[120px] rounded-full"></div>
+</div>
+<div class="max-w-[800px] mx-auto px-gutter text-center relative z-10">
+<h2 class="font-display text-headline-lg mb-md">Ready to Achieve Digital Mastery?</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-xl">Join the academy today and get instant access to the introductory Trading Edge workshop.</p>
+<div class="flex flex-col sm:flex-row justify-center gap-md">
+<button class="bg-primary text-on-primary px-xl py-md font-label-md text-label-md rounded active:scale-95 transition-all">GET STARTED NOW</button>
+<div class="flex items-center justify-center space-x-sm font-label-md text-label-md text-on-surface-variant">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span>30-Day Money Back Guarantee</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest border-t border-white/10 w-full py-xl">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter px-gutter max-w-[1440px] mx-auto">
+<div class="md:col-span-4">
+<div class="font-display text-headline-md text-primary mb-md">Borsa Academy</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant leading-relaxed mb-md">
+                    © 2024 Borsa Academy. High-precision trading education. Financial Risk Warning: Trading involves significant risk.
+                </p>
+<div class="flex space-x-md">
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors cursor-pointer">language</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors cursor-pointer">terminal</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors cursor-pointer">podcasts</span>
+</div>
+</div>
+<div class="md:col-span-2 md:col-start-6">
+<h5 class="font-label-md text-label-md text-on-surface mb-md uppercase tracking-widest">Academy</h5>
+<ul class="space-y-sm">
+<li><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary underline transition-opacity opacity-80 hover:opacity-100" href="#">All Courses</a></li>
+<li><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary underline transition-opacity opacity-80 hover:opacity-100" href="#">Mentorship</a></li>
+<li><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary underline transition-opacity opacity-80 hover:opacity-100" href="#">Trading Tools</a></li>
+</ul>
+</div>
+<div class="md:col-span-2">
+<h5 class="font-label-md text-label-md text-on-surface mb-md uppercase tracking-widest">Company</h5>
+<ul class="space-y-sm">
+<li><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary underline transition-opacity opacity-80 hover:opacity-100" href="#">About Us</a></li>
+<li><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary underline transition-opacity opacity-80 hover:opacity-100" href="#">Sitemap</a></li>
+<li><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary underline transition-opacity opacity-80 hover:opacity-100" href="#">Contact</a></li>
+</ul>
+</div>
+<div class="md:col-span-3">
+<h5 class="font-label-md text-label-md text-on-surface mb-md uppercase tracking-widest">Legal</h5>
+<ul class="space-y-sm">
+<li><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary underline transition-opacity opacity-80 hover:opacity-100" href="#">Privacy Policy</a></li>
+<li><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary underline transition-opacity opacity-80 hover:opacity-100" href="#">Terms of Service</a></li>
+<li><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary underline transition-opacity opacity-80 hover:opacity-100" href="#">Risk Disclosure</a></li>
+</ul>
+</div>
+</div>
+</footer>
+<script>
+        // Micro-interactions for market ticker hover pause
+        const ticker = document.querySelector('.animate-ticker');
+        ticker.addEventListener('mouseenter', () => {
+            ticker.style.animationPlayState = 'paused';
+        });
+        ticker.addEventListener('mouseleave', () => {
+            ticker.style.animationPlayState = 'running';
+        });
+
+        // Subtle parallax effect on hero abstract image
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const heroImage = document.querySelector('section img');
+            if(heroImage) {
+                heroImage.style.transform = `translateY(${scrolled * 0.4}px)`;
+            }
+        });
+    </script>
+</body></html>
