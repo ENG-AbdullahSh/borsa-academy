@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Ticker from './components/Ticker';
 import CursorGlow from './components/CursorGlow';
 import Footer from './components/Footer';
+import ScrollToTop from './components/ScrollToTop';
 
 // Pages
 import Home from './pages/Home';
@@ -13,6 +14,9 @@ import AboutContact from './pages/AboutContact';
 import AdminDashboard from './pages/AdminDashboard';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
+import Masari from './pages/Masari';
+import NotificationsPage from './pages/NotificationsPage';
+import { NotificationProvider } from './context/NotificationContext';
 
 /* Auth pages are full-screen and should NOT render the shared
    Navbar / Ticker / Footer chrome — we detect them by pathname. */
@@ -33,6 +37,7 @@ function AppShell() {
 
       {!isAuth && (
         <>
+          <ScrollToTop />
           <Navbar />
           <div style={{ marginTop: '64px' }}>
             <Ticker />
@@ -48,6 +53,8 @@ function AppShell() {
           <Route path="/courses/:id" element={<CourseDetail />} />
           <Route path="/about"      element={<AboutContact />} />
           <Route path="/admin"      element={<AdminDashboard />} />
+          <Route path="/masari"     element={<Masari />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
 
           {/* Auth pages — full-screen, no chrome */}
           <Route path="/signin" element={<SignIn />} />
@@ -63,7 +70,9 @@ function AppShell() {
 function App() {
   return (
     <Router>
-      <AppShell />
+      <NotificationProvider>
+        <AppShell />
+      </NotificationProvider>
     </Router>
   );
 }
