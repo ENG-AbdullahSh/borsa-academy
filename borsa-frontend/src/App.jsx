@@ -4,7 +4,7 @@ import Navbar from './components/Navbar';
 import Ticker from './components/Ticker';
 import CursorGlow from './components/CursorGlow';
 import Footer from './components/Footer';
-import ScrollToTop from './components/ScrollToTop';
+import ScrollToTop from "./components/ScrollToTop";
 
 // Pages
 import Home from './pages/Home';
