@@ -326,62 +326,122 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="d-flex min-vh-100" style={{ paddingTop: '64px', backgroundColor: '#0b0e11' }}>
-      {/* Sidebar */}
-      <aside className="d-flex flex-column justify-content-between py-4 border-start"
-        style={{ width: sidebarOpen ? '260px' : '80px', minWidth: sidebarOpen ? '260px' : '80px', backgroundColor: '#111417', borderColor: 'rgba(255,255,255,0.05)', minHeight: 'calc(100vh - 64px)', transition: 'width 0.3s ease, min-width 0.3s ease' }}>
-        <div className="d-flex flex-column gap-4">
-          {/* Toggle */}
-          <div className="px-3">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="btn p-0 border-0 bg-transparent text-muted interactive"
-              style={{ width: '32px', height: '32px', alignSelf: sidebarOpen ? 'flex-start' : 'center' }}>
-              <span className="material-symbols-outlined">{sidebarOpen ? 'menu_open' : 'menu'}</span>
-            </button>
-          </div>
+    <>
+      {/* ── Desktop Layout ── */}
+      <div className="admin-shell d-flex min-vh-100" style={{ paddingTop: '64px', backgroundColor: '#0b0e11' }}>
 
-          {/* Nav */}
-          <nav className="d-flex flex-column gap-2 mt-2">
-            {NAV_TABS.map((tab) => {
-              const isActive = activeTab === tab.name;
-              return (
-                <button key={tab.name} onClick={() => setActiveTab(tab.name)}
-                  className="btn border-0 text-start d-flex align-items-center gap-3 py-3 rounded-0 w-100 interactive position-relative"
-                  style={{ 
-                    backgroundColor: isActive ? 'rgba(0, 230, 118, 0.08)' : 'transparent', 
-                    color: isActive ? '#00e676' : '#bacbb9', 
-                    paddingRight: sidebarOpen ? '24px' : '0', 
-                    justifyContent: sidebarOpen ? 'flex-start' : 'center',
-                    borderRight: isActive ? '3px solid #00e676' : '3px solid transparent'
-                  }}>
-                  <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '22px' }}>{tab.icon}</span>
-                  {sidebarOpen && <span className="font-mono-data" style={{ fontSize: '14px', fontFamily: 'var(--font-sans)', fontWeight: isActive ? '700' : '500' }}>{tab.name}</span>}
-                </button>
-              )
-            })}
-          </nav>
-        </div>
-
-        {/* Profile */}
-        <div className="d-flex align-items-center gap-3 pt-4 border-top px-3 mt-4" style={{ borderColor: 'rgba(255,255,255,0.05)', justifyContent: sidebarOpen ? 'flex-start' : 'center' }}>
-          <div className="rounded-circle border flex-shrink-0" style={{ width: '40px', height: '40px', borderColor: '#00e676', overflow: 'hidden' }}>
-            <img alt="المشرف" className="w-100 h-100 object-cover"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBdHC77LmwG49gMXeUdo3BC4CnzdYGLc7uanWx7xgzaRtYs51ey0rTNn8TOqZGAJ_Txqm9XO0GeWU9ImvH0TCi5H9DEO35GP8X74Z1DPBwEGL4RI3QzjAKgrqZA0vgYoFEGOFVYtqKASdSlI_v4EcfFKnPOuTr6RnJrNQngfAPUT6h6Yd2T0wQ9grK08GiCIxcIcHHEy5lPcPoQUIRnSLSZ2tPwPIr_5X9Opl2RO6UkMh1NTa_dlXJxdUB8mfGhxoFVrdnPVqvMj4Yr" />
-          </div>
-          {sidebarOpen && (
-            <div className="overflow-hidden">
-              <p className="m-0 text-white fw-bold text-truncate" style={{ fontSize: '14px', fontFamily: 'var(--font-sans)' }}>د. إيلينا فانس</p>
-              <p className="m-0 font-mono-data text-uppercase" style={{ fontSize: '11px', color: '#7c8e7c' }}>مشرف النظام</p>
+        {/* Sidebar — hidden on mobile (< 768px), visible on md+ */}
+        <aside
+          className="admin-sidebar d-none d-md-flex flex-column justify-content-between py-4 border-start"
+          style={{
+            width: sidebarOpen ? '260px' : '72px',
+            minWidth: sidebarOpen ? '260px' : '72px',
+            backgroundColor: '#111417',
+            borderColor: 'rgba(255,255,255,0.05)',
+            minHeight: 'calc(100vh - 64px)',
+            transition: 'width 0.3s ease, min-width 0.3s ease',
+            flexShrink: 0,
+          }}
+        >
+          <div className="d-flex flex-column gap-4">
+            {/* Toggle */}
+            <div className="px-3">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="btn p-0 border-0 bg-transparent text-muted interactive"
+                style={{ width: '32px', height: '32px' }}
+              >
+                <span className="material-symbols-outlined">{sidebarOpen ? 'menu_open' : 'menu'}</span>
+              </button>
             </div>
-          )}
-        </div>
-      </aside>
 
-      {/* Main */}
-      <main className="flex-grow-1 p-4 p-md-5 overflow-x-hidden">
-        <div className="container-fluid p-0" style={{ maxWidth: '1200px' }}>
-          {renderContent()}
-        </div>
-      </main>
-    </div>
+            {/* Nav */}
+            <nav className="d-flex flex-column gap-1 mt-2">
+              {NAV_TABS.map((tab) => {
+                const isTabActive = activeTab === tab.name;
+                return (
+                  <button
+                    key={tab.name}
+                    onClick={() => setActiveTab(tab.name)}
+                    className="btn border-0 d-flex align-items-center gap-3 py-3 rounded-0 w-100 interactive"
+                    style={{
+                      backgroundColor: isTabActive ? 'rgba(0, 230, 118, 0.08)' : 'transparent',
+                      color: isTabActive ? '#00e676' : '#bacbb9',
+                      paddingRight: sidebarOpen ? '24px' : '0',
+                      justifyContent: sidebarOpen ? 'flex-start' : 'center',
+                      borderRight: isTabActive ? '3px solid #00e676' : '3px solid transparent',
+                      textAlign: 'start',
+                    }}
+                  >
+                    <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '22px' }}>{tab.icon}</span>
+                    {sidebarOpen && (
+                      <span style={{ fontSize: '14px', fontFamily: 'var(--font-sans)', fontWeight: isTabActive ? '700' : '500' }}>
+                        {tab.name}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Profile */}
+          <div
+            className="d-flex align-items-center gap-3 pt-4 border-top px-3 mt-4"
+            style={{ borderColor: 'rgba(255,255,255,0.05)', justifyContent: sidebarOpen ? 'flex-start' : 'center' }}
+          >
+            <div className="rounded-circle border flex-shrink-0" style={{ width: '40px', height: '40px', borderColor: '#00e676', overflow: 'hidden' }}>
+              <img alt="المشرف" className="w-100 h-100 object-cover"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBdHC77LmwG49gMXeUdo3BC4CnzdYGLc7uanWx7xgzaRtYs51ey0rTNn8TOqZGAJ_Txqm9XO0GeWU9ImvH0TCi5H9DEO35GP8X74Z1DPBwEGL4RI3QzjAKgrqZA0vgYoFEGOFVYtqKASdSlI_v4EcfFKnPOuTr6RnJrNQngfAPUT6h6Yd2T0wQ9grK08GiCIxcIcHHEy5lPcPoQUIRnSLSZ2tPwPIr_5X9Opl2RO6UkMh1NTa_dlXJxdUB8mfGhxoFVrdnPVqvMj4Yr"
+              />
+            </div>
+            {sidebarOpen && (
+              <div className="overflow-hidden">
+                <p className="m-0 text-white fw-bold text-truncate" style={{ fontSize: '14px', fontFamily: 'var(--font-sans)' }}>د. إيلينا فانس</p>
+                <p className="m-0 font-mono-data text-uppercase" style={{ fontSize: '11px', color: '#7c8e7c' }}>مشرف النظام</p>
+              </div>
+            )}
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-grow-1 overflow-x-hidden" style={{ paddingBottom: '80px' }}>
+          <div className="p-3 p-md-4 p-lg-5">
+            <div className="container-fluid p-0" style={{ maxWidth: '1200px' }}>
+              {renderContent()}
+            </div>
+          </div>
+        </main>
+      </div>
+
+      {/* ── Mobile Bottom Tab Bar (visible only on < 768px) ── */}
+      <nav className="admin-mobile-tabs d-flex d-md-none">
+        {NAV_TABS.map((tab) => {
+          const isTabActive = activeTab === tab.name;
+          return (
+            <button
+              key={tab.name}
+              onClick={() => setActiveTab(tab.name)}
+              className="btn border-0 flex-fill d-flex flex-column align-items-center justify-content-center gap-1 py-2"
+              style={{
+                backgroundColor: 'transparent',
+                color: isTabActive ? '#00e676' : '#6b7280',
+                transition: 'color 0.2s ease',
+                fontSize: '10px',
+                fontFamily: 'var(--font-sans)',
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '22px', fontVariationSettings: isTabActive ? "'FILL' 1" : "'FILL' 0" }}>
+                {tab.icon}
+              </span>
+              <span style={{ fontWeight: isTabActive ? '700' : '400' }}>{tab.name}</span>
+              {isTabActive && (
+                <span style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#00e676', boxShadow: '0 0 6px #00e676' }} />
+              )}
+            </button>
+          );
+        })}
+      </nav>
+    </>
   );
 }

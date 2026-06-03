@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/auth.css';
+import borsaLogo from '../assets/Borsa Academy.jpeg';
 
 /* ── SVG helpers ─────────────────────────────────────────────────── */
 const CheckIcon = () => (
@@ -59,7 +60,12 @@ export default function SignIn() {
         <div className="auth-identity-inner">
 
           {/* Brand */}
-          <div className="auth-logo">بورصة أكاديمي</div>
+          <div className="auth-logo-img-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexDirection: 'row-reverse' }}>
+            <img src={borsaLogo} alt="بورصة أكاديمي" className="auth-logo-img brand-logo-animated" />
+            <span className="brand-text-glowing" style={{ fontSize: '28px', fontFamily: 'var(--font-sans)' }}>
+              بورصة أكاديمي
+            </span>
+          </div>
           <div className="auth-logo-underline" />
           <p className="auth-tagline">
             بوابتك الاحترافية لتعلم التداول وتحليل الأسواق المالية
@@ -101,6 +107,12 @@ export default function SignIn() {
             <>
               {/* Header */}
               <div className="auth-form-header">
+                <img 
+                  src={borsaLogo} 
+                  alt="Borsa Academy" 
+                  className="mx-auto mb-4" 
+                  style={{ maxHeight: '55px', filter: 'drop-shadow(0 0 12px rgba(0, 230, 118, 0.25))' }} 
+                />
                 <h1 className="auth-form-title">مرحباً بك مجدداً</h1>
                 <p className="auth-form-subtitle">
                   الرجاء إدخال بياناتك للوصول إلى حسابك
@@ -122,7 +134,7 @@ export default function SignIn() {
                   <input
                     id="signin-email"
                     type="email"
-                    className="auth-input"
+                    className="auth-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
                     placeholder="operator@borsa.io"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
@@ -139,7 +151,7 @@ export default function SignIn() {
                   <input
                     id="signin-password"
                     type="password"
-                    className="auth-input"
+                    className="auth-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
                     placeholder="••••••••••••"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
@@ -149,19 +161,20 @@ export default function SignIn() {
                 </div>
 
                 {/* Remember + Forgot row */}
-                <div className="auth-utils-row">
-                  <label className="auth-remember" htmlFor="signin-remember">
+                <div className="auth-utils-row flex items-center justify-between mt-2 mb-6">
+                  <label className="auth-remember flex items-center gap-2 cursor-pointer select-none" htmlFor="signin-remember">
                     <input
                       id="signin-remember"
                       type="checkbox"
+                      className="w-4 h-4 accent-[#00E676] cursor-pointer"
                       checked={remember}
                       onChange={e => setRemember(e.target.checked)}
                     />
-                    <span className="auth-remember-label">تذكرني</span>
+                    <span className="auth-remember-label text-[13px] text-slate-400 hover:text-slate-300 transition-colors">تذكرني</span>
                   </label>
                   <button
                     type="button"
-                    className="auth-forgot"
+                    className="auth-forgot text-[13px] text-slate-500 hover:text-[#00E676] bg-transparent border-none cursor-pointer transition-colors"
                     id="signin-forgot"
                   >
                     نسيت كلمة المرور؟
@@ -172,7 +185,7 @@ export default function SignIn() {
                 <button
                   id="signin-submit"
                   type="submit"
-                  className="auth-cta-btn"
+                  className="auth-cta-btn hover:brightness-110 active:scale-[0.99] transition-all duration-300 shadow-[0_0_20px_rgba(0,230,118,0.4)]"
                   disabled={loading}
                 >
                   {loading && <span className="auth-spinner" />}

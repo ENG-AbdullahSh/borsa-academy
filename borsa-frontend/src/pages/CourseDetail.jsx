@@ -1,39 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-
-const MODULES = [
-  {
-    key: 'mod1',
-    title: 'الوحدة ١: أساسيات تدفق الأوامر',
-    completed: true,
-    lessons: [
-      { title: '١.١ تشريح الصفقة', duration: '١٢:٠٥', active: true },
-      { title: '١.٢ شرح عمق السوق', duration: '١٨:٤٠', active: false },
-    ],
-  },
-  {
-    key: 'mod2',
-    title: 'الوحدة ٢: استراتيجيات التنفيذ',
-    completed: false,
-    lessons: [
-      { title: '٢.١ استراتيجية الفيد', duration: '٢٥:١٠', locked: true },
-      { title: '٢.٢ دخول الزخم الانفجاري', duration: '٣٢:١٥', locked: true },
-    ],
-  },
-  {
-    key: 'mod3',
-    title: 'الوحدة ٣: إدارة المخاطر',
-    completed: false,
-    lessons: [
-      { title: '٣.١ تحديد وقف الخسارة', duration: '١٥:٥٠', locked: true },
-    ],
-  },
-];
+import CinemaVideoPlayer from '../components/CinemaVideoPlayer';
+import CourseCurriculum from '../components/CourseCurriculum';
+import VideoNotesSidebar from '../components/VideoNotesSidebar';
 
 export default function CourseDetail() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [expanded, setExpanded] = useState({ mod1: true, mod2: false, mod3: false });
+  const videoRef = useRef(null);
 
   return (
     <div className="min-vh-100" style={{ paddingTop: '64px' }}>
@@ -51,41 +25,23 @@ export default function CourseDetail() {
           {/* Left / Main */}
           <div className="col-12 col-lg-8 d-flex flex-column gap-4">
 
-            {/* Video Player */}
-            <section className="position-relative glass-card rounded-3 overflow-hidden" style={{ minHeight: '380px', borderRadius: '12px' }}>
-              {isPlaying ? (
-                <div className="w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-dark bg-opacity-75 p-5" style={{ minHeight: '380px' }}>
-                  <div className="spinner-grow" role="status" style={{ width: '48px', height: '48px', color: '#75ff9e' }} />
-                  <span className="font-mono-data text-uppercase mt-3" style={{ color: '#75ff9e', fontSize: '12px', letterSpacing: '0.1em' }}>جارٍ تزامن تدفق دفتر الأوامر...</span>
-                  <p className="text-muted font-mono-data mt-2" style={{ fontSize: '11px' }}>مخطط العمق • ملف حجم السعر • مؤشرات VWAP نشطة</p>
-                </div>
-              ) : (
-                <>
-                  <img alt="واجهة التداول المتقدمة" className="w-100 object-cover" style={{ minHeight: '380px', opacity: 0.85 }}
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHHrmM7bgkBU4GMt7xzQKoyQOiVLuUg9PexkkiML4CxF82U9zfcUSTSMv0cXRfAaizBMluvgMle--myXkoOAv9z3fCXk95tvVzgvUlyNs88aDjSmRXhiB25gqF6CifQ_bo54ux0p2-ErdEfpfE7mpQWgoS_xFcrie4ar8KNPhmesZRshDUw0ZBuEyIFbikh_Nr9NK4XP3FkkcEfQxXiqkdp1ZdoleBBIDyzNrEv3dn3fClsc5947beLNlkhrYKrFGOHCuwVHSf6Nyi" />
-                  <div onClick={() => setIsPlaying(true)} className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ cursor: 'pointer' }}>
-                    <div className="d-flex align-items-center justify-content-center border" style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: 'rgba(117,255,158,0.15)', borderColor: 'rgba(117,255,158,0.45)', backdropFilter: 'blur(4px)' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '40px', color: '#75ff9e' }}>play_arrow</span>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Controls */}
-              <div className="position-absolute bottom-0 start-0 w-100 p-3" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)', zIndex: 10 }}>
-                <div className="d-flex align-items-center gap-3 glass-card p-2 rounded-2" style={{ direction: 'ltr' }}>
-                  <button onClick={() => setIsPlaying(!isPlaying)} className="material-symbols-outlined btn p-0 border-0 bg-transparent" style={{ fontSize: '32px', color: '#75ff9e' }}>
-                    {isPlaying ? 'pause' : 'play_arrow'}
-                  </button>
-                  <div className="flex-grow-1 rounded-full overflow-hidden" style={{ height: '4px', backgroundColor: 'rgba(255,255,255,0.1)' }}>
-                    <div style={{ width: isPlaying ? '38%' : '32%', height: '100%', background: 'linear-gradient(90deg,#00a9e8,#75ff9e)', boxShadow: '0 0 8px rgba(117,255,158,0.5)' }} />
-                  </div>
-                  <span className="font-mono-data text-white" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>{isPlaying ? '17:10' : '14:20'} / 45:00</span>
-                  <button className="material-symbols-outlined btn p-0 border-0 bg-transparent text-muted" style={{ fontSize: '20px' }}>volume_up</button>
-                  <button className="material-symbols-outlined btn p-0 border-0 bg-transparent text-muted" style={{ fontSize: '20px' }}>fullscreen</button>
-                </div>
+            {/* Video & Notes Row */}
+            <div className="row g-3">
+              <div className="col-12 col-xl-8">
+                {/* Video Player */}
+                <section className="position-relative glass-card rounded-3 overflow-hidden h-100" style={{ minHeight: '380px', borderRadius: '12px' }}>
+                  <CinemaVideoPlayer 
+                    innerRef={videoRef}
+                    src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" 
+                    courseId="masterclass" 
+                    lessonId="1_1" 
+                  />
+                </section>
               </div>
-            </section>
+              <div className="col-12 col-xl-4">
+                <VideoNotesSidebar videoRef={videoRef} courseId="masterclass" lessonId="1_1" />
+              </div>
+            </div>
 
             {/* Title & Actions */}
             <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-end gap-3">
@@ -169,56 +125,7 @@ export default function CourseDetail() {
 
           {/* Sidebar Curriculum */}
           <aside className="col-12 col-lg-4">
-            <div className="glass-card rounded-3 overflow-hidden d-flex flex-column" style={{ position: 'sticky', top: '88px', maxHeight: 'calc(100vh - 120px)' }}>
-              <div className="p-3 border-bottom" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-                <h3 className="h6 text-white fw-bold mb-2" style={{ fontFamily: 'var(--font-sans)' }}>منهج الكورس</h3>
-                <div className="d-flex justify-content-between font-mono-data text-muted mb-2" style={{ fontSize: '11px' }}>
-                  <span>١٢ وحدة • ٨ ساعات ٤٥ دقيقة</span>
-                  <span style={{ color: '#75ff9e' }}>٣٤٪ مكتمل</span>
-                </div>
-                <div style={{ height: '3px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '99px' }}>
-                  <div style={{ width: '34%', height: '100%', backgroundColor: '#75ff9e', boxShadow: '0 0 8px rgba(117,255,158,0.3)' }} />
-                </div>
-              </div>
-
-              <div className="flex-grow-1 overflow-auto p-2 d-flex flex-column gap-2 custom-scrollbar">
-                {MODULES.map((mod) => (
-                  <div key={mod.key} className="rounded border" style={{ borderColor: 'rgba(255,255,255,0.06)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
-                    <button onClick={() => setExpanded((p) => ({ ...p, [mod.key]: !p[mod.key] }))}
-                      className="w-100 btn p-3 border-0 bg-transparent text-start d-flex align-items-center justify-content-between text-white">
-                      <div className="d-flex align-items-center gap-2">
-                        <span className="material-symbols-outlined" style={{ color: mod.completed ? '#75ff9e' : '#7c8e7c', fontSize: '16px', fontVariationSettings: mod.completed ? "'FILL' 1" : "'FILL' 0" }}>
-                          {mod.completed ? 'check_circle' : 'circle'}
-                        </span>
-                        <span className="font-mono-data fw-semibold" style={{ fontSize: '12px', fontFamily: 'var(--font-sans)' }}>{mod.title}</span>
-                      </div>
-                      <span className="material-symbols-outlined text-muted" style={{ transform: expanded[mod.key] ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.3s' }}>expand_more</span>
-                    </button>
-                    {expanded[mod.key] && (
-                      <div className="px-3 pb-3 d-flex flex-column gap-2 border-top pt-2" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-                        {mod.lessons.map((lesson, i) => (
-                          <div key={i} className="p-2 rounded d-flex align-items-center justify-content-between font-mono-data"
-                            style={{ fontSize: '11px', backgroundColor: lesson.active ? 'rgba(117,255,158,0.08)' : 'transparent', borderLeft: lesson.active ? '2px solid #75ff9e' : 'none', color: lesson.active ? '#75ff9e' : '#bacbb9', fontFamily: 'var(--font-sans)', direction: 'ltr' }}>
-                            <span className="d-flex align-items-center gap-1">
-                              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>{lesson.locked ? 'lock' : 'play_circle'}</span>
-                              {lesson.title}
-                            </span>
-                            <span className="opacity-75">{lesson.duration}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-                <div className="text-center py-2 text-muted font-mono-data fst-italic" style={{ fontSize: '11px' }}>+ ٩ وحدات إضافية</div>
-              </div>
-
-              <div className="p-3 border-top" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-                <button className="btn w-100 py-2 d-flex align-items-center justify-content-center gap-2 fw-semibold text-muted border border-secondary border-opacity-25 rounded" style={{ fontSize: '12px', fontFamily: 'var(--font-sans)' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>workspace_premium</span> الحصول على الشهادة
-                </button>
-              </div>
-            </div>
+            <CourseCurriculum />
           </aside>
 
         </div>
