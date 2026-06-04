@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import CertificateModal from './CertificateModal';
 
 const MOCK_CURRICULUM = [
   {
@@ -6,7 +7,7 @@ const MOCK_CURRICULUM = [
     title: 'الوحدة ١: أساسيات تدفق الأوامر',
     lessons: [
       { id: 'l1', title: '١.١ تشريح الصفقة', duration: '١٢:٠٥', state: 'completed' },
-      { id: 'l2', title: '١.٢ شرح عمق السوق', duration: '١٨:٤٠', state: 'completed' },
+      { id: 'l2', title: '١.٢ شرح عمق السوق', duration: '١٨:٤0', state: 'completed' },
       { id: 'l3', title: '١.٣ ديناميكية السيولة', duration: '١٤:٢٠', state: 'current' },
     ],
   },
@@ -33,6 +34,7 @@ const MOCK_CURRICULUM = [
 export default function CourseCurriculum() {
   const [expandedSections, setExpandedSections] = useState({ sec1: true });
   const [progressWidth, setProgressWidth] = useState(0);
+  const [isCertificateOpen, setIsCertificateOpen] = useState(false);
   
   // Calculate completion
   const totalLessons = MOCK_CURRICULUM.reduce((acc, curr) => acc + curr.lessons.length, 0);
@@ -135,10 +137,16 @@ export default function CourseCurriculum() {
       
       {/* Footer / Certificate Action */}
       <div className="p-3 border-top" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-        <button className="btn w-100 py-2 d-flex align-items-center justify-content-center gap-2 fw-semibold text-muted border border-secondary border-opacity-25 rounded interactive-btn" style={{ fontSize: '12px', fontFamily: 'var(--font-sans)' }}>
-          <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>workspace_premium</span> الحصول على الشهادة
+        <button 
+          onClick={() => setIsCertificateOpen(true)}
+          className="btn w-100 py-2 d-flex align-items-center justify-content-center gap-2 fw-semibold btn-primary-cta interactive" 
+          style={{ fontSize: '13px', fontFamily: 'var(--font-sans)', borderRadius: '8px' }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>workspace_premium</span> الحصول على الشهادة
         </button>
       </div>
+
+      <CertificateModal isOpen={isCertificateOpen} onClose={() => setIsCertificateOpen(false)} />
     </div>
   );
 }

@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom';
 import CinemaVideoPlayer from '../components/CinemaVideoPlayer';
 import CourseCurriculum from '../components/CourseCurriculum';
 import VideoNotesSidebar from '../components/VideoNotesSidebar';
+import CourseQuiz from '../components/CourseQuiz';
 
 export default function CourseDetail() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isQuizOpen, setIsQuizOpen] = useState(false);
   const videoRef = useRef(null);
 
   return (
@@ -49,7 +51,11 @@ export default function CourseDetail() {
                 <h1 className="fw-bold text-white mb-1" style={{ fontSize: '28px', fontFamily: 'var(--font-sans)' }}>ماستركلاس السكالبينج المتقدم</h1>
                 <p className="text-muted m-0" style={{ fontSize: '14px', fontFamily: 'var(--font-sans)' }}>أتقن الاتجاهات الدقيقة باستخدام تحليل تدفق الأوامر عالي الدقة.</p>
               </div>
-              <div className="d-flex gap-2">
+              <div className="d-flex gap-2 flex-wrap">
+                <button onClick={() => setIsQuizOpen(true)} className="btn px-4 py-2 fw-bold interactive btn-primary-cta d-flex align-items-center gap-2" style={{ borderRadius: '8px', fontSize: '13px', fontFamily: 'var(--font-sans)' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>quiz</span>
+                  اختبر معلوماتك في هذه المحاضرة
+                </button>
                 <button onClick={() => setIsPlaying(true)} className="btn px-4 py-2 fw-semibold" style={{ backgroundColor: '#75ff9e', color: '#003918', borderRadius: '4px', fontSize: '13px', fontFamily: 'var(--font-sans)', boxShadow: '0 0 15px rgba(117,255,158,0.12)' }}>
                   متابعة التعلم
                 </button>
@@ -59,6 +65,8 @@ export default function CourseDetail() {
                 </button>
               </div>
             </div>
+
+            <CourseQuiz isOpen={isQuizOpen} onClose={() => setIsQuizOpen(false)} />
 
             {/* Info Grid */}
             <div className="row g-4">

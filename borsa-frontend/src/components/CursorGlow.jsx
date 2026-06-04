@@ -1,24 +1,68 @@
 import React, { useEffect, useState } from 'react';
+import { motion, useMotionValue, useSpring } from 'framer-motion';
 
-export default function CursorGlow() {
-  const [coords, setCoords] = useState({ x: 0, y: 0 });
+const CursorGlow = () => {
+  const [isHovering, setIsHovering] = useState(false);
+  
+  const cursorX = useMotionValue(-100);
+  const cursorY = useMotionValue(-100);
+  
+  const springConfig = { damping: 25, stiffness: 250, mass: 0.5 };
+  const cursorXSpring = useSpring(cursorX, springConfig);
+  const cursorYSpring = useSpring(cursorY, springConfig);
 
   useEffect(() => {
-    const handleMouseMove = (e) => {
-      setCoords({ x: e.clientX, y: e.clientY });
+    const moveCursor = (e) => {
+      cursorX.set(e.clientX - 16);
+      cursorY.set(e.clientY - 16);
     };
-    window.addEventListener('mousemove', handleMouseMove);
+
+    const handleMouseOver = (e) => {
+      const interactiveElements = ['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA'];
+      const target = e.target;
+      const isInteractive = 
+        interactiveElements.includes(target.tagName) ||
+        target.closest('a') || 
+        target.closest('button') ||
+        (target.classList && target.classList.contains('masari-card')) ||
+        (target.classList && target.classList.contains('interactive'));
+        
+      setIsHovering(!!isInteractive);
+    };
+
+    window.addEventListener('mousemove', moveCursor);
+    window.addEventListener('mouseover', handleMouseOver);
+
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mousemove', moveCursor);
+      window.removeEventListener('mouseover', handleMouseOver);
     };
-  }, []);
+  }, [cursorX, cursorY]);
 
   return (
-    <div
-      className="fixed inset-0 pointer-events-none z-[100] opacity-30 mix-blend-screen"
+    <motion.div
       style={{
-        background: `radial-gradient(600px circle at ${coords.x}px ${coords.y}px, rgba(117, 255, 158, 0.08), transparent 45%)`,
+        translateX: cursorXSpring,
+        translateY: cursorYSpring,
+        position: 'fixed',
+        left: 0,
+        top: 0,
+        width: '32px',
+        height: '32px',
+        borderRadius: '50%',
+        backgroundColor: 'rgba(0,230,118,0.15)',
+        pointerEvents: 'none',
+        zIndex: 9999,
+        filter: 'blur(8px)',
       }}
+      animate={{
+        scale: isHovering ? 1.4 : 1,
+        opacity: isHovering ? 0.8 : 0.4,
+        filter: isHovering ? 'blur(12px)' : 'blur(8px)',
+      }}
+      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
     />
   );
-}
+};
+
+export default CursorGlow;
