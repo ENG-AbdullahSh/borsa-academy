@@ -9,6 +9,7 @@ import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
 import { courseImage, levelLabel } from '../utils/courseDisplay';
 
 const ACCESS_REQUIRED_MESSAGE = 'يجب الاشتراك في الدورة أولاً';
+const SAMPLE_VIDEO = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4';
 
 export default function CourseDetail() {
   const { id } = useParams();
@@ -19,23 +20,26 @@ export default function CourseDetail() {
 
   const [course, setCourse] = useState(null);
   const [enrollment, setEnrollment] = useState(null);
+  const [curriculum, setCurriculum] = useState(null);
   const [courseLoading, setCourseLoading] = useState(true);
+  const [curriculumLoading, setCurriculumLoading] = useState(true);
   const [accessLoading, setAccessLoading] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
   const [courseError, setCourseError] = useState('');
+  const [curriculumError, setCurriculumError] = useState('');
   const [accessMessage, setAccessMessage] = useState('');
   const [notice, setNotice] = useState('');
+  const [curriculumRefreshKey, setCurriculumRefreshKey] = useState(0);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isQuizOpen, setIsQuizOpen] = useState(false);
 
   const courseId = Number(id);
   const isCourseIdValid = Number.isFinite(courseId) && courseId > 0;
-  const canAccessCourse = Boolean(enrollment);
+  const canAccessCourse = Boolean(enrollment) || Boolean(curriculum?.can_access_full_curriculum);
+  const sections = useMemo(() => curriculum?.sections || [], [curriculum]);
 
   const courseMeta = useMemo(() => {
-    if (!course) {
-      return [];
-    }
+    if (!course) return [];
 
     return [
       { icon: 'signal_cellular_alt', label: levelLabel(course.level) },
@@ -44,6 +48,14 @@ export default function CourseDetail() {
       { icon: 'category', label: course.category || 'تداول' },
     ];
   }, [course]);
+
+  const firstPlayableLesson = useMemo(() => {
+    if (!canAccessCourse) return null;
+
+    return sections
+      .flatMap((section) => section.lessons || [])
+      .find((lesson) => !lesson.is_locked && lesson.video_url) || null;
+  }, [canAccessCourse, sections]);
 
   const fetchEnrollment = useCallback(async (signal) => {
     if (!isAuthenticated || !token || !courseId) {
@@ -85,6 +97,10 @@ export default function CourseDetail() {
   }, [courseId, isAuthenticated, token]);
 
   useEffect(() => {
+    if (!isCourseIdValid) {
+      return undefined;
+    }
+
     const controller = new AbortController();
 
     const fetchCourse = async () => {
@@ -110,15 +126,13 @@ export default function CourseDetail() {
       }
     };
 
-    if (isCourseIdValid) {
-      fetchCourse();
-    }
+    Promise.resolve().then(fetchCourse);
 
     return () => controller.abort();
   }, [courseId, isCourseIdValid]);
 
   useEffect(() => {
-    if (authLoading || !courseId) {
+    if (authLoading || !isCourseIdValid) {
       return undefined;
     }
 
@@ -126,15 +140,48 @@ export default function CourseDetail() {
     Promise.resolve().then(() => fetchEnrollment(controller.signal));
 
     return () => controller.abort();
-  }, [authLoading, courseId, fetchEnrollment]);
+  }, [authLoading, fetchEnrollment, isCourseIdValid]);
+
+  useEffect(() => {
+    if (authLoading || !isCourseIdValid) {
+      return undefined;
+    }
+
+    const controller = new AbortController();
+
+    const fetchCurriculum = async () => {
+      setCurriculumLoading(true);
+      setCurriculumError('');
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/courses/${courseId}/curriculum`, {
+          headers: apiHeaders(token),
+          signal: controller.signal,
+        });
+        const payload = await readJsonResponse(response);
+        setCurriculum(payload.data || null);
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          setCurriculum(null);
+          setCurriculumError('تعذر تحميل منهج الدورة.');
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setCurriculumLoading(false);
+        }
+      }
+    };
+
+    Promise.resolve().then(fetchCurriculum);
+
+    return () => controller.abort();
+  }, [authLoading, courseId, curriculumRefreshKey, isCourseIdValid, token]);
 
   const handleEnroll = async () => {
     setNotice('');
     setAccessMessage('');
 
-    if (authLoading) {
-      return;
-    }
+    if (authLoading) return;
 
     if (!isAuthenticated || !token) {
       navigate('/signin', { state: { from: location } });
@@ -152,12 +199,14 @@ export default function CourseDetail() {
 
       if (response.status === 409) {
         await fetchEnrollment();
+        setCurriculumRefreshKey((current) => current + 1);
         setNotice('أنت مشترك في هذه الدورة بالفعل.');
         return;
       }
 
       const payload = await readJsonResponse(response);
       setEnrollment(payload.data || null);
+      setCurriculumRefreshKey((current) => current + 1);
       setNotice('تم الاشتراك في الدورة بنجاح.');
     } catch (error) {
       setAccessMessage(error.message || 'تعذر إتمام الاشتراك الآن.');
@@ -225,9 +274,9 @@ export default function CourseDetail() {
                   {canAccessCourse ? (
                     <CinemaVideoPlayer
                       innerRef={videoRef}
-                      src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+                      src={firstPlayableLesson?.video_url || SAMPLE_VIDEO}
                       courseId={String(course.id)}
-                      lessonId="1_1"
+                      lessonId={String(firstPlayableLesson?.id || '1_1')}
                     />
                   ) : (
                     <div className="h-100 d-flex flex-column align-items-center justify-content-center text-center p-4" style={{ minHeight: '380px' }}>
@@ -257,15 +306,10 @@ export default function CourseDetail() {
               </div>
               <div className="col-12 col-xl-4">
                 {canAccessCourse ? (
-                  <VideoNotesSidebar videoRef={videoRef} courseId={String(course.id)} lessonId="1_1" />
+                  <VideoNotesSidebar videoRef={videoRef} courseId={String(course.id)} lessonId={String(firstPlayableLesson?.id || '1_1')} />
                 ) : (
                   <div className="glass-card p-4 rounded-3 h-100 d-flex flex-column justify-content-center">
-                    <img
-                      src={courseImage(course)}
-                      alt={course.title}
-                      className="w-100 rounded-3 object-cover mb-3"
-                      style={{ height: '180px' }}
-                    />
+                    <img src={courseImage(course)} alt={course.title} className="w-100 rounded-3 object-cover mb-3" style={{ height: '180px' }} />
                     <h3 className="h6 text-white fw-bold mb-2" style={{ fontFamily: 'var(--font-sans)' }}>{course.title}</h3>
                     <p className="text-muted m-0" style={{ fontSize: '13px', lineHeight: 1.8 }}>{course.short_description}</p>
                   </div>
@@ -365,25 +409,13 @@ export default function CourseDetail() {
           </div>
 
           <aside className="col-12 col-lg-4">
-            {canAccessCourse ? (
-              <CourseCurriculum />
-            ) : (
-              <div className="glass-card p-4 rounded-3 position-sticky" style={{ top: '88px' }}>
-                <h3 className="h5 text-white fw-bold mb-3" style={{ fontFamily: 'var(--font-sans)' }}>ابدأ رحلتك</h3>
-                <p className="text-muted" style={{ fontSize: '14px', lineHeight: 1.8 }}>
-                  بعد الاشتراك ستظهر المحاضرات، الملاحظات، والاختبارات الخاصة بهذه الدورة.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleEnroll}
-                  disabled={enrolling || authLoading}
-                  className="btn btn-primary-cta w-100 py-2 fw-bold"
-                  style={{ borderRadius: '8px', fontFamily: 'var(--font-sans)' }}
-                >
-                  {enrolling ? 'جاري الاشتراك...' : 'اشترك الآن'}
-                </button>
-              </div>
-            )}
+            <CourseCurriculum
+              sections={sections}
+              isEnrolled={canAccessCourse}
+              loading={curriculumLoading}
+              error={curriculumError}
+              progressPercent={enrollment?.progress || 0}
+            />
           </aside>
         </div>
       </main>

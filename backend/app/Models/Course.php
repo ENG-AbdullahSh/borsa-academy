@@ -50,4 +50,11 @@ class Course extends Model
     {
         return $this->hasMany(Enrollment::class);
     }
+
+    public function sections(): HasMany
+    {
+        return $this->hasMany(CourseSection::class)
+            ->orderBy('order')
+            ->orderBy('id');
+    }
 }

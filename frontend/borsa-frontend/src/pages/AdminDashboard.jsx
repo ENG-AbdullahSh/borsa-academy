@@ -1,5 +1,8 @@
 import { useState, useMemo } from 'react';
 import AdminCourses from './AdminCourses';
+import AdminCurriculum from './AdminCurriculum';
+
+const CURRICULUM_TAB = 'المحتوى التعليمي';
 
 const ENROLLMENTS = [
   { id: 'TRN-809', name: 'سارة مولر', course: 'السكالبينج المتقدم', amount: 499, date: '٢٠٢٦-٠٥-٣١', status: 'نشط' },
@@ -22,6 +25,7 @@ const REVENUE = [
 const NAV_TABS = [
   { name: 'نظرة عامة', icon: 'grid_view' },
   { name: 'إدارة الكورسات', icon: 'auto_stories' },
+  { name: CURRICULUM_TAB, icon: 'menu_book' },
   { name: 'المدربون', icon: 'group' },
   { name: 'الإعدادات', icon: 'settings' },
 ];
@@ -183,6 +187,7 @@ export default function AdminDashboard() {
   );
 
   const renderCourses = () => <AdminCourses />;
+  const renderCurriculum = () => <AdminCurriculum />;
 
   const renderInstructors = () => (
     <>
@@ -281,6 +286,7 @@ export default function AdminDashboard() {
     switch (activeTab) {
       case 'نظرة عامة': return renderOverview();
       case 'إدارة الكورسات': return renderCourses();
+      case CURRICULUM_TAB: return renderCurriculum();
       case 'المدربون': return renderInstructors();
       case 'الإعدادات': return renderSettings();
       default: return renderOverview();
