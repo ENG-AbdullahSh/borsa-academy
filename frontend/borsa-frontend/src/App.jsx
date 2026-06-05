@@ -15,6 +15,8 @@ import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import Masari from './pages/Masari';
 import NotificationsPage from './pages/NotificationsPage';
+import MyCourses from './pages/MyCourses';
+import StudentDashboard from './pages/StudentDashboard';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
 import { AuthProvider } from './context/AuthProvider';
 import { NotificationProvider } from './context/NotificationContext';
@@ -62,6 +64,8 @@ function AppShell() {
             )}
           />
           <Route path="/masari"     element={<Masari />} />
+          <Route path="/student-dashboard" element={<StudentDashboard />} />
+          <Route path="/my-courses" element={<MyCourses />} />
           <Route path="/notifications" element={<NotificationsPage />} />
 
           {/* Auth pages — full-screen, no chrome */}

@@ -39,6 +39,10 @@ export default function Navbar() {
     { label: 'الرئيسية', path: '/' },
     { label: 'الكورسات', path: '/courses' },
     { label: 'مساري 📈', path: '/masari' },
+    ...(isAuthenticated && user?.role !== 'admin' ? [
+      { label: 'لوحة الطالب', path: '/student-dashboard' },
+      { label: 'دوراتي', path: '/my-courses' },
+    ] : []),
     { label: 'من نحن واتصل بنا', path: '/about' },
     ...(user?.role === 'admin' ? [{ label: 'لوحة التحكم', path: '/admin' }] : []),
   ];

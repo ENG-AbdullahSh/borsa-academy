@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CourseController;
+use App\Http\Controllers\Api\EnrollmentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/courses', [CourseController::class, 'index']);
@@ -13,6 +14,12 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+
+    Route::middleware('role:student')->group(function (): void {
+        Route::post('/enrollments', [EnrollmentController::class, 'store']);
+        Route::get('/my-courses', [EnrollmentController::class, 'index']);
+        Route::get('/my-courses/{courseId}', [EnrollmentController::class, 'show'])->whereNumber('courseId');
+    });
 
     Route::middleware('role:admin')->group(function (): void {
         Route::get('/admin/test', function () {
