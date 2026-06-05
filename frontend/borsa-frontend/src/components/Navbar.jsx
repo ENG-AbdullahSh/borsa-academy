@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import borsaLogo from '../assets/Borsa Academy.jpeg';
-import { FiBell, FiCheckCircle } from 'react-icons/fi';
+import { FiBell, FiCheckCircle, FiLogOut, FiUser } from 'react-icons/fi';
+import { useAuth } from '../hooks/useAuth';
 import { useNotifications } from '../context/NotificationContext';
 
 export default function Navbar() {
@@ -11,6 +12,7 @@ export default function Navbar() {
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef(null);
 
+  const { user, isAuthenticated, logout } = useAuth();
   const { notifications, unreadCount, markAllAsRead, markAsRead } = useNotifications();
 
   // Close dropdown on outside click
@@ -33,15 +35,22 @@ export default function Navbar() {
     fontWeight: isActive(path) ? '700' : '500',
   });
 
-  const NAV_LINKS = [
+  const navLinks = [
     { label: 'الرئيسية', path: '/' },
     { label: 'الكورسات', path: '/courses' },
     { label: 'مساري 📈', path: '/masari' },
     { label: 'من نحن واتصل بنا', path: '/about' },
-    { label: 'لوحة التحكم', path: '/admin' },
+    ...(user?.role === 'admin' ? [{ label: 'لوحة التحكم', path: '/admin' }] : []),
   ];
 
   const closeMobile = () => setMobileOpen(false);
+
+  const handleLogout = async () => {
+    await logout();
+    setNotifOpen(false);
+    closeMobile();
+    navigate('/signin', { replace: true });
+  };
 
   return (
     <>
@@ -72,7 +81,7 @@ export default function Navbar() {
 
           {/* ── Desktop Nav Links (hidden on mobile) ── */}
           <div className="d-none d-lg-flex align-items-center gap-4 flex-grow-1 justify-content-center">
-            {NAV_LINKS.map(({ label, path }) => (
+            {navLinks.map(({ label, path }) => (
               <Link
                 key={path}
                 to={path}
@@ -195,20 +204,45 @@ export default function Navbar() {
               )}
             </div>
 
-            <Link
-              to="/signin"
-              className="btn btn-link text-decoration-none p-0 border-0 fw-bold btn-link-opacity"
-              style={{ fontSize: '14px', fontFamily: 'var(--font-sans)' }}
-            >
-              تسجيل الدخول
-            </Link>
-            <Link
-              to="/signup"
-              className="btn px-4 py-2 fw-bold btn-join-premium"
-              style={{ color: '#003918', fontSize: '13px', fontFamily: 'var(--font-sans)', letterSpacing: '0.02em' }}
-            >
-              انضم الآن
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <div
+                  className="d-flex align-items-center gap-2 px-2"
+                  style={{ color: '#bacbb9', fontSize: '13px', fontFamily: 'var(--font-sans)' }}
+                >
+                  <FiUser size={16} />
+                  <span className="text-truncate" style={{ maxWidth: '140px' }}>
+                    {user?.name || user?.email}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="btn btn-link text-decoration-none p-0 border-0 fw-bold btn-link-opacity d-flex align-items-center gap-2"
+                  style={{ fontSize: '14px', fontFamily: 'var(--font-sans)' }}
+                >
+                  <FiLogOut size={17} />
+                  تسجيل الخروج
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/signin"
+                  className="btn btn-link text-decoration-none p-0 border-0 fw-bold btn-link-opacity"
+                  style={{ fontSize: '14px', fontFamily: 'var(--font-sans)' }}
+                >
+                  تسجيل الدخول
+                </Link>
+                <Link
+                  to="/signup"
+                  className="btn px-4 py-2 fw-bold btn-join-premium"
+                  style={{ color: '#003918', fontSize: '13px', fontFamily: 'var(--font-sans)', letterSpacing: '0.02em' }}
+                >
+                  انضم الآن
+                </Link>
+              </>
+            )}
           </div>
 
           {/* ── Hamburger (visible on mobile only) ── */}
@@ -263,7 +297,7 @@ export default function Navbar() {
       >
         {/* Mobile Nav Links */}
         <nav className="d-flex flex-column px-4 gap-1 mb-4">
-          {NAV_LINKS.map(({ label, path }) => (
+          {navLinks.map(({ label, path }) => (
             <Link
               key={path}
               to={path}
@@ -289,28 +323,57 @@ export default function Navbar() {
 
         {/* Mobile Auth Buttons */}
         <div className="d-flex flex-column gap-3 px-4">
-          <Link
-            to="/signin"
-            onClick={closeMobile}
-            className="btn py-2 fw-bold text-white"
-            style={{
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '10px',
-              fontFamily: 'var(--font-sans)',
-              fontSize: '14px',
-              backgroundColor: 'transparent',
-            }}
-          >
-            تسجيل الدخول
-          </Link>
-          <Link
-            to="/signup"
-            onClick={closeMobile}
-            className="btn py-2 fw-bold btn-join-premium"
-            style={{ color: '#003918', fontSize: '14px', fontFamily: 'var(--font-sans)' }}
-          >
-            انضم الآن
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <div
+                className="d-flex align-items-center gap-2 px-2"
+                style={{ color: '#bacbb9', fontSize: '13px', fontFamily: 'var(--font-sans)' }}
+              >
+                <FiUser size={16} />
+                <span className="text-truncate">{user?.name || user?.email}</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="btn py-2 fw-bold text-white d-flex align-items-center justify-content-center gap-2"
+                style={{
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '10px',
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '14px',
+                  backgroundColor: 'transparent',
+                }}
+              >
+                <FiLogOut size={17} />
+                تسجيل الخروج
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/signin"
+                onClick={closeMobile}
+                className="btn py-2 fw-bold text-white"
+                style={{
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '10px',
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '14px',
+                  backgroundColor: 'transparent',
+                }}
+              >
+                تسجيل الدخول
+              </Link>
+              <Link
+                to="/signup"
+                onClick={closeMobile}
+                className="btn py-2 fw-bold btn-join-premium"
+                style={{ color: '#003918', fontSize: '14px', fontFamily: 'var(--font-sans)' }}
+              >
+                انضم الآن
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </>

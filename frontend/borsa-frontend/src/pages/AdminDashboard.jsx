@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import AdminCourses from './AdminCourses';
 
 const ENROLLMENTS = [
   { id: 'TRN-809', name: 'سارة مولر', course: 'السكالبينج المتقدم', amount: 499, date: '٢٠٢٦-٠٥-٣١', status: 'نشط' },
@@ -30,13 +31,6 @@ const STATUS_STYLE = {
   'مكتمل':  { bg: 'rgba(117, 255, 158, 0.1)', color: '#75ff9e', border: 'rgba(117, 255, 158, 0.2)' },
   'معلق':   { bg: 'rgba(244, 67, 54, 0.1)',   color: '#ffb4ab', border: 'rgba(244, 67, 54, 0.2)' },
 };
-
-const COURSES = [
-  { id: 1, title: 'السكالبينج المتقدم', price: '$499', students: 124 },
-  { id: 2, title: 'أساسيات الفوركس', price: '$299', students: 342 },
-  { id: 3, title: 'التحليل الخوارزمي', price: '$899', students: 89 },
-  { id: 4, title: 'علم نفس التداول', price: '$199', students: 512 }
-];
 
 const INSTRUCTORS = [
   { id: 1, name: 'سارة مولر', specialty: 'تداول العملات الرقمية', students: 450, status: 'نشط' },
@@ -188,39 +182,7 @@ export default function AdminDashboard() {
     </>
   );
 
-  const renderCourses = () => (
-    <>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h1 className="fw-bold text-white mb-1" style={{ fontSize: '28px', fontFamily: 'var(--font-sans)' }}>إدارة الكورسات</h1>
-          <p className="text-muted m-0" style={{ fontSize: '14px', fontFamily: 'var(--font-sans)' }}>تعديل ومراقبة الكورسات النشطة.</p>
-        </div>
-        <button className="btn fw-bold btn-add-course py-2 px-5" style={{ fontSize: '14px', fontFamily: 'var(--font-sans)' }}>
-          إضافة كورس جديد
-        </button>
-      </div>
-
-      <div className="row g-4">
-        {COURSES.map(course => (
-          <div key={course.id} className="col-12 col-md-6 col-xl-4">
-            <div className="glass-card p-4 rounded-3 h-100 d-flex flex-column justify-content-between interactive card-glow">
-              <div>
-                <h3 className="h5 text-white fw-bold mb-3" style={{ fontFamily: 'var(--font-sans)' }}>{course.title}</h3>
-                <div className="d-flex align-items-center justify-content-between mb-4">
-                  <span className="font-mono-data text-muted" style={{ fontSize: '13px' }}>المشتركون: <span className="text-white fw-bold">{course.students}</span></span>
-                  <span className="font-mono-data fw-bold" style={{ color: '#00e676', fontSize: '16px' }}>{course.price}</span>
-                </div>
-              </div>
-              <div className="d-flex gap-2 border-top pt-3" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-                <button className="btn btn-sm w-50 fw-bold btn-edit-course">تعديل</button>
-                <button className="btn btn-sm w-50 fw-bold btn-delete-course">حذف</button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </>
-  );
+  const renderCourses = () => <AdminCourses />;
 
   const renderInstructors = () => (
     <>

@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Ticker from './components/Ticker';
@@ -16,6 +15,8 @@ import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import Masari from './pages/Masari';
 import NotificationsPage from './pages/NotificationsPage';
+import ProtectedAdminRoute from './components/ProtectedAdminRoute';
+import { AuthProvider } from './context/AuthProvider';
 import { NotificationProvider } from './context/NotificationContext';
 
 /* Auth pages are full-screen and should NOT render the shared
@@ -52,7 +53,14 @@ function AppShell() {
           <Route path="/courses"    element={<Courses />} />
           <Route path="/courses/:id" element={<CourseDetail />} />
           <Route path="/about"      element={<AboutContact />} />
-          <Route path="/admin"      element={<AdminDashboard />} />
+          <Route
+            path="/admin"
+            element={(
+              <ProtectedAdminRoute>
+                <AdminDashboard />
+              </ProtectedAdminRoute>
+            )}
+          />
           <Route path="/masari"     element={<Masari />} />
           <Route path="/notifications" element={<NotificationsPage />} />
 
@@ -71,7 +79,9 @@ function App() {
   return (
     <Router>
       <NotificationProvider>
-        <AppShell />
+        <AuthProvider>
+          <AppShell />
+        </AuthProvider>
       </NotificationProvider>
     </Router>
   );

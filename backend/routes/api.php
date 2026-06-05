@@ -21,8 +21,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
             ]);
         });
 
+        Route::get('/admin/courses', [CourseController::class, 'adminIndex']);
+        Route::get('/admin/courses/{id}', [CourseController::class, 'adminShow'])->whereNumber('id');
         Route::post('/admin/courses', [CourseController::class, 'store']);
         Route::put('/admin/courses/{id}', [CourseController::class, 'update'])->whereNumber('id');
         Route::delete('/admin/courses/{id}', [CourseController::class, 'destroy'])->whereNumber('id');
     });
+
 });

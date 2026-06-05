@@ -59,6 +59,48 @@ class CourseController extends Controller
         ]);
     }
 
+    public function adminIndex(Request $request): JsonResponse
+    {
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'level' => ['nullable', Rule::in(Course::LEVELS)],
+            'status' => ['nullable', Rule::in(Course::STATUSES)],
+            'category' => ['nullable', 'string', 'max:191'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+
+        $courses = Course::query()
+            ->when($filters['search'] ?? null, function ($query, string $search): void {
+                $query->where(function ($query) use ($search): void {
+                    $query
+                        ->where('title', 'like', "%{$search}%")
+                        ->orWhere('slug', 'like', "%{$search}%")
+                        ->orWhere('instructor_name', 'like', "%{$search}%");
+                });
+            })
+            ->when($filters['level'] ?? null, function ($query, string $level): void {
+                $query->where('level', $level);
+            })
+            ->when($filters['status'] ?? null, function ($query, string $status): void {
+                $query->where('status', $status);
+            })
+            ->when($filters['category'] ?? null, function ($query, string $category): void {
+                $query->where('category', $category);
+            })
+            ->latest()
+            ->paginate($filters['per_page'] ?? 25)
+            ->withQueryString();
+
+        return response()->json($courses);
+    }
+
+    public function adminShow(int $id): JsonResponse
+    {
+        return response()->json([
+            'data' => Course::findOrFail($id),
+        ]);
+    }
+
     public function store(StoreCourseRequest $request): JsonResponse
     {
         $validated = $request->validated();

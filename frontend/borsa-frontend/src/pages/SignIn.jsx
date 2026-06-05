@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 import '../styles/auth.css';
 import borsaLogo from '../assets/Borsa Academy.jpeg';
 
@@ -23,11 +24,37 @@ const FEATURES = [
   'مجتمع تفاعلي وجلسات حية مع خبراء السوق',
 ];
 
+const getLoginErrorMessage = (error) => {
+  if (error?.status === 422) {
+    return 'بيانات الدخول غير صحيحة.';
+  }
+
+  if (error?.status === 403) {
+    return 'هذا الحساب غير نشط.';
+  }
+
+  return 'تعذر تسجيل الدخول. تأكد من تشغيل الخادم وحاول مرة أخرى.';
+};
+
+const getRedirectPath = (role, fromPath) => {
+  if (role === 'admin') {
+    return fromPath && fromPath !== '/signin' ? fromPath : '/admin';
+  }
+
+  if (role === 'student') {
+    return '/masari';
+  }
+
+  return '/';
+};
+
 /* ═══════════════════════════════════════════════════════════════════
    SignIn Page
 ═══════════════════════════════════════════════════════════════════ */
 export default function SignIn() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
 
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
@@ -36,7 +63,7 @@ export default function SignIn() {
   const [success, setSuccess]   = useState(false);
   const [error, setError]       = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     if (!email || !password) {
@@ -44,12 +71,18 @@ export default function SignIn() {
       return;
     }
     setLoading(true);
-    /* Simulate async auth — replace with real API call */
-    setTimeout(() => {
+
+    try {
+      const result = await login({ email, password });
+      const redirectPath = getRedirectPath(result.user?.role, location.state?.from?.pathname);
+
       setLoading(false);
       setSuccess(true);
-      setTimeout(() => navigate('/'), 1900);
-    }, 1500);
+      setTimeout(() => navigate(redirectPath, { replace: true }), 700);
+    } catch (err) {
+      setLoading(false);
+      setError(getLoginErrorMessage(err));
+    }
   };
 
   return (
