@@ -57,4 +57,9 @@ class Course extends Model
             ->orderBy('order')
             ->orderBy('id');
     }
+
+    public function lessonProgress(): HasMany
+    {
+        return $this->hasMany(LessonProgress::class);
+    }
 }

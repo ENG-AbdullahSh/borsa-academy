@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 import '../styles/auth.css';
 import borsaLogo from '../assets/Borsa Academy.jpeg';
 
@@ -33,6 +34,8 @@ export default function SignUp() {
   const [email, setEmail]               = useState('');
   const [password, setPassword]         = useState('');
   const [confirmPassword, setConfirm]   = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreed, setAgreed]             = useState(false);
   const [loading, setLoading]           = useState(false);
   const [success, setSuccess]           = useState(false);
@@ -181,16 +184,29 @@ export default function SignUp() {
                   <label className="auth-label" htmlFor="signup-password">
                     كلمة المرور
                   </label>
-                  <input
-                    id="signup-password"
-                    type="password"
-                    className="auth-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
-                    placeholder="••••••••  (8 أحرف على الأقل)"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    autoComplete="new-password"
-                    required
-                  />
+                  <div className="auth-password-control">
+                    <input
+                      id="signup-password"
+                      type={showPassword ? 'text' : 'password'}
+                      className="auth-input auth-password-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
+                      placeholder="••••••••  (8 أحرف على الأقل)"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      autoComplete="new-password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="auth-password-toggle"
+                      onClick={() => setShowPassword((current) => !current)}
+                      aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                      aria-pressed={showPassword}
+                      aria-controls="signup-password"
+                      title={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                    >
+                      {showPassword ? <FiEyeOff aria-hidden="true" /> : <FiEye aria-hidden="true" />}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Confirm Password */}
@@ -198,21 +214,34 @@ export default function SignUp() {
                   <label className="auth-label" htmlFor="signup-confirm">
                     تأكيد كلمة المرور
                   </label>
-                  <input
-                    id="signup-confirm"
-                    type="password"
-                    className="auth-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={e => setConfirm(e.target.value)}
-                    autoComplete="new-password"
-                    required
-                    style={{
-                      borderColor: confirmPassword && password !== confirmPassword
-                        ? 'rgba(255,82,82,0.5)'
-                        : undefined,
-                    }}
-                  />
+                  <div className="auth-password-control">
+                    <input
+                      id="signup-confirm"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      className="auth-input auth-password-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={e => setConfirm(e.target.value)}
+                      autoComplete="new-password"
+                      required
+                      style={{
+                        borderColor: confirmPassword && password !== confirmPassword
+                          ? 'rgba(255,82,82,0.5)'
+                          : undefined,
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="auth-password-toggle"
+                      onClick={() => setShowConfirmPassword((current) => !current)}
+                      aria-label={showConfirmPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                      aria-pressed={showConfirmPassword}
+                      aria-controls="signup-confirm"
+                      title={showConfirmPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                    >
+                      {showConfirmPassword ? <FiEyeOff aria-hidden="true" /> : <FiEye aria-hidden="true" />}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Terms Agreement */}

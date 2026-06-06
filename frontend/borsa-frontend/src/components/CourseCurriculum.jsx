@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import CertificateModal from './CertificateModal';
+import { useAuth } from '../hooks/useAuth';
+import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
 
 function formatDuration(minutes) {
   const value = Number(minutes || 0);
@@ -13,18 +15,38 @@ function formatDuration(minutes) {
   return remaining ? `${hours} س ${remaining} د` : `${hours} ساعة`;
 }
 
+function progressErrorMessage(error) {
+  if (error?.status === 403) {
+    return 'يجب الاشتراك في الدورة أولاً.';
+  }
+
+  if (error?.status) {
+    return 'فشل تحديث التقدم.';
+  }
+
+  return 'حدث خطأ غير متوقع.';
+}
+
 export default function CourseCurriculum({
   sections = [],
   isEnrolled = false,
   loading = false,
   error = '',
   progressPercent = 0,
+  onLessonProgressChange,
 }) {
+  const { token } = useAuth();
   const [expandedSections, setExpandedSections] = useState({});
   const [isCertificateOpen, setIsCertificateOpen] = useState(false);
+  const [updatingLessonId, setUpdatingLessonId] = useState(null);
+  const [progressError, setProgressError] = useState('');
 
   const stats = useMemo(() => {
     const totalLessons = sections.reduce((total, section) => total + (section.lessons?.length || 0), 0);
+    const completedLessons = sections.reduce(
+      (total, section) => total + (section.lessons || []).filter((lesson) => lesson.completed).length,
+      0,
+    );
     const previewLessons = sections.reduce(
       (total, section) => total + (section.lessons || []).filter((lesson) => lesson.is_preview).length,
       0,
@@ -33,6 +55,7 @@ export default function CourseCurriculum({
     return {
       totalSections: sections.length,
       totalLessons,
+      completedLessons,
       previewLessons,
       progress: Math.min(Math.max(Number(progressPercent || 0), 0), 100),
     };
@@ -42,16 +65,26 @@ export default function CourseCurriculum({
     setExpandedSections((current) => ({ ...current, [id]: !current[id] }));
   };
 
-  const renderIcon = (lesson) => {
-    if (isEnrolled || !lesson.is_locked) {
-      return (
-        <span className="material-symbols-outlined" style={{ color: '#00e676', fontSize: '18px' }}>
-          play_circle
-        </span>
-      );
+  const toggleLessonCompletion = async (lesson) => {
+    if (!isEnrolled || lesson.is_locked || !token || updatingLessonId !== null) {
+      return;
     }
 
-    return <span className="material-symbols-outlined text-muted" style={{ fontSize: '18px' }}>lock</span>;
+    setUpdatingLessonId(lesson.id);
+    setProgressError('');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/lessons/${lesson.id}/complete`, {
+        method: lesson.completed ? 'DELETE' : 'POST',
+        headers: apiHeaders(token),
+      });
+      const payload = await readJsonResponse(response);
+      onLessonProgressChange?.(lesson.id, !lesson.completed, payload);
+    } catch (requestError) {
+      setProgressError(progressErrorMessage(requestError));
+    } finally {
+      setUpdatingLessonId(null);
+    }
   };
 
   return (
@@ -59,11 +92,15 @@ export default function CourseCurriculum({
       <div className="p-4 border-bottom" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
         <div className="d-flex align-items-center justify-content-between gap-2 mb-3">
           <h3 className="h6 text-white fw-bold m-0" style={{ fontFamily: 'var(--font-sans)' }}>منهج الدورة</h3>
-          {!isEnrolled && (
+          {stats.progress === 100 ? (
+            <span className="px-2 py-1 rounded" style={{ color: '#75ff9e', backgroundColor: 'rgba(0,230,118,0.1)', fontSize: '10px' }}>
+              🏆 تم إكمال الدورة
+            </span>
+          ) : !isEnrolled ? (
             <span className="px-2 py-1 rounded font-mono-data" style={{ color: '#ffb4ab', backgroundColor: 'rgba(244,67,54,0.1)', fontSize: '10px' }}>
               مقفل
             </span>
-          )}
+          ) : null}
         </div>
         <div className="d-flex justify-content-between font-mono-data text-muted mb-2" style={{ fontSize: '12px' }}>
           <span>{stats.totalSections} وحدات • {stats.totalLessons} درس</span>
@@ -78,7 +115,7 @@ export default function CourseCurriculum({
               height: '100%',
               backgroundColor: '#00e676',
               boxShadow: '0 0 10px #00E676',
-              transition: 'width 0.5s ease',
+              transition: 'width 0.35s ease',
               borderRadius: '99px',
             }}
           />
@@ -86,9 +123,15 @@ export default function CourseCurriculum({
       </div>
 
       <div className="flex-grow-1 overflow-auto p-3 d-flex flex-column gap-3 custom-scrollbar">
+        {progressError && (
+          <div className="rounded px-3 py-2" role="alert" style={{ color: '#fecaca', backgroundColor: 'rgba(255,82,82,0.08)', border: '1px solid rgba(255,82,82,0.2)', fontSize: '12px' }}>
+            {progressError}
+          </div>
+        )}
+
         {loading ? (
           <div className="py-5 text-center">
-            <span className="material-symbols-outlined" style={{ color: '#75ff9e', fontSize: '42px' }}>progress_activity</span>
+            <span className="spinner-border spinner-border-sm" style={{ color: '#75ff9e' }} aria-hidden="true" />
             <p className="text-muted mt-3 mb-0">جاري تحميل المنهج...</p>
           </div>
         ) : error ? (
@@ -126,25 +169,53 @@ export default function CourseCurriculum({
                 <div className="px-2 pb-2 d-flex flex-column gap-1 border-top pt-2" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
                   {(section.lessons || []).length === 0 ? (
                     <div className="p-2 text-muted" style={{ fontSize: '12px' }}>لا توجد دروس داخل هذا القسم.</div>
-                  ) : (section.lessons || []).map((lesson) => (
-                    <div
-                      key={lesson.id}
-                      className={`p-2 rounded d-flex align-items-center justify-content-between font-mono-data lesson-item ${lesson.is_locked ? 'locked' : 'current'}`}
-                    >
-                      <div className="d-flex align-items-center gap-2">
-                        {renderIcon(lesson)}
-                        <div className="d-flex flex-column">
-                          <span className={`lesson-title ${!lesson.is_locked ? 'fw-bold text-white' : ''}`}>
-                            {lesson.title}
-                          </span>
-                          {lesson.is_preview && !isEnrolled && (
-                            <span style={{ color: '#81cfff', fontSize: '10px' }}>معاينة مجانية</span>
-                          )}
+                  ) : (section.lessons || []).map((lesson) => {
+                    const isUpdating = updatingLessonId === lesson.id;
+
+                    return (
+                      <div
+                        key={lesson.id}
+                        className={`p-2 rounded font-mono-data lesson-item ${lesson.is_locked ? 'locked' : 'current'}`}
+                      >
+                        <div className="d-flex align-items-center justify-content-between gap-2">
+                          <div className="d-flex align-items-center gap-2 min-w-0">
+                            <span className="material-symbols-outlined" style={{ color: lesson.is_locked ? '#64748b' : '#00e676', fontSize: '18px' }}>
+                              {lesson.is_locked ? 'lock' : 'play_circle'}
+                            </span>
+                            <div className="d-flex flex-column">
+                              <span className={`lesson-title ${!lesson.is_locked ? 'fw-bold text-white' : ''}`}>
+                                {lesson.title}
+                              </span>
+                              {lesson.is_preview && !isEnrolled && (
+                                <span style={{ color: '#81cfff', fontSize: '10px' }}>معاينة مجانية</span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="lesson-duration flex-shrink-0">{formatDuration(lesson.duration_minutes)}</span>
                         </div>
+
+                        {isEnrolled && !lesson.is_locked && (
+                          <button
+                            type="button"
+                            onClick={() => toggleLessonCompletion(lesson)}
+                            disabled={updatingLessonId !== null}
+                            className="btn border-0 bg-transparent p-0 mt-2 d-flex align-items-center gap-2"
+                            style={{ color: lesson.completed ? '#75ff9e' : '#94a3b8', fontSize: '12px', fontFamily: 'var(--font-sans)' }}
+                            aria-pressed={Boolean(lesson.completed)}
+                          >
+                            {isUpdating ? (
+                              <span className="spinner-border spinner-border-sm" aria-hidden="true" />
+                            ) : (
+                              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                                {lesson.completed ? 'check_box' : 'check_box_outline_blank'}
+                              </span>
+                            )}
+                            {lesson.completed ? 'مكتمل' : 'تم الإنجاز'}
+                          </button>
+                        )}
                       </div>
-                      <span className="lesson-duration">{formatDuration(lesson.duration_minutes)}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -156,9 +227,9 @@ export default function CourseCurriculum({
         <button
           type="button"
           onClick={() => setIsCertificateOpen(true)}
-          disabled={!isEnrolled}
+          disabled={!isEnrolled || stats.progress < 100}
           className="btn w-100 py-2 d-flex align-items-center justify-content-center gap-2 fw-semibold btn-primary-cta interactive"
-          style={{ fontSize: '13px', fontFamily: 'var(--font-sans)', borderRadius: '8px', opacity: isEnrolled ? 1 : 0.55 }}
+          style={{ fontSize: '13px', fontFamily: 'var(--font-sans)', borderRadius: '8px', opacity: isEnrolled && stats.progress === 100 ? 1 : 0.55 }}
         >
           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>workspace_premium</span>
           الحصول على الشهادة

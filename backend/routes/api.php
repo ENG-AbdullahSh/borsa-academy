@@ -1,11 +1,12 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\CourseCurriculumController;
 use App\Http\Controllers\Api\CourseController;
-use App\Http\Controllers\Api\EnrollmentController;
+use App\Http\Controllers\Api\CourseCurriculumController;
 use App\Http\Controllers\Api\CourseSectionController;
+use App\Http\Controllers\Api\EnrollmentController;
 use App\Http\Controllers\Api\LessonController;
+use App\Http\Controllers\Api\LessonProgressController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/courses', [CourseController::class, 'index']);
@@ -22,7 +23,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::middleware('role:student')->group(function (): void {
         Route::post('/enrollments', [EnrollmentController::class, 'store']);
         Route::get('/my-courses', [EnrollmentController::class, 'index']);
+        Route::get('/my-courses/{courseId}/progress', [LessonProgressController::class, 'course'])->whereNumber('courseId');
         Route::get('/my-courses/{courseId}', [EnrollmentController::class, 'show'])->whereNumber('courseId');
+        Route::get('/my-progress', [LessonProgressController::class, 'index']);
+        Route::post('/lessons/{lesson}/complete', [LessonProgressController::class, 'complete'])->whereNumber('lesson');
+        Route::delete('/lessons/{lesson}/complete', [LessonProgressController::class, 'destroy'])->whereNumber('lesson');
     });
 
     Route::middleware('role:admin')->group(function (): void {

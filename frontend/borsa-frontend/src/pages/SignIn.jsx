@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth';
 import '../styles/auth.css';
 import borsaLogo from '../assets/Borsa Academy.jpeg';
@@ -58,6 +59,7 @@ export default function SignIn() {
 
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
   const [loading, setLoading]   = useState(false);
   const [success, setSuccess]   = useState(false);
@@ -181,16 +183,29 @@ export default function SignIn() {
                   <label className="auth-label" htmlFor="signin-password">
                     كلمة المرور
                   </label>
-                  <input
-                    id="signin-password"
-                    type="password"
-                    className="auth-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
-                    placeholder="••••••••••••"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    autoComplete="current-password"
-                    required
-                  />
+                  <div className="auth-password-control">
+                    <input
+                      id="signin-password"
+                      type={showPassword ? 'text' : 'password'}
+                      className="auth-input auth-password-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
+                      placeholder="••••••••••••"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      autoComplete="current-password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="auth-password-toggle"
+                      onClick={() => setShowPassword((current) => !current)}
+                      aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                      aria-pressed={showPassword}
+                      aria-controls="signin-password"
+                      title={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                    >
+                      {showPassword ? <FiEyeOff aria-hidden="true" /> : <FiEye aria-hidden="true" />}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Remember + Forgot row */}

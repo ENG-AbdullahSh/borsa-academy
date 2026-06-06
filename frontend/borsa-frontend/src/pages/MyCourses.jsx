@@ -13,6 +13,12 @@ const DEFAULT_PAGINATION = {
   to: null,
 };
 
+function progressStatus(progress) {
+  if (progress >= 100) return 'مكتمل';
+  if (progress > 0) return 'قيد التقدم';
+  return 'لم يبدأ';
+}
+
 export default function MyCourses() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -177,6 +183,9 @@ export default function MyCourses() {
                       <h2 className="h6 text-white fw-bold mb-2" style={{ fontFamily: 'var(--font-sans)', lineHeight: 1.5 }}>
                         {enrollment.course.title}
                       </h2>
+                      {enrollment.progress >= 100 && (
+                        <p className="mb-2" style={{ color: '#75ff9e', fontSize: '12px' }}>🏆 تم إكمال الدورة</p>
+                      )}
                       <p className="text-muted d-flex align-items-center gap-1 mb-3" style={{ fontSize: '12px', fontFamily: 'var(--font-sans)' }}>
                         <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>person</span>
                         بإشراف {enrollment.course.instructor}
@@ -184,7 +193,7 @@ export default function MyCourses() {
                       <div className="mb-4">
                         <div className="d-flex justify-content-between text-muted mb-2" style={{ fontSize: '12px' }}>
                           <span>التقدم</span>
-                          <span>{enrollment.completed ? 'مكتملة' : 'قيد التقدم'}</span>
+                          <span>{progressStatus(enrollment.progress)}</span>
                         </div>
                         <div style={{ height: '8px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '999px', overflow: 'hidden' }}>
                           <div style={{ width: `${enrollment.progress}%`, height: '100%', backgroundColor: '#75ff9e', borderRadius: '999px' }} />

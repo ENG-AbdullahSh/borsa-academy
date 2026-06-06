@@ -37,6 +37,7 @@ export default function CourseDetail() {
   const isCourseIdValid = Number.isFinite(courseId) && courseId > 0;
   const canAccessCourse = Boolean(enrollment) || Boolean(curriculum?.can_access_full_curriculum);
   const sections = useMemo(() => curriculum?.sections || [], [curriculum]);
+  const progressPercentage = Number(enrollment?.progress ?? curriculum?.progress_percentage ?? 0);
 
   const courseMeta = useMemo(() => {
     if (!course) return [];
@@ -80,8 +81,30 @@ export default function CourseDetail() {
       }
 
       const payload = await readJsonResponse(response);
-      setEnrollment(payload.data || null);
-      return payload.data || null;
+      let enrollmentData = payload.data || null;
+
+      if (enrollmentData) {
+        try {
+          const progressResponse = await fetch(`${API_BASE_URL}/my-courses/${courseId}/progress`, {
+            headers: apiHeaders(token),
+            signal,
+          });
+          const progressPayload = await readJsonResponse(progressResponse);
+
+          enrollmentData = {
+            ...enrollmentData,
+            progress: progressPayload.progress_percentage ?? enrollmentData.progress,
+            completed: progressPayload.course_completed ?? enrollmentData.completed,
+          };
+        } catch (progressError) {
+          if (progressError.name === 'AbortError') {
+            throw progressError;
+          }
+        }
+      }
+
+      setEnrollment(enrollmentData);
+      return enrollmentData;
     } catch (error) {
       if (error.name !== 'AbortError') {
         setEnrollment(null);
@@ -215,6 +238,30 @@ export default function CourseDetail() {
     }
   };
 
+  const handleLessonProgressChange = useCallback((lessonId, completed, progress) => {
+    setCurriculum((current) => {
+      if (!current) return current;
+
+      return {
+        ...current,
+        progress_percentage: progress.progress_percentage,
+        course_completed: progress.course_completed,
+        sections: (current.sections || []).map((section) => ({
+          ...section,
+          lessons: (section.lessons || []).map((lesson) => (
+            lesson.id === lessonId ? { ...lesson, completed } : lesson
+          )),
+        })),
+      };
+    });
+
+    setEnrollment((current) => current ? {
+      ...current,
+      progress: progress.progress_percentage,
+      completed: progress.course_completed,
+    } : current);
+  }, []);
+
   if (!isCourseIdValid) {
     return (
       <div className="min-vh-100 d-flex align-items-center justify-content-center px-4" style={{ paddingTop: '64px' }}>
@@ -264,6 +311,41 @@ export default function CourseDetail() {
           <div className="alert mb-4 border-0" role="status" style={{ backgroundColor: 'rgba(117,255,158,0.1)', color: '#75ff9e' }}>
             {notice}
           </div>
+        )}
+
+        {canAccessCourse && (
+          <section className="mb-4" aria-label="تقدم الدورة" style={{ direction: 'rtl' }}>
+            <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+              <span className="text-white fw-semibold" style={{ fontFamily: 'var(--font-sans)', fontSize: '14px' }}>
+                تقدم الدورة
+              </span>
+              <div className="d-flex align-items-center gap-3">
+                {progressPercentage >= 100 && (
+                  <span style={{ color: '#75ff9e', fontSize: '13px' }}>🏆 تم إكمال الدورة</span>
+                )}
+                <span className="font-mono-data" style={{ color: '#75ff9e', fontSize: '13px' }}>
+                  {progressPercentage}% مكتمل
+                </span>
+              </div>
+            </div>
+            <div
+              role="progressbar"
+              aria-valuenow={progressPercentage}
+              aria-valuemin="0"
+              aria-valuemax="100"
+              style={{ height: '8px', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: '999px', overflow: 'hidden' }}
+            >
+              <div
+                style={{
+                  width: `${progressPercentage}%`,
+                  height: '100%',
+                  backgroundColor: '#75ff9e',
+                  borderRadius: '999px',
+                  transition: 'width 0.35s ease',
+                }}
+              />
+            </div>
+          </section>
         )}
 
         <div className="row g-4">
@@ -414,7 +496,8 @@ export default function CourseDetail() {
               isEnrolled={canAccessCourse}
               loading={curriculumLoading}
               error={curriculumError}
-              progressPercent={enrollment?.progress || 0}
+              progressPercent={progressPercentage}
+              onLessonProgressChange={handleLessonProgressChange}
             />
           </aside>
         </div>

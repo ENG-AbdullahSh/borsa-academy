@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Lesson;
+use App\Models\LessonProgress;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -39,24 +40,39 @@ class CourseCurriculumController extends Controller
     private function formatCourseCurriculum(Course $course, Request $request, bool $forceAccess = false): array
     {
         $user = auth('sanctum')->user();
-        $isEnrolled = $user !== null
-            && $user->role === 'student'
-            && $user->enrollments()->where('course_id', $course->id)->exists();
+        $enrollment = $user !== null && $user->role === 'student'
+            ? $user->enrollments()->where('course_id', $course->id)->first()
+            : null;
+        $isEnrolled = $enrollment !== null;
         $canAccessAllLessons = $forceAccess || $isEnrolled || $user?->role === 'admin';
+        $completedLessonIds = $isEnrolled
+            ? LessonProgress::query()
+                ->where('user_id', $user->id)
+                ->where('course_id', $course->id)
+                ->where('completed', true)
+                ->pluck('lesson_id')
+                ->flip()
+            : collect();
 
         return [
             'course_id' => $course->id,
             'course_title' => $course->title,
             'is_enrolled' => $isEnrolled,
             'can_access_full_curriculum' => $canAccessAllLessons,
-            'sections' => $course->sections->map(function ($section) use ($canAccessAllLessons): array {
+            'progress_percentage' => $enrollment?->progress ?? 0,
+            'course_completed' => $enrollment?->completed ?? false,
+            'sections' => $course->sections->map(function ($section) use ($canAccessAllLessons, $completedLessonIds): array {
                 return [
                     'id' => $section->id,
                     'course_id' => $section->course_id,
                     'title' => $section->title,
                     'order' => $section->order,
                     'lessons' => $section->lessons->map(
-                        fn (Lesson $lesson): array => $this->formatLesson($lesson, $canAccessAllLessons)
+                        fn (Lesson $lesson): array => $this->formatLesson(
+                            $lesson,
+                            $canAccessAllLessons,
+                            $completedLessonIds->has($lesson->id),
+                        )
                     )->values(),
                 ];
             })->values(),
@@ -66,7 +82,7 @@ class CourseCurriculumController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function formatLesson(Lesson $lesson, bool $canAccessAllLessons): array
+    private function formatLesson(Lesson $lesson, bool $canAccessAllLessons, bool $completed): array
     {
         $canAccessLesson = $canAccessAllLessons || $lesson->is_preview;
 
@@ -81,6 +97,7 @@ class CourseCurriculumController extends Controller
             'order' => $lesson->order,
             'is_preview' => $lesson->is_preview,
             'is_locked' => ! $canAccessLesson,
+            'completed' => $completed,
         ];
     }
 }
