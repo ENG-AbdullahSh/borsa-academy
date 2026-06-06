@@ -67,6 +67,7 @@ class LessonProgressController extends Controller
             'progress_percentage' => $progress['progress_percentage'],
             'course_completed' => $progress['course_completed'],
             'certificate_id' => $progress['certificate_id'],
+            'certificate_status' => $progress['certificate_status'],
         ]);
     }
 
@@ -113,6 +114,7 @@ class LessonProgressController extends Controller
             'progress_percentage' => $progress['progress_percentage'],
             'course_completed' => $progress['course_completed'],
             'certificate_id' => $progress['certificate_id'],
+            'certificate_status' => $progress['certificate_status'],
         ]);
     }
 
@@ -167,6 +169,7 @@ class LessonProgressController extends Controller
                 'completed' => $progress['course_completed'],
                 'completed_lessons' => $progress['completed_lessons'],
                 'total_lessons' => $progress['total_lessons'],
+                'certificate_status' => $progress['certificate_status'],
                 'course' => $enrollment->course,
             ];
         })->values();

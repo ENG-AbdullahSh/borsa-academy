@@ -119,8 +119,12 @@ export default function MyCourses() {
       }
 
       navigate(`/certificates/${certificate.id}`);
-    } catch {
-      setCertificateError('تعذر فتح الشهادة حالياً. حاول مرة أخرى.');
+    } catch (requestError) {
+      setCertificateError(
+        requestError.data?.locked_reason === 'quiz_not_passed'
+          ? 'الشهادة مقفلة حتى اجتياز الاختبار.'
+          : 'تعذر فتح الشهادة حالياً. حاول مرة أخرى.',
+      );
     } finally {
       setOpeningCertificateId(null);
     }
@@ -230,7 +234,7 @@ export default function MyCourses() {
                         </div>
                       </div>
                       <div className="mt-auto d-flex flex-column gap-2">
-                        {enrollment.progress >= 100 && (
+                        {enrollment.progress >= 100 && enrollment.certificateStatus?.certificate_unlocked && (
                           <button
                             type="button"
                             onClick={() => openCertificate(enrollment.courseId)}
@@ -244,6 +248,21 @@ export default function MyCourses() {
                             )}
                             عرض الشهادة
                           </button>
+                        )}
+                        {enrollment.progress >= 100
+                          && enrollment.certificateStatus?.has_active_quiz
+                          && !enrollment.certificateStatus?.quiz_passed && (
+                          <>
+                            <p className="mb-0 text-center" style={{ color: '#ffd54f', fontSize: '12px' }}>
+                              الشهادة مقفلة حتى اجتياز الاختبار
+                            </p>
+                            <Link
+                              to={`/courses/${enrollment.courseId}`}
+                              className="btn btn-secondary-cta w-100 py-2 fw-bold"
+                            >
+                              ابدأ الاختبار
+                            </Link>
+                          </>
                         )}
                         <Link
                           to={`/courses/${enrollment.courseId}`}

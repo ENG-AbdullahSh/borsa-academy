@@ -13,7 +13,7 @@ class CourseProgressService
     ) {}
 
     /**
-     * @return array<string, int|bool|null>
+     * @return array<string, mixed>
      */
     public function syncEnrollment(Enrollment $enrollment): array
     {
@@ -46,6 +46,7 @@ class CourseProgressService
         $certificate = $courseCompleted
             ? $this->certificateService->issueForEnrollment($enrollment)
             : null;
+        $certificateStatus = $this->certificateService->eligibilityForEnrollment($enrollment);
 
         return [
             'course_id' => $enrollment->course_id,
@@ -54,6 +55,7 @@ class CourseProgressService
             'progress_percentage' => $progressPercentage,
             'course_completed' => $courseCompleted,
             'certificate_id' => $certificate?->id,
+            'certificate_status' => $certificateStatus,
         ];
     }
 }

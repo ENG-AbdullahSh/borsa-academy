@@ -231,6 +231,19 @@ export default function StudentDashboard() {
                               <span>{enrollment.course.instructor}</span>
                               <span>{enrollment.progress}%</span>
                             </div>
+                            {enrollment.progress >= 100 && enrollment.certificateStatus?.has_active_quiz && (
+                              <p
+                                className="mb-2"
+                                style={{
+                                  color: enrollment.certificateStatus.quiz_passed ? '#75ff9e' : '#ffd54f',
+                                  fontSize: '11px',
+                                }}
+                              >
+                                {enrollment.certificateStatus.quiz_passed
+                                  ? 'تم اجتياز الاختبار والشهادة متاحة'
+                                  : 'الاختبار مطلوب لفتح الشهادة'}
+                              </p>
+                            )}
                             <div style={{ height: '6px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '999px', overflow: 'hidden' }}>
                               <div style={{ width: `${enrollment.progress}%`, height: '100%', backgroundColor: '#75ff9e', borderRadius: '999px' }} />
                             </div>

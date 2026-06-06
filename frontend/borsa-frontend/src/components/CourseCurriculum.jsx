@@ -34,6 +34,8 @@ export default function CourseCurriculum({
   error = '',
   progressPercent = 0,
   courseId,
+  quizStatus = null,
+  onStartQuiz,
   onLessonProgressChange,
 }) {
   const { token } = useAuth();
@@ -61,6 +63,17 @@ export default function CourseCurriculum({
       progress: Math.min(Math.max(Number(progressPercent || 0), 0), 100),
     };
   }, [progressPercent, sections]);
+  const certificateUnlocked = Boolean(
+    isEnrolled
+    && stats.progress === 100
+    && quizStatus?.certificate_unlocked,
+  );
+  const certificateLockedByQuiz = Boolean(
+    isEnrolled
+    && stats.progress === 100
+    && quizStatus?.has_active_quiz
+    && !quizStatus?.quiz_passed,
+  );
 
   const toggleSection = (id) => {
     setExpandedSections((current) => ({ ...current, [id]: !current[id] }));
@@ -225,12 +238,29 @@ export default function CourseCurriculum({
       </div>
 
       <div className="p-3 border-top" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+        {certificateLockedByQuiz && (
+          <div
+            className="rounded-3 px-3 py-2 mb-2 text-center"
+            style={{ color: '#ffd54f', background: 'rgba(255,213,79,0.08)', border: '1px solid rgba(255,213,79,0.2)', fontSize: '12px' }}
+          >
+            الشهادة مقفلة حتى اجتياز الاختبار
+          </div>
+        )}
+        {certificateLockedByQuiz && quizStatus?.quiz_ready && (
+          <button
+            type="button"
+            onClick={onStartQuiz}
+            className="btn btn-secondary-cta w-100 py-2 mb-2 fw-semibold"
+          >
+            ابدأ الاختبار
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setIsCertificateOpen(true)}
-          disabled={!isEnrolled || stats.progress < 100}
+          disabled={!certificateUnlocked}
           className="btn w-100 py-2 d-flex align-items-center justify-content-center gap-2 fw-semibold btn-primary-cta interactive"
-          style={{ fontSize: '13px', fontFamily: 'var(--font-sans)', borderRadius: '8px', opacity: isEnrolled && stats.progress === 100 ? 1 : 0.55 }}
+          style={{ fontSize: '13px', fontFamily: 'var(--font-sans)', borderRadius: '8px', opacity: certificateUnlocked ? 1 : 0.55 }}
         >
           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>workspace_premium</span>
           الحصول على الشهادة

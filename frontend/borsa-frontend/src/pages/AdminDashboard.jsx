@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 import AdminCourses from './AdminCourses';
 import AdminCurriculum from './AdminCurriculum';
+import AdminQuizManager from './AdminQuizManager';
 import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
 
@@ -9,6 +10,7 @@ const TABS = [
   { id: 'overview', label: 'نظرة عامة', icon: 'grid_view' },
   { id: 'courses', label: 'إدارة الكورسات', icon: 'auto_stories' },
   { id: 'curriculum', label: 'المحتوى التعليمي', icon: 'menu_book' },
+  { id: 'quizzes', label: 'الاختبارات', icon: 'quiz' },
   { id: 'instructors', label: 'المدربون', icon: 'group' },
   { id: 'settings', label: 'الإعدادات', icon: 'settings' },
 ];
@@ -473,6 +475,7 @@ export default function AdminDashboard() {
   const renderContent = () => {
     if (activeTab === 'courses') return <AdminCourses />;
     if (activeTab === 'curriculum') return <AdminCurriculum />;
+    if (activeTab === 'quizzes') return <AdminQuizManager />;
     if (activeTab === 'instructors') return renderInstructors();
     if (activeTab === 'settings') return renderSettings();
     return renderOverview();

@@ -46,4 +46,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Certificate::class);
     }
+
+    public function quizAttempts(): HasMany
+    {
+        return $this->hasMany(QuizAttempt::class);
+    }
 }

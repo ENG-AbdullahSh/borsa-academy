@@ -22,7 +22,18 @@ class CertificateController extends Controller
             ->certificates()
             ->with(['user:id,name', 'course:id,title'])
             ->latest('issued_at')
-            ->get();
+            ->get()
+            ->filter(function (Certificate $certificate) use ($request): bool {
+                $enrollment = $request->user()
+                    ->enrollments()
+                    ->where('course_id', $certificate->course_id)
+                    ->first();
+
+                return $enrollment
+                    && $this->certificateService
+                        ->eligibilityForEnrollment($enrollment)['certificate_unlocked'];
+            })
+            ->values();
 
         return CertificateResource::collection($certificates);
     }
@@ -33,6 +44,22 @@ class CertificateController extends Controller
             return response()->json([
                 'message' => 'Certificate was not found.',
             ], 404);
+        }
+
+        $enrollment = $request->user()
+            ->enrollments()
+            ->where('course_id', $certificate->course_id)
+            ->first();
+        $eligibility = $enrollment
+            ? $this->certificateService->eligibilityForEnrollment($enrollment)
+            : null;
+
+        if (! $eligibility || ! $eligibility['certificate_unlocked']) {
+            return response()->json([
+                'message' => $eligibility['locked_message'] ?? 'Certificate is locked.',
+                'locked_reason' => $eligibility['locked_reason'] ?? 'not_enrolled',
+                'certificate_status' => $eligibility,
+            ], 423);
         }
 
         return new CertificateResource(
@@ -53,13 +80,17 @@ class CertificateController extends Controller
             ], 403);
         }
 
-        $certificate = $this->certificateService->issueForEnrollment($enrollment);
+        $eligibility = $this->certificateService->eligibilityForEnrollment($enrollment);
 
-        if (! $certificate) {
+        if (! $eligibility['certificate_unlocked']) {
             return response()->json([
-                'message' => 'The course must be completed before a certificate is issued.',
-            ], 422);
+                'message' => $eligibility['locked_message'],
+                'locked_reason' => $eligibility['locked_reason'],
+                'certificate_status' => $eligibility,
+            ], $eligibility['locked_reason'] === 'course_incomplete' ? 422 : 423);
         }
+
+        $certificate = $this->certificateService->issueForEnrollment($enrollment);
 
         return (new CertificateResource(
             $certificate->load(['user:id,name', 'course:id,title']),

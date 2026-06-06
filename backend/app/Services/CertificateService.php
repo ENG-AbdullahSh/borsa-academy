@@ -9,11 +9,25 @@ use Illuminate\Support\Str;
 
 class CertificateService
 {
-    public function issueForEnrollment(Enrollment $enrollment): ?Certificate
+    public function __construct(
+        private readonly QuizService $quizService,
+    ) {}
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function eligibilityForEnrollment(Enrollment $enrollment): array
     {
         $enrollment->refresh();
 
-        if ($enrollment->progress !== 100 || ! $enrollment->completed) {
+        return $this->quizService->statusForEnrollment($enrollment);
+    }
+
+    public function issueForEnrollment(Enrollment $enrollment): ?Certificate
+    {
+        $eligibility = $this->eligibilityForEnrollment($enrollment);
+
+        if (! $eligibility['certificate_unlocked']) {
             return null;
         }
 

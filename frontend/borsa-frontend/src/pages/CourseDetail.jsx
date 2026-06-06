@@ -32,6 +32,8 @@ export default function CourseDetail() {
   const [curriculumRefreshKey, setCurriculumRefreshKey] = useState(0);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isQuizOpen, setIsQuizOpen] = useState(false);
+  const [quizStatus, setQuizStatus] = useState(null);
+  const [quizStatusLoading, setQuizStatusLoading] = useState(false);
 
   const courseId = Number(id);
   const isCourseIdValid = Number.isFinite(courseId) && courseId > 0;
@@ -119,6 +121,34 @@ export default function CourseDetail() {
     }
   }, [courseId, isAuthenticated, token]);
 
+  const fetchQuizStatus = useCallback(async (signal) => {
+    if (!isAuthenticated || !token || !courseId || !enrollment) {
+      setQuizStatus(null);
+      return null;
+    }
+
+    setQuizStatusLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/my-courses/${courseId}/quiz-status`, {
+        headers: apiHeaders(token),
+        signal,
+      });
+      const payload = await readJsonResponse(response);
+      const nextStatus = payload.data || null;
+      setQuizStatus(nextStatus);
+      return nextStatus;
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        setQuizStatus(enrollment.certificate_status || null);
+      }
+
+      return null;
+    } finally {
+      if (!signal?.aborted) setQuizStatusLoading(false);
+    }
+  }, [courseId, enrollment, isAuthenticated, token]);
+
   useEffect(() => {
     if (!isCourseIdValid) {
       return undefined;
@@ -164,6 +194,14 @@ export default function CourseDetail() {
 
     return () => controller.abort();
   }, [authLoading, fetchEnrollment, isCourseIdValid]);
+
+  useEffect(() => {
+    if (authLoading || !enrollment) return undefined;
+
+    const controller = new AbortController();
+    Promise.resolve().then(() => fetchQuizStatus(controller.signal));
+    return () => controller.abort();
+  }, [authLoading, enrollment, fetchQuizStatus, progressPercentage]);
 
   useEffect(() => {
     if (authLoading || !isCourseIdValid) {
@@ -259,7 +297,23 @@ export default function CourseDetail() {
       ...current,
       progress: progress.progress_percentage,
       completed: progress.course_completed,
+      certificate_status: progress.certificate_status,
     } : current);
+    setQuizStatus(progress.certificate_status || null);
+  }, []);
+
+  const handleQuizPassed = useCallback((payload) => {
+    setQuizStatus((current) => ({
+      ...(current || {}),
+      quiz_passed: true,
+      can_take_quiz: false,
+      certificate_unlocked: true,
+      certificate_id: payload.certificate_id,
+      locked_reason: null,
+      locked_message: null,
+      passed_attempt: payload.attempt,
+      latest_attempt: payload.attempt,
+    }));
   }, []);
 
   if (!isCourseIdValid) {
@@ -407,10 +461,19 @@ export default function CourseDetail() {
               <div className="d-flex gap-2 flex-wrap">
                 {canAccessCourse ? (
                   <>
-                    <button onClick={() => setIsQuizOpen(true)} className="btn px-4 py-2 fw-bold interactive btn-primary-cta d-flex align-items-center gap-2" style={{ borderRadius: '8px', fontSize: '13px', fontFamily: 'var(--font-sans)' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>quiz</span>
-                      اختبر معلوماتك
-                    </button>
+                    {progressPercentage >= 100 && quizStatus?.has_active_quiz && (
+                      <button
+                        onClick={() => setIsQuizOpen(true)}
+                        disabled={quizStatusLoading || quizStatus.quiz_passed || !quizStatus.quiz_ready}
+                        className="btn px-4 py-2 fw-bold interactive btn-primary-cta d-flex align-items-center gap-2"
+                        style={{ borderRadius: '8px', fontSize: '13px', fontFamily: 'var(--font-sans)', opacity: quizStatus.quiz_passed ? 0.7 : 1 }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                          {quizStatus.quiz_passed ? 'verified' : 'quiz'}
+                        </span>
+                        {quizStatus.quiz_passed ? 'تم اجتياز الاختبار' : 'ابدأ الاختبار'}
+                      </button>
+                    )}
                     <button className="btn px-4 py-2 fw-semibold" style={{ backgroundColor: '#75ff9e', color: '#003918', borderRadius: '4px', fontSize: '13px', fontFamily: 'var(--font-sans)', boxShadow: '0 0 15px rgba(117,255,158,0.12)' }}>
                       متابعة التعلم
                     </button>
@@ -427,7 +490,12 @@ export default function CourseDetail() {
               </div>
             </div>
 
-            <CourseQuiz isOpen={isQuizOpen} onClose={() => setIsQuizOpen(false)} />
+            <CourseQuiz
+              isOpen={isQuizOpen}
+              onClose={() => setIsQuizOpen(false)}
+              courseId={courseId}
+              onPassed={handleQuizPassed}
+            />
 
             <div className="row g-4">
               <div className="col-12 col-md-8">
@@ -498,6 +566,8 @@ export default function CourseDetail() {
               error={curriculumError}
               progressPercent={progressPercentage}
               courseId={courseId}
+              quizStatus={quizStatus}
+              onStartQuiz={() => setIsQuizOpen(true)}
               onLessonProgressChange={handleLessonProgressChange}
             />
           </aside>

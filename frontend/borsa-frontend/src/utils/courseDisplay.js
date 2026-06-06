@@ -40,6 +40,7 @@ export function normalizeEnrollment(enrollment, index = 0) {
     enrolledAt: enrollment.enrolled_at,
     progress,
     completed: Boolean(enrollment.completed),
+    certificateStatus: enrollment.certificate_status || null,
     course: {
       ...course,
       image: courseImage(course, index),

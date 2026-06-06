@@ -6,12 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Enrollments\StoreEnrollmentRequest;
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Services\CertificateService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class EnrollmentController extends Controller
 {
+    public function __construct(
+        private readonly CertificateService $certificateService,
+    ) {}
+
     public function store(StoreEnrollmentRequest $request): JsonResponse
     {
         $user = $request->user();
@@ -114,6 +119,7 @@ class EnrollmentController extends Controller
             'enrolled_at' => $enrollment->enrolled_at,
             'progress' => $enrollment->progress,
             'completed' => $enrollment->completed,
+            'certificate_status' => $this->certificateService->eligibilityForEnrollment($enrollment),
             'course' => $enrollment->course,
         ];
     }

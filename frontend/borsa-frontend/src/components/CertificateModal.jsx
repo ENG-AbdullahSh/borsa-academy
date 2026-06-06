@@ -29,7 +29,11 @@ export default function CertificateModal({ isOpen, onClose, courseId }) {
       } catch (requestError) {
         if (requestError.name !== 'AbortError') {
           setCertificate(null);
-          setError('تعذر تحميل الشهادة حالياً.');
+          setError(
+            requestError.data?.locked_reason === 'quiz_not_passed'
+              ? 'الشهادة مقفلة حتى اجتياز الاختبار'
+              : 'تعذر تحميل الشهادة حالياً.',
+          );
         }
       } finally {
         if (!controller.signal.aborted) setLoading(false);
