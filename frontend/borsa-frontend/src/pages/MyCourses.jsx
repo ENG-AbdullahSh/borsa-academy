@@ -28,6 +28,8 @@ export default function MyCourses() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [certificateError, setCertificateError] = useState('');
+  const [openingCertificateId, setOpeningCertificateId] = useState(null);
   const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
@@ -101,6 +103,29 @@ export default function MyCourses() {
     setPage(Math.min(Math.max(nextPage, 1), lastPage));
   };
 
+  const openCertificate = async (courseId) => {
+    setOpeningCertificateId(courseId);
+    setCertificateError('');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/my-courses/${courseId}/certificate`, {
+        headers: apiHeaders(token),
+      });
+      const payload = await readJsonResponse(response);
+      const certificate = payload.data;
+
+      if (!certificate?.id) {
+        throw new Error('Certificate was not returned.');
+      }
+
+      navigate(`/certificates/${certificate.id}`);
+    } catch {
+      setCertificateError('تعذر فتح الشهادة حالياً. حاول مرة أخرى.');
+    } finally {
+      setOpeningCertificateId(null);
+    }
+  };
+
   if (authLoading || (!isAuthenticated && loading)) {
     return (
       <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ paddingTop: '64px' }}>
@@ -159,6 +184,11 @@ export default function MyCourses() {
           </div>
         ) : (
           <>
+            {certificateError && (
+              <div className="rounded-3 px-3 py-2 mb-4" role="alert" style={{ color: '#fecaca', background: 'rgba(255,82,82,0.08)', border: '1px solid rgba(255,82,82,0.2)' }}>
+                {certificateError}
+              </div>
+            )}
             <div className="row g-4">
               {enrollments.map((enrollment, index) => (
                 <div key={enrollment.id} className="col-12 col-md-6 col-xl-4">
@@ -199,14 +229,31 @@ export default function MyCourses() {
                           <div style={{ width: `${enrollment.progress}%`, height: '100%', backgroundColor: '#75ff9e', borderRadius: '999px' }} />
                         </div>
                       </div>
-                      <Link
-                        to={`/courses/${enrollment.courseId}`}
-                        className="btn mt-auto w-100 py-2 text-white fw-semibold d-flex align-items-center justify-content-center gap-2"
-                        style={{ backgroundColor: '#272a2e', borderRadius: '8px', fontSize: '13px', fontFamily: 'var(--font-sans)' }}
-                      >
-                        متابعة التعلم
-                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>arrow_back</span>
-                      </Link>
+                      <div className="mt-auto d-flex flex-column gap-2">
+                        {enrollment.progress >= 100 && (
+                          <button
+                            type="button"
+                            onClick={() => openCertificate(enrollment.courseId)}
+                            disabled={openingCertificateId !== null}
+                            className="btn btn-primary-cta w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2"
+                          >
+                            {openingCertificateId === enrollment.courseId ? (
+                              <span className="spinner-border spinner-border-sm" aria-hidden="true" />
+                            ) : (
+                              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>workspace_premium</span>
+                            )}
+                            عرض الشهادة
+                          </button>
+                        )}
+                        <Link
+                          to={`/courses/${enrollment.courseId}`}
+                          className="btn w-100 py-2 text-white fw-semibold d-flex align-items-center justify-content-center gap-2"
+                          style={{ backgroundColor: '#272a2e', borderRadius: '8px', fontSize: '13px', fontFamily: 'var(--font-sans)' }}
+                        >
+                          متابعة التعلم
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>arrow_back</span>
+                        </Link>
+                      </div>
                     </div>
                   </article>
                 </div>

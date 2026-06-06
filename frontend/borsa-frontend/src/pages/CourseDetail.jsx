@@ -497,6 +497,7 @@ export default function CourseDetail() {
               loading={curriculumLoading}
               error={curriculumError}
               progressPercent={progressPercentage}
+              courseId={courseId}
               onLessonProgressChange={handleLessonProgressChange}
             />
           </aside>

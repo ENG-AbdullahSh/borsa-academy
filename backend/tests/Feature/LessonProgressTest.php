@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\CourseSection;
 use App\Models\Enrollment;
@@ -87,6 +88,11 @@ test('a student can complete lessons and undo completion', function () {
     expect($enrollment->refresh())
         ->progress->toBe(100)
         ->completed->toBeTrue();
+
+    expect(Certificate::query()
+        ->where('user_id', $this->student->id)
+        ->where('course_id', $this->course->id)
+        ->count())->toBe(1);
 
     $this->deleteJson("/api/lessons/{$this->secondLesson->id}/complete")
         ->assertOk()

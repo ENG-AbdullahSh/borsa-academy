@@ -8,8 +8,12 @@ use App\Models\LessonProgress;
 
 class CourseProgressService
 {
+    public function __construct(
+        private readonly CertificateService $certificateService,
+    ) {}
+
     /**
-     * @return array<string, int|bool>
+     * @return array<string, int|bool|null>
      */
     public function syncEnrollment(Enrollment $enrollment): array
     {
@@ -39,12 +43,17 @@ class CourseProgressService
             'completed' => $courseCompleted,
         ]);
 
+        $certificate = $courseCompleted
+            ? $this->certificateService->issueForEnrollment($enrollment)
+            : null;
+
         return [
             'course_id' => $enrollment->course_id,
             'completed_lessons' => $completedLessons,
             'total_lessons' => $totalLessons,
             'progress_percentage' => $progressPercentage,
             'course_completed' => $courseCompleted,
+            'certificate_id' => $certificate?->id,
         ];
     }
 }

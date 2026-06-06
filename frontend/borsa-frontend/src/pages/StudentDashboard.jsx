@@ -10,6 +10,7 @@ const DEFAULT_SUMMARY = {
   in_progress_courses: 0,
   not_started_courses: 0,
   overall_learning_progress: 0,
+  certificates_count: 0,
 };
 
 export default function StudentDashboard() {
@@ -18,6 +19,7 @@ export default function StudentDashboard() {
   const { token, user, isAuthenticated, loading: authLoading } = useAuth();
   const [enrollments, setEnrollments] = useState([]);
   const [summary, setSummary] = useState(DEFAULT_SUMMARY);
+  const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [retryKey, setRetryKey] = useState(0);
@@ -46,12 +48,24 @@ export default function StudentDashboard() {
         });
         const payload = await readJsonResponse(response);
         const apiEnrollments = Array.isArray(payload.courses) ? payload.courses : [];
+        const certificatesResponse = await fetch(`${API_BASE_URL}/my-certificates`, {
+          headers: apiHeaders(token),
+          signal: controller.signal,
+        });
+        const certificatesPayload = await readJsonResponse(certificatesResponse);
+        const apiCertificates = Array.isArray(certificatesPayload.data) ? certificatesPayload.data : [];
 
         setEnrollments(apiEnrollments.map(normalizeEnrollment));
-        setSummary({ ...DEFAULT_SUMMARY, ...(payload.summary || {}) });
+        setCertificates(apiCertificates);
+        setSummary({
+          ...DEFAULT_SUMMARY,
+          ...(payload.summary || {}),
+          certificates_count: apiCertificates.length,
+        });
       } catch (fetchError) {
         if (fetchError.name !== 'AbortError') {
           setEnrollments([]);
+          setCertificates([]);
           setSummary(DEFAULT_SUMMARY);
           setError('تعذر تحميل لوحة الطالب. تأكد من تشغيل Laravel API.');
         }
@@ -88,6 +102,13 @@ export default function StudentDashboard() {
       suffix: '',
       icon: 'trending_up',
       color: '#ffd54f',
+    },
+    {
+      label: 'الشهادات',
+      value: summary.certificates_count,
+      suffix: '',
+      icon: 'workspace_premium',
+      color: '#d4af37',
     },
     {
       label: 'التقدم التعليمي العام',
@@ -146,7 +167,7 @@ export default function StudentDashboard() {
           <>
             <div className="row g-3 mb-5">
               {stats.map((stat) => (
-                <div key={stat.label} className="col-12 col-sm-6 col-xl-3">
+                <div key={stat.label} className="col-12 col-sm-6 col-xl">
                   <div className="glass-card p-4 rounded-3 h-100">
                     <div className="d-flex align-items-center justify-content-between mb-3">
                       <span className="material-symbols-outlined" style={{ color: stat.color, fontSize: '34px' }}>{stat.icon}</span>
@@ -216,6 +237,39 @@ export default function StudentDashboard() {
                           </div>
                         </article>
                       </Link>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="mt-5">
+              <div className="d-flex align-items-center justify-content-between gap-3 mb-4">
+                <div>
+                  <h2 className="h5 text-white fw-bold mb-1">أحدث الشهادات</h2>
+                  <p className="text-muted m-0" style={{ fontSize: '13px' }}>شهاداتك الصادرة بعد إكمال الدورات.</p>
+                </div>
+                <Link to="/certificates" className="text-decoration-none fw-bold" style={{ color: '#75ff9e', fontSize: '14px' }}>
+                  عرض الكل
+                </Link>
+              </div>
+
+              {certificates.length === 0 ? (
+                <div className="glass-card rounded-3 p-4 text-center text-muted">
+                  لا توجد شهادات بعد. أكمل دورة بنسبة 100% لتظهر هنا.
+                </div>
+              ) : (
+                <div className="row g-3">
+                  {certificates.slice(0, 3).map((certificate) => (
+                    <div key={certificate.id} className="col-12 col-lg-4">
+                      <article className="glass-card rounded-3 p-4 h-100">
+                        <span className="material-symbols-outlined mb-3" style={{ color: '#d4af37', fontSize: '34px' }}>workspace_premium</span>
+                        <h3 className="h6 text-white fw-bold mb-2">{certificate.course_title}</h3>
+                        <p className="font-mono-data text-muted mb-3" dir="ltr" style={{ fontSize: '11px' }}>{certificate.certificate_number}</p>
+                        <Link to={`/certificates/${certificate.id}`} className="text-decoration-none fw-bold" style={{ color: '#75ff9e', fontSize: '13px' }}>
+                          عرض الشهادة
+                        </Link>
+                      </article>
                     </div>
                   ))}
                 </div>

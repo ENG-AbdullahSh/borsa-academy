@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\AdminCertificateController;
+use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CertificateController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\CourseCurriculumController;
 use App\Http\Controllers\Api\CourseSectionController;
@@ -26,11 +29,16 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/my-courses/{courseId}/progress', [LessonProgressController::class, 'course'])->whereNumber('courseId');
         Route::get('/my-courses/{courseId}', [EnrollmentController::class, 'show'])->whereNumber('courseId');
         Route::get('/my-progress', [LessonProgressController::class, 'index']);
+        Route::get('/my-certificates', [CertificateController::class, 'index']);
+        Route::get('/my-certificates/{certificate}', [CertificateController::class, 'show'])->whereNumber('certificate');
+        Route::get('/my-courses/{courseId}/certificate', [CertificateController::class, 'course'])->whereNumber('courseId');
         Route::post('/lessons/{lesson}/complete', [LessonProgressController::class, 'complete'])->whereNumber('lesson');
         Route::delete('/lessons/{lesson}/complete', [LessonProgressController::class, 'destroy'])->whereNumber('lesson');
     });
 
     Route::middleware('role:admin')->group(function (): void {
+        Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
+        Route::get('/admin/certificates', [AdminCertificateController::class, 'index']);
         Route::get('/admin/test', function () {
             return response()->json([
                 'message' => 'Admin route access confirmed.',

@@ -42,6 +42,7 @@ export default function Navbar() {
     ...(isAuthenticated && user?.role !== 'admin' ? [
       { label: 'لوحة الطالب', path: '/student-dashboard' },
       { label: 'دوراتي', path: '/my-courses' },
+      { label: 'شهاداتي', path: '/certificates' },
     ] : []),
     { label: 'من نحن واتصل بنا', path: '/about' },
     ...(user?.role === 'admin' ? [{ label: 'لوحة التحكم', path: '/admin' }] : []),

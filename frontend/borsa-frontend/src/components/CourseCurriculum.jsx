@@ -33,6 +33,7 @@ export default function CourseCurriculum({
   loading = false,
   error = '',
   progressPercent = 0,
+  courseId,
   onLessonProgressChange,
 }) {
   const { token } = useAuth();
@@ -236,7 +237,11 @@ export default function CourseCurriculum({
         </button>
       </div>
 
-      <CertificateModal isOpen={isCertificateOpen} onClose={() => setIsCertificateOpen(false)} />
+      <CertificateModal
+        isOpen={isCertificateOpen}
+        onClose={() => setIsCertificateOpen(false)}
+        courseId={courseId}
+      />
     </div>
   );
 }
