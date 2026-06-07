@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FiEye, FiEyeOff } from 'react-icons/fi';
 import AdminCourses from './AdminCourses';
 import AdminCurriculum from './AdminCurriculum';
 import AdminInstructors from './AdminInstructors';
+import AdminQuizManager from './AdminQuizManager';
 import AdminSettings from './AdminSettings';
 import ProfileSettings from './ProfileSettings';
 import { useAuth } from '../hooks/useAuth';
@@ -30,77 +30,6 @@ const EMPTY_DASHBOARD = {
   },
   recent_enrollments: [],
 };
-
-function PasswordField({
-  id,
-  label,
-  value,
-  onChange,
-  visible,
-  onToggle,
-  autoComplete,
-}) {
-  const visibilityLabel = visible ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور';
-
-  return (
-    <div className="mb-3">
-      <label className="form-label text-muted" htmlFor={id} style={{ fontSize: '13px' }}>
-        {label}
-      </label>
-      <div className="position-relative">
-        <input
-          id={id}
-          type={visible ? 'text' : 'password'}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className="form-control custom-input py-2 border-0"
-          placeholder="••••••••"
-          autoComplete={autoComplete}
-          style={{
-            background: 'rgba(255,255,255,0.03)',
-            direction: 'ltr',
-            textAlign: 'left',
-            paddingLeft: '46px',
-          }}
-        />
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-label={visibilityLabel}
-          aria-pressed={visible}
-          aria-controls={id}
-          title={visibilityLabel}
-          className="btn border-0 position-absolute d-flex align-items-center justify-content-center"
-          style={{
-            left: '4px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            width: '38px',
-            height: '38px',
-            color: '#bacbb9',
-            background: 'transparent',
-          }}
-        >
-          {visible ? <FiEyeOff aria-hidden="true" /> : <FiEye aria-hidden="true" />}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function EmptyState({ icon, title, description }) {
-  return (
-    <section className="glass-card rounded-3 px-4 py-5 text-center">
-      <span className="material-symbols-outlined mb-3" style={{ color: '#75ff9e', fontSize: '52px' }}>
-        {icon}
-      </span>
-      <h2 className="h5 text-white fw-bold mb-2" style={{ fontFamily: 'var(--font-sans)' }}>{title}</h2>
-      <p className="text-muted mb-0 mx-auto" style={{ maxWidth: '560px', lineHeight: 1.8, fontSize: '14px' }}>
-        {description}
-      </p>
-    </section>
-  );
-}
 
 function progressStatus(enrollment) {
   if (enrollment.completed || Number(enrollment.progress) >= 100) {
@@ -132,16 +61,6 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [retryKey, setRetryKey] = useState(0);
-  const [passwords, setPasswords] = useState({
-    current: '',
-    next: '',
-    confirmation: '',
-  });
-  const [passwordVisibility, setPasswordVisibility] = useState({
-    current: false,
-    next: false,
-    confirmation: false,
-  });
 
   useEffect(() => {
     if (!token) return undefined;
@@ -219,14 +138,6 @@ export default function AdminDashboard() {
       note: 'متوسط جميع الاشتراكات',
     },
   ]), [dashboard.stats]);
-
-  const togglePassword = (field) => {
-    setPasswordVisibility((current) => ({ ...current, [field]: !current[field] }));
-  };
-
-  const updatePasswordField = (field, value) => {
-    setPasswords((current) => ({ ...current, [field]: value }));
-  };
 
   const renderOverview = () => (
     <>
