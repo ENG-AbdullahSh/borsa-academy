@@ -12,6 +12,8 @@ export default function CertificateDetails() {
   const [certificate, setCertificate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState('');
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -48,12 +50,71 @@ export default function CertificateDetails() {
     return () => controller.abort();
   }, [authLoading, id, isAuthenticated, token]);
 
+  // ── PDF download via blob ────────────────────────────────────────────────
+  const downloadPdf = async () => {
+    setPdfError('');
+    setPdfLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/certificates/${id}/download`, {
+        headers: apiHeaders(token),
+      });
+
+      if (!response.ok) {
+        // Try to extract JSON error message
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.message || 'تعذر تحميل الشهادة.');
+      }
+
+      const blob = await response.blob();
+      const url  = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href     = url;
+      link.download = certificate
+        ? `Certificate-${certificate.course_title?.replace(/\s+/g, '-') ?? id}.pdf`
+        : `certificate-${id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setPdfError(err.message || 'حدث خطأ غير متوقع. حاول مرة أخرى.');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
   return (
     <div className="min-vh-100" style={{ paddingTop: '64px', direction: 'rtl' }}>
       <main className="py-5 px-3 px-md-4">
         <div className="d-flex flex-wrap justify-content-between gap-3 mb-4" style={{ maxWidth: '920px', margin: '0 auto' }}>
           <Link to="/certificates" className="btn btn-secondary-cta px-4 py-2">العودة إلى الشهادات</Link>
-          <button type="button" className="btn btn-secondary-cta px-4 py-2 fw-bold" disabled>تحميل PDF قريباً</button>
+
+          <div className="d-flex flex-column align-items-end gap-1">
+            <button
+              type="button"
+              id="certificate-pdf-download"
+              onClick={downloadPdf}
+              disabled={pdfLoading || loading || !!error}
+              className="btn btn-primary-cta px-4 py-2 fw-bold d-flex align-items-center gap-2"
+            >
+              {pdfLoading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                  جاري التوليد...
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>download</span>
+                  تحميل PDF
+                </>
+              )}
+            </button>
+            {pdfError && (
+              <span style={{ fontSize: '12px', color: '#ff6b6b', fontFamily: 'var(--font-sans)' }}>
+                {pdfError}
+              </span>
+            )}
+          </div>
         </div>
 
         {loading ? (

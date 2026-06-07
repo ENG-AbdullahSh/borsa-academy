@@ -9,10 +9,13 @@ const EMPTY_FORM = {
   short_description: '',
   description: '',
   thumbnail: '',
+  image_path: '',
+  file: null,
+  preview: '',
   price: '',
   level: 'beginner',
   category: '',
-  instructor_name: '',
+  instructor_id: '',
   duration_hours: '',
   status: 'draft',
 };
@@ -71,11 +74,12 @@ function buildCoursePayload(form) {
     title: form.title.trim(),
     short_description: form.short_description.trim(),
     description: form.description.trim(),
-    thumbnail: form.thumbnail.trim() || null,
+    thumbnail: form.thumbnail || null,
+    image_path: form.image_path || null,
     price: Number(form.price),
     level: form.level,
     category: form.category.trim(),
-    instructor_name: form.instructor_name.trim(),
+    instructor_id: form.instructor_id,
     duration_hours: Number(form.duration_hours),
     status: form.status,
   };
@@ -94,16 +98,55 @@ function courseToForm(course) {
     short_description: course.short_description || '',
     description: course.description || '',
     thumbnail: course.thumbnail || '',
+    image_path: course.image_path || '',
+    file: null,
+    preview: course.thumbnail || course.image_path || '',
     price: course.price ?? '',
     level: course.level || 'beginner',
     category: course.category || '',
-    instructor_name: course.instructor_name || '',
+    instructor_id: course.instructor_id || '',
     duration_hours: course.duration_hours ?? '',
     status: course.status || 'draft',
   };
 }
 
 function CourseForm({ form, onChange, onSubmit, submitting, submitLabel, compact = false }) {
+  const [dragActive, setDragActive] = useState(false);
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFile(e.target.files[0]);
+    }
+  };
+
+  const handleFile = (file) => {
+    const previewUrl = URL.createObjectURL(file);
+    onChange({ ...form, file, preview: previewUrl });
+  };
+  
+  const removeImage = () => {
+    onChange({ ...form, file: null, preview: '', thumbnail: '', image_path: '' });
+  };
+
   const handleChange = (event) => {
     const { name, value } = event.target;
     onChange({ ...form, [name]: value });
@@ -122,7 +165,12 @@ function CourseForm({ form, onChange, onSubmit, submitting, submitLabel, compact
         </div>
         <div className="col-12 col-lg-4">
           <label className="form-label text-muted" style={{ fontSize: '12px' }}>المدرب</label>
-          <input name="instructor_name" value={form.instructor_name} onChange={handleChange} className="form-control custom-input" required maxLength={255} />
+          <select name="instructor_id" value={form.instructor_id} onChange={handleChange} className="form-select custom-input" required>
+             <option value="" disabled>اختر المدرب</option>
+             {form.available_instructors?.map(inst => (
+               <option key={inst.id} value={inst.id}>{inst.name}</option>
+             ))}
+          </select>
         </div>
         <div className="col-12 col-lg-4">
           <label className="form-label text-muted" style={{ fontSize: '12px' }}>التصنيف</label>
@@ -148,9 +196,58 @@ function CourseForm({ form, onChange, onSubmit, submitting, submitLabel, compact
             {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
         </div>
-        <div className="col-12 col-lg-4">
-          <label className="form-label text-muted" style={{ fontSize: '12px' }}>رابط الصورة اختياري</label>
-          <input name="thumbnail" value={form.thumbnail} onChange={handleChange} className="form-control custom-input" maxLength={2048} placeholder="https://..." style={{ direction: 'ltr', textAlign: 'left' }} />
+        <div className="col-12">
+          <label className="form-label text-muted fw-semibold mb-2" style={{ fontSize: '13px' }}>صورة الغلاف (Cover Image)</label>
+          <div 
+            className={`position-relative d-flex flex-column align-items-center justify-content-center p-4 text-center transition-all ${dragActive ? 'bg-primary bg-opacity-10' : ''}`}
+            style={{ 
+              border: `2px dashed ${dragActive ? '#81cfff' : 'rgba(255,255,255,0.15)'}`,
+              background: dragActive ? 'rgba(129, 207, 255, 0.05)' : 'rgba(255,255,255,0.02)',
+              borderRadius: '16px',
+              cursor: 'pointer',
+              minHeight: '200px',
+              overflow: 'hidden'
+            }}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+            onClick={() => !form.preview && document.getElementById('course-image-upload').click()}
+          >
+            {form.preview ? (
+              <div className="w-100 h-100 position-relative rounded-3 overflow-hidden d-flex align-items-center justify-content-center" style={{ minHeight: '180px' }}>
+                <img src={form.preview} alt="Preview" className="img-fluid rounded" style={{ maxHeight: '280px', objectFit: 'contain', width: '100%', background: 'rgba(0,0,0,0.2)' }} />
+                <div className="position-absolute d-flex gap-2" style={{ top: '12px', right: '12px' }}>
+                  <button 
+                    type="button" 
+                    onClick={(e) => { e.stopPropagation(); removeImage(); }} 
+                    className="btn btn-sm d-flex align-items-center justify-content-center shadow-sm transition-all" 
+                    style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(4px)' }}
+                    onMouseOver={(e) => e.currentTarget.style.background = 'rgba(220,53,69,0.9)'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.6)'}
+                  >
+                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="d-flex flex-column align-items-center" style={{ pointerEvents: 'none' }}>
+                <div className="rounded-circle d-flex align-items-center justify-content-center mb-3" style={{ width: '56px', height: '56px', background: 'rgba(255,255,255,0.05)', color: '#81cfff' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>cloud_upload</span>
+                </div>
+                <span className="text-white fw-bold mb-1" style={{ fontSize: '15px', fontFamily: 'var(--font-sans)' }}>اسحب الصورة وأفلتها هنا</span>
+                <span className="text-muted" style={{ fontSize: '13px' }}>أو اضغط لاختيار ملف (الحد الأقصى 10MB)</span>
+                <span className="text-muted mt-2" style={{ fontSize: '11px', opacity: 0.7 }}>الصيغ المدعومة: JPEG, PNG, JPG, GIF, SVG</span>
+              </div>
+            )}
+            <input 
+              id="course-image-upload" 
+              type="file" 
+              accept="image/jpeg, image/png, image/jpg, image/gif, image/svg+xml" 
+              className="d-none" 
+              onChange={handleFileChange} 
+            />
+          </div>
         </div>
         <div className="col-12">
           <label className="form-label text-muted" style={{ fontSize: '12px' }}>وصف قصير</label>
@@ -250,7 +347,19 @@ export default function AdminCourses() {
         const payload = await readJsonResponse(response);
         const apiCourses = Array.isArray(payload.data) ? payload.data : [];
 
+        // Also fetch instructors
+        const instResponse = await fetch('http://127.0.0.1:8000/api/admin/instructors', {
+          headers: authHeaders,
+          signal: controller.signal,
+        });
+        const instData = await instResponse.json();
+        const apiInstructors = Array.isArray(instData) ? instData : [];
+
         setCourses(apiCourses);
+        // Inject available_instructors to forms
+        setAddForm(prev => ({ ...prev, available_instructors: apiInstructors }));
+        setEditForm(prev => ({ ...prev, available_instructors: apiInstructors }));
+
         setPagination({
           current_page: payload.current_page ?? page,
           last_page: payload.last_page ?? 1,
@@ -289,13 +398,43 @@ export default function AdminCourses() {
     const endpoint = isEdit ? `${ADMIN_COURSES_API_URL}/${editingCourse.id}` : ADMIN_COURSES_API_URL;
 
     try {
+      let finalPath = form.image_path;
+      let finalUrl = form.thumbnail;
+
+      if (form.file) {
+        const formData = new FormData();
+        formData.append('file', form.file);
+        formData.append('folder', 'courses');
+
+        const uploadResponse = await fetch('http://127.0.0.1:8000/api/upload', {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+        
+        const uploadData = await readJsonResponse(uploadResponse);
+        if (uploadData.success) {
+           finalPath = uploadData.path;
+           finalUrl = uploadData.url;
+        } else {
+           throw new Error(uploadData.message || 'فشل رفع الصورة');
+        }
+      }
+
+      const payload = buildCoursePayload(form);
+      payload.image_path = finalPath;
+      payload.thumbnail = finalUrl;
+
       const response = await fetch(endpoint, {
         method: isEdit ? 'PUT' : 'POST',
         headers: {
           ...authHeaders,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(buildCoursePayload(form)),
+        body: JSON.stringify(payload),
       });
       await readJsonResponse(response);
 
@@ -303,7 +442,7 @@ export default function AdminCourses() {
         setEditingCourse(null);
         showMessage('success', 'تم تحديث الكورس بنجاح.');
       } else {
-        setAddForm(EMPTY_FORM);
+        setAddForm({ ...EMPTY_FORM, available_instructors: addForm.available_instructors });
         showMessage('success', 'تمت إضافة الكورس بنجاح.');
       }
 
@@ -451,7 +590,7 @@ export default function AdminCourses() {
                         <span className="font-mono-data text-muted" style={{ fontSize: '11px', direction: 'ltr', textAlign: 'right' }}>{course.slug}</span>
                       </div>
                     </td>
-                    <td className="py-3 px-3 text-muted" style={{ fontSize: '13px' }}>{course.instructor_name}</td>
+                    <td className="py-3 px-3 text-muted" style={{ fontSize: '13px' }}>{course.instructor?.name || course.instructor_name || '-'}</td>
                     <td className="py-3 px-3 text-muted" style={{ fontSize: '13px' }}>{course.category}</td>
                     <td className="py-3 px-3 text-center font-mono-data" style={{ color: '#00e676' }}>${Number(course.price || 0).toFixed(2)}</td>
                     <td className="py-3 px-3 text-center">

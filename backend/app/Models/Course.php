@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -14,10 +15,12 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'short_description',
     'description',
     'thumbnail',
+    'image_path',
     'price',
     'level',
     'category',
     'instructor_name',
+    'instructor_id',
     'duration_hours',
     'status',
 ])]
@@ -77,5 +80,10 @@ class Course extends Model
     public function quizAttempts(): HasMany
     {
         return $this->hasMany(QuizAttempt::class);
+    }
+
+    public function instructor(): BelongsTo
+    {
+        return $this->belongsTo(Instructor::class);
     }
 }

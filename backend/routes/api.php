@@ -9,22 +9,37 @@ use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\CourseCurriculumController;
 use App\Http\Controllers\Api\CourseSectionController;
 use App\Http\Controllers\Api\EnrollmentController;
+use App\Http\Controllers\Api\InstructorController;
 use App\Http\Controllers\Api\LessonController;
 use App\Http\Controllers\Api\LessonProgressController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\QuizController;
+use App\Http\Controllers\Api\SettingController;
+use App\Http\Controllers\UploadController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/courses', [CourseController::class, 'index']);
 Route::get('/courses/{id}', [CourseController::class, 'show'])->whereNumber('id');
 Route::get('/courses/{id}/curriculum', [CourseCurriculumController::class, 'show'])->whereNumber('id');
+Route::get('/settings', [SettingController::class, 'getSettings']);
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/upload', [UploadController::class, 'uploadFile']);
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
 
+    // ── Profile ────────────────────────────────────────────────────────
+    Route::put('/profile/update', [ProfileController::class, 'updateProfile']);
+    Route::put('/profile/update-password', [ProfileController::class, 'updatePassword']);
+
+    // ── Notifications ──────────────────────────────────────────────
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::post('/notifications/mark-read', [NotificationController::class, 'markAsRead']);
     Route::middleware('role:student')->group(function (): void {
         Route::post('/enrollments', [EnrollmentController::class, 'store']);
         Route::get('/my-courses', [EnrollmentController::class, 'index']);
@@ -34,6 +49,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/my-certificates', [CertificateController::class, 'index']);
         Route::get('/my-certificates/{certificate}', [CertificateController::class, 'show'])->whereNumber('certificate');
         Route::get('/my-courses/{courseId}/certificate', [CertificateController::class, 'course'])->whereNumber('courseId');
+        Route::get('/certificates/{id}/download', [CertificateController::class, 'downloadPdf'])->whereNumber('id');
         Route::get('/courses/{course}/quiz', [QuizController::class, 'show'])->whereNumber('course');
         Route::post('/courses/{course}/quiz/submit', [QuizController::class, 'submit'])->whereNumber('course');
         Route::get('/my-quiz-attempts', [QuizController::class, 'attempts']);
@@ -43,6 +59,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
     });
 
     Route::middleware('role:admin')->group(function (): void {
+        Route::put('/admin/settings', [SettingController::class, 'updateSettings']);
+        Route::apiResource('/admin/instructors', InstructorController::class);
         Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
         Route::get('/admin/certificates', [AdminCertificateController::class, 'index']);
         Route::get('/admin/courses/{course}/quiz', [AdminQuizController::class, 'show'])->whereNumber('course');

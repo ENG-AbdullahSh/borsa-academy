@@ -24,6 +24,7 @@ class StoreCourseRequest extends FormRequest
             'short_description' => ['required', 'string', 'max:500'],
             'description' => ['required', 'string'],
             'thumbnail' => ['nullable', 'string', 'max:2048'],
+            'image_path' => ['nullable', 'string', 'max:2048'],
             'price' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
             'level' => ['required', Rule::in(Course::LEVELS)],
             'category' => ['required', 'string', 'max:191'],

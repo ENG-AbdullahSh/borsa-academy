@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\CertificateResource;
 use App\Models\Certificate;
 use App\Services\CertificateService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 
 class CertificateController extends Controller
 {
@@ -84,8 +86,8 @@ class CertificateController extends Controller
 
         if (! $eligibility['certificate_unlocked']) {
             return response()->json([
-                'message' => $eligibility['locked_message'],
-                'locked_reason' => $eligibility['locked_reason'],
+                'message'            => $eligibility['locked_message'],
+                'locked_reason'      => $eligibility['locked_reason'],
                 'certificate_status' => $eligibility,
             ], $eligibility['locked_reason'] === 'course_incomplete' ? 422 : 423);
         }
@@ -95,5 +97,50 @@ class CertificateController extends Controller
         return (new CertificateResource(
             $certificate->load(['user:id,name', 'course:id,title']),
         ))->response()->setStatusCode(200);
+    }
+
+    /**
+     * Generate and download a PDF certificate for the authenticated user.
+     */
+    public function downloadPdf(Request $request, int $id): Response|JsonResponse
+    {
+        $certificate = Certificate::with(['user:id,name', 'course:id,title'])
+            ->find($id);
+
+        // 404 — certificate does not exist
+        if (! $certificate) {
+            return response()->json(['message' => 'Certificate not found.'], 404);
+        }
+
+        // 403 — certificate belongs to someone else
+        if ($certificate->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Certificate not found.'], 404);
+        }
+
+        // Verify the student actually earned this (course + quiz complete)
+        $enrollment = $request->user()
+            ->enrollments()
+            ->where('course_id', $certificate->course_id)
+            ->first();
+
+        $eligibility = $enrollment
+            ? $this->certificateService->eligibilityForEnrollment($enrollment)
+            : null;
+
+        if (! $eligibility || ! $eligibility['certificate_unlocked']) {
+            return response()->json(['message' => 'Certificate is not yet unlocked.'], 423);
+        }
+
+        $pdf = Pdf::loadView('certificates.pdf', [
+            'certificate' => $certificate,
+            'studentName' => $certificate->user?->name  ?? 'Student',
+            'courseName'  => $certificate->course?->title ?? 'Course',
+            'issuedAt'    => $certificate->issued_at
+                ? $certificate->issued_at->format('d F Y')
+                : now()->format('d F Y'),
+            'certNumber'  => $certificate->certificate_number,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('certificate-' . $id . '.pdf');
     }
 }

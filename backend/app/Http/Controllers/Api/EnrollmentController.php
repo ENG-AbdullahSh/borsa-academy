@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Enrollments\StoreEnrollmentRequest;
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Notifications\AcademyNotification;
 use App\Services\CertificateService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -49,9 +50,16 @@ class EnrollmentController extends Controller
             ], 409);
         }
 
+        // Fire enrollment notification to the student
+        $user->notify(new AcademyNotification(
+            title: 'تم تسجيلك في الكورس بنجاح! 🎉',
+            message: 'لقد انضممت إلى كورس "' . $course->title . '". ابدأ التعلم الآن وحقق أهدافك.',
+            actionUrl: '/my-courses',
+        ));
+
         return response()->json([
             'message' => 'Enrollment created successfully.',
-            'data' => $this->formatEnrollment($enrollment->load('course')),
+            'data'    => $this->formatEnrollment($enrollment->load('course')),
         ], 201);
     }
 

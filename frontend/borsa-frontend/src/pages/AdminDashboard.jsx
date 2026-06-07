@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 import AdminCourses from './AdminCourses';
 import AdminCurriculum from './AdminCurriculum';
-import AdminQuizManager from './AdminQuizManager';
+import AdminInstructors from './AdminInstructors';
+import AdminSettings from './AdminSettings';
+import ProfileSettings from './ProfileSettings';
 import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
 
@@ -12,6 +14,7 @@ const TABS = [
   { id: 'curriculum', label: 'المحتوى التعليمي', icon: 'menu_book' },
   { id: 'quizzes', label: 'الاختبارات', icon: 'quiz' },
   { id: 'instructors', label: 'المدربون', icon: 'group' },
+  { id: 'profile', label: 'الملف الشخصي', icon: 'account_circle' },
   { id: 'settings', label: 'الإعدادات', icon: 'settings' },
 ];
 
@@ -348,128 +351,7 @@ export default function AdminDashboard() {
   );
 
   const renderInstructors = () => (
-    <>
-      <div className="mb-4">
-        <h1 className="fw-bold text-white mb-1" style={{ fontSize: '28px', fontFamily: 'var(--font-sans)' }}>المدربون</h1>
-        <p className="text-muted m-0" style={{ fontSize: '14px' }}>إدارة حسابات المدربين وتخصصاتهم.</p>
-      </div>
-      <EmptyState
-        icon="construction"
-        title="إدارة المدربين قيد التطوير"
-        description="لا توجد واجهة خلفية لإدارة المدربين حالياً. ستظهر الحسابات والتخصصات وإحصاءات الطلاب هنا بعد إضافة وحدة المدربين، لذلك تمت إزالة جميع الأسماء والأرقام التجريبية."
-      />
-    </>
-  );
-
-  const renderSettings = () => (
-    <>
-      <div className="mb-4">
-        <h1 className="fw-bold text-white mb-1" style={{ fontSize: '28px', fontFamily: 'var(--font-sans)' }}>الإعدادات</h1>
-        <p className="text-muted m-0" style={{ fontSize: '14px' }}>إعدادات المنصة العامة والأمان.</p>
-      </div>
-
-      <div
-        className="rounded-3 px-4 py-3 mb-4 d-flex align-items-start gap-3"
-        role="status"
-        style={{ background: 'rgba(255,193,7,0.08)', border: '1px solid rgba(255,193,7,0.2)', color: '#ffd54f' }}
-      >
-        <span className="material-symbols-outlined">info</span>
-        <div>
-          <strong className="d-block mb-1">إعدادات تجريبية غير مفعلة بعد</strong>
-          <span style={{ color: '#bacbb9', fontSize: '13px' }}>
-            الحقول التالية للمعاينة فقط ولا يتم حفظها أو إرسالها إلى الخادم.
-          </span>
-        </div>
-      </div>
-
-      <div className="row g-4">
-        <div className="col-12 col-lg-6">
-          <section className="glass-card p-4 rounded-3 h-100">
-            <h2 className="h5 text-white fw-bold mb-4" style={{ fontFamily: 'var(--font-sans)' }}>الإعدادات العامة</h2>
-            <div className="mb-3">
-              <label className="form-label text-muted" htmlFor="academy-name" style={{ fontSize: '13px' }}>اسم الأكاديمية</label>
-              <input
-                id="academy-name"
-                type="text"
-                className="form-control custom-input py-2 border-0"
-                value="بورصة أكاديمي"
-                disabled
-                readOnly
-                style={{ background: 'rgba(255,255,255,0.03)' }}
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label text-muted" htmlFor="admin-email" style={{ fontSize: '13px' }}>البريد الإلكتروني للإدارة</label>
-              <input
-                id="admin-email"
-                type="email"
-                className="form-control custom-input py-2 border-0"
-                value={user?.email || ''}
-                disabled
-                readOnly
-                dir="ltr"
-                style={{ textAlign: 'left', background: 'rgba(255,255,255,0.03)' }}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="form-label text-muted" htmlFor="payment-gateway" style={{ fontSize: '13px' }}>بوابات الدفع</label>
-              <select
-                id="payment-gateway"
-                className="form-select custom-input py-2 border-0"
-                value="unavailable"
-                disabled
-                onChange={() => {}}
-                style={{ background: 'rgba(255,255,255,0.03)' }}
-              >
-                <option value="unavailable">غير مفعلة حالياً</option>
-              </select>
-            </div>
-            <button type="button" className="btn btn-primary-cta py-2 px-4 w-100 fw-bold" disabled>
-              سيتم تفعيل الحفظ لاحقاً
-            </button>
-          </section>
-        </div>
-
-        <div className="col-12 col-lg-6">
-          <section className="glass-card p-4 rounded-3 h-100">
-            <h2 className="h5 text-white fw-bold mb-2" style={{ fontFamily: 'var(--font-sans)' }}>تغيير كلمة المرور</h2>
-            <p className="text-muted mb-4" style={{ fontSize: '12px', lineHeight: 1.7 }}>
-              واجهة تغيير كلمة المرور غير مرتبطة بالخادم بعد. زر التحديث معطل ولا يتم حفظ أي قيمة.
-            </p>
-            <PasswordField
-              id="admin-current-password"
-              label="كلمة المرور الحالية"
-              value={passwords.current}
-              onChange={(value) => updatePasswordField('current', value)}
-              visible={passwordVisibility.current}
-              onToggle={() => togglePassword('current')}
-              autoComplete="current-password"
-            />
-            <PasswordField
-              id="admin-new-password"
-              label="كلمة المرور الجديدة"
-              value={passwords.next}
-              onChange={(value) => updatePasswordField('next', value)}
-              visible={passwordVisibility.next}
-              onToggle={() => togglePassword('next')}
-              autoComplete="new-password"
-            />
-            <PasswordField
-              id="admin-confirm-password"
-              label="تأكيد كلمة المرور الجديدة"
-              value={passwords.confirmation}
-              onChange={(value) => updatePasswordField('confirmation', value)}
-              visible={passwordVisibility.confirmation}
-              onToggle={() => togglePassword('confirmation')}
-              autoComplete="new-password"
-            />
-            <button type="button" className="btn btn-secondary-cta py-2 px-4 w-100 fw-bold mt-2" disabled>
-              سيتم تفعيل التحديث لاحقاً
-            </button>
-          </section>
-        </div>
-      </div>
-    </>
+    <AdminInstructors />
   );
 
   const renderContent = () => {
@@ -477,7 +359,8 @@ export default function AdminDashboard() {
     if (activeTab === 'curriculum') return <AdminCurriculum />;
     if (activeTab === 'quizzes') return <AdminQuizManager />;
     if (activeTab === 'instructors') return renderInstructors();
-    if (activeTab === 'settings') return renderSettings();
+    if (activeTab === 'profile') return <ProfileSettings />;
+    if (activeTab === 'settings') return <AdminSettings />;
     return renderOverview();
   };
 

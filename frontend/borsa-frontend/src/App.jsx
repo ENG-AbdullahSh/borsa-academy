@@ -19,9 +19,11 @@ import MyCourses from './pages/MyCourses';
 import StudentDashboard from './pages/StudentDashboard';
 import Certificates from './pages/Certificates';
 import CertificateDetails from './pages/CertificateDetails';
+import ProfilePage from './pages/ProfilePage';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
 import { AuthProvider } from './context/AuthProvider';
 import { NotificationProvider } from './context/NotificationContext';
+import { SettingsProvider } from './context/SettingsContext';
 
 /* Auth pages are full-screen and should NOT render the shared
    Navbar / Ticker / Footer chrome — we detect them by pathname. */
@@ -71,6 +73,7 @@ function AppShell() {
           <Route path="/certificates" element={<Certificates />} />
           <Route path="/certificates/:id" element={<CertificateDetails />} />
           <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
 
           {/* Auth pages — full-screen, no chrome */}
           <Route path="/signin" element={<SignIn />} />
@@ -87,9 +90,11 @@ function App() {
   return (
     <Router>
       <NotificationProvider>
-        <AuthProvider>
-          <AppShell />
-        </AuthProvider>
+        <SettingsProvider>
+          <AuthProvider>
+            <AppShell />
+          </AuthProvider>
+        </SettingsProvider>
       </NotificationProvider>
     </Router>
   );

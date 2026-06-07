@@ -4,6 +4,7 @@ import borsaLogo from '../assets/Borsa Academy.jpeg';
 import { FiBell, FiCheckCircle, FiLogOut, FiUser } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth';
 import { useNotifications } from '../context/NotificationContext';
+import { useSettings } from '../context/SettingsContext';
 
 export default function Navbar() {
   const location = useLocation();
@@ -13,7 +14,8 @@ export default function Navbar() {
   const notifRef = useRef(null);
 
   const { user, isAuthenticated, logout } = useAuth();
-  const { notifications, unreadCount, markAllAsRead, markAsRead } = useNotifications();
+  const { notifications, unreadCount, loading: notifLoading, markAllAsRead, markAsRead } = useNotifications();
+  const { settings } = useSettings();
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -38,7 +40,8 @@ export default function Navbar() {
   const navLinks = [
     { label: 'الرئيسية', path: '/' },
     { label: 'الكورسات', path: '/courses' },
-    { label: 'مساري 📈', path: '/masari' },
+    // "مساري" is a student-only feature — hidden from admins
+    ...(user?.role !== 'admin' ? [{ label: 'مساري 📈', path: '/masari' }] : []),
     ...(isAuthenticated && user?.role !== 'admin' ? [
       { label: 'لوحة الطالب', path: '/student-dashboard' },
       { label: 'دوراتي', path: '/my-courses' },
@@ -74,13 +77,13 @@ export default function Navbar() {
             style={{ flexDirection: 'row' }}
           >
             <img
-              src={borsaLogo}
-              alt="بورصة أكاديمي"
+              src={settings.logo_path ? `http://127.0.0.1:8000/storage/${settings.logo_path}` : borsaLogo}
+              alt={settings.academy_name || "بورصة أكاديمي"}
               className="brand-logo-animated"
               style={{ height: '42px', maxHeight: '42px', width: 'auto', objectFit: 'contain', borderRadius: '8px' }}
             />
             <span className="brand-text-glowing" style={{ fontSize: '20px', fontFamily: 'var(--font-sans)' }}>
-              بورصة أكاديمي
+              {settings.academy_name || 'بورصة أكاديمي'}
             </span>
           </Link>
 
@@ -165,13 +168,21 @@ export default function Navbar() {
                   </div>
                   
                   <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-                    {notifications.length === 0 ? (
-                      <div style={{ padding: '30px', textAlign: 'center', color: '#64748B', fontSize: '13px' }}>لا توجد إشعارات حالياً</div>
+                    {notifLoading ? (
+                      <div style={{ padding: '30px', textAlign: 'center' }}>
+                        <span className="spinner-border spinner-border-sm" style={{ color: '#00E676' }} aria-hidden="true" />
+                        <p style={{ color: '#64748B', fontSize: '13px', margin: '10px 0 0' }}>جاري تحميل الإشعارات...</p>
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div style={{ padding: '30px', textAlign: 'center', color: '#64748B', fontSize: '13px' }}>
+                        <span style={{ display: 'block', fontSize: '28px', marginBottom: '8px' }}>🔔</span>
+                        لا توجد إشعارات حالياً
+                      </div>
                     ) : (
-                      notifications.slice(0, 4).map(notif => (
+                      notifications.slice(0, 5).map(notif => (
                         <div 
                           key={notif.id}
-                          onClick={() => { markAsRead(notif.id); setNotifOpen(false); navigate('/notifications'); }}
+                          onClick={() => { markAsRead(notif.id); setNotifOpen(false); navigate(notif.action_url || '/notifications'); }}
                           style={{
                             padding: '16px',
                             borderBottom: '1px solid rgba(255,255,255,0.03)',
@@ -189,7 +200,7 @@ export default function Navbar() {
                           <div style={{ paddingRight: notif.isUnread ? '12px' : '0' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                               <h4 style={{ margin: 0, fontSize: '13px', color: notif.isUnread ? '#fff' : '#E2E8F0', fontWeight: '700' }}>{notif.title}</h4>
-                              <span style={{ fontSize: '11px', color: '#64748B' }}>{notif.time}</span>
+                              <span style={{ fontSize: '11px', color: '#64748B', flexShrink: 0, marginRight: '8px' }}>{notif.time}</span>
                             </div>
                             <p style={{ margin: 0, fontSize: '12px', color: '#94A3B8', lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                               {notif.description}
@@ -211,15 +222,24 @@ export default function Navbar() {
 
             {isAuthenticated ? (
               <>
-                <div
-                  className="d-flex align-items-center gap-2 px-2"
+                <Link
+                  to="/profile"
+                  className="d-flex align-items-center gap-2 px-2 text-decoration-none btn-link-opacity"
                   style={{ color: '#bacbb9', fontSize: '13px', fontFamily: 'var(--font-sans)' }}
                 >
-                  <FiUser size={16} />
+                  {user?.avatar ? (
+                    <img 
+                      src={`http://127.0.0.1:8000/storage/${user.avatar}`} 
+                      alt={user.name} 
+                      style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} 
+                    />
+                  ) : (
+                    <FiUser size={18} />
+                  )}
                   <span className="text-truncate" style={{ maxWidth: '140px' }}>
                     {user?.name || user?.email}
                   </span>
-                </div>
+                </Link>
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -332,9 +352,17 @@ export default function Navbar() {
             <>
               <div
                 className="d-flex align-items-center gap-2 px-2"
-                style={{ color: '#bacbb9', fontSize: '13px', fontFamily: 'var(--font-sans)' }}
+                style={{ color: '#bacbb9', fontSize: '14px', fontFamily: 'var(--font-sans)' }}
               >
-                <FiUser size={16} />
+                {user?.avatar ? (
+                  <img 
+                    src={`http://127.0.0.1:8000/storage/${user.avatar}`} 
+                    alt={user.name} 
+                    style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} 
+                  />
+                ) : (
+                  <FiUser size={18} />
+                )}
                 <span className="text-truncate">{user?.name || user?.email}</span>
               </div>
               <button

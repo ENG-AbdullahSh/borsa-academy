@@ -11,6 +11,8 @@ export default function Certificates() {
   const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  // Per-certificate download state keyed by certificate.id
+  const [downloadStates, setDownloadStates] = useState({});
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -48,6 +50,36 @@ export default function Certificates() {
     return () => controller.abort();
   }, [authLoading, isAuthenticated, token]);
 
+  // ── PDF download helper ──────────────────────────────────────────────────
+  const downloadPdf = async (certificate) => {
+    const { id, course_title } = certificate;
+    setDownloadStates((prev) => ({ ...prev, [id]: { loading: true, error: '' } }));
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/certificates/${id}/download`, {
+        headers: apiHeaders(token),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.message || 'تعذر تحميل الشهادة.');
+      }
+
+      const blob = await response.blob();
+      const url  = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href     = url;
+      link.download = `Certificate-${course_title?.replace(/\s+/g, '-') ?? id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setDownloadStates((prev) => ({ ...prev, [id]: { loading: false, error: '' } }));
+    } catch (err) {
+      setDownloadStates((prev) => ({ ...prev, [id]: { loading: false, error: err.message || 'حدث خطأ.' } }));
+    }
+  };
+
   return (
     <div className="min-vh-100" style={{ paddingTop: '64px', direction: 'rtl' }}>
       <main className="py-5 px-4" style={{ maxWidth: '1100px', margin: '0 auto' }}>
@@ -70,20 +102,42 @@ export default function Certificates() {
           </div>
         ) : (
           <div className="d-flex flex-column gap-3">
-            {certificates.map((certificate) => (
-              <article key={certificate.id} className="glass-card rounded-3 p-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-                <div>
-                  <span className="font-mono-data d-block mb-2" dir="ltr" style={{ color: '#d4af37', fontSize: '12px' }}>
-                    {certificate.certificate_number}
-                  </span>
-                  <h2 className="h5 text-white fw-bold mb-2">{certificate.course_title}</h2>
-                  <p className="text-muted mb-0" style={{ fontSize: '13px' }}>تاريخ الإصدار: {formatCertificateDate(certificate.issued_at)}</p>
-                </div>
-                <Link to={`/certificates/${certificate.id}`} className="btn btn-primary-cta px-4 py-2 fw-bold flex-shrink-0">
-                  عرض الشهادة
-                </Link>
-              </article>
-            ))}
+            {certificates.map((certificate) => {
+              const dlState = downloadStates[certificate.id] || {};
+              return (
+                <article key={certificate.id} className="glass-card rounded-3 p-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                  <div>
+                    <span className="font-mono-data d-block mb-2" dir="ltr" style={{ color: '#d4af37', fontSize: '12px' }}>
+                      {certificate.certificate_number}
+                    </span>
+                    <h2 className="h5 text-white fw-bold mb-2">{certificate.course_title}</h2>
+                    <p className="text-muted mb-0" style={{ fontSize: '13px' }}>تاريخ الإصدار: {formatCertificateDate(certificate.issued_at)}</p>
+                    {dlState.error && (
+                      <p className="mb-0 mt-1" style={{ color: '#ff6b6b', fontSize: '12px' }}>{dlState.error}</p>
+                    )}
+                  </div>
+
+                  <div className="d-flex gap-2 flex-shrink-0">
+                    <Link to={`/certificates/${certificate.id}`} className="btn btn-secondary-cta px-3 py-2 fw-bold">
+                      عرض
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => downloadPdf(certificate)}
+                      disabled={dlState.loading}
+                      className="btn btn-primary-cta px-3 py-2 fw-bold d-flex align-items-center gap-2"
+                    >
+                      {dlState.loading ? (
+                        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                      ) : (
+                        <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>download</span>
+                      )}
+                      PDF
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </main>

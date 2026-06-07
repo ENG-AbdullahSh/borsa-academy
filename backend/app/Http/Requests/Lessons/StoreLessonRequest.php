@@ -22,6 +22,7 @@ class StoreLessonRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'video_url' => ['nullable', 'string', 'max:2048'],
             'pdf_url' => ['nullable', 'string', 'max:2048'],
+            'file_path' => ['nullable', 'string', 'max:2048'],
             'duration_minutes' => ['required', 'integer', 'min:1', 'max:10000'],
             'order' => ['nullable', 'integer', 'min:0', 'max:10000'],
             'is_preview' => ['nullable', 'boolean'],

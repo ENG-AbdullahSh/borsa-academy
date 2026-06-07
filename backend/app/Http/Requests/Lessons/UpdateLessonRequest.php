@@ -22,6 +22,7 @@ class UpdateLessonRequest extends FormRequest
             'description' => ['sometimes', 'nullable', 'string'],
             'video_url' => ['sometimes', 'nullable', 'string', 'max:2048'],
             'pdf_url' => ['sometimes', 'nullable', 'string', 'max:2048'],
+            'file_path' => ['sometimes', 'nullable', 'string', 'max:2048'],
             'duration_minutes' => ['sometimes', 'required', 'integer', 'min:1', 'max:10000'],
             'order' => ['sometimes', 'required', 'integer', 'min:0', 'max:10000'],
             'is_preview' => ['sometimes', 'boolean'],

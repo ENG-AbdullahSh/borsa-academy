@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'description',
     'video_url',
     'pdf_url',
+    'file_path',
     'duration_minutes',
     'order',
     'is_preview',

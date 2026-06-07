@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaTelegram, FaYoutube, FaXTwitter, FaDiscord } from 'react-icons/fa6';
+import { useSettings } from '../context/SettingsContext';
 
 export default function Footer() {
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const { settings } = useSettings();
 
   const handleSubscribe = (e) => {
     e.preventDefault();
@@ -23,10 +25,10 @@ export default function Footer() {
           <div className="col-12 col-md-3">
             <Link to="/" className="text-decoration-none fw-bold d-inline-block mb-3 interactive"
               style={{ color: '#75ff9e', fontSize: '22px', fontFamily: 'var(--font-sans)', textShadow: '0 0 12px rgba(117,255,158,0.18)', letterSpacing: '-0.01em' }}>
-              بورصة أكاديمي
+              {settings.academy_name || 'بورصة أكاديمي'}
             </Link>
             <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '14px', lineHeight: 1.8 }}>
-              منصة التعليم المالي الاحترافي للعصر الرقمي. نمكّن المتداولين من إتقان الأسواق العالمية بأدوات مؤسسية ورؤى استراتيجية عالية الدقة.
+              {settings.general_description || 'منصة التعليم المالي الاحترافي للعصر الرقمي. نمكّن المتداولين من إتقان الأسواق العالمية بأدوات مؤسسية ورؤى استراتيجية عالية الدقة.'}
             </p>
           </div>
 
@@ -80,7 +82,7 @@ export default function Footer() {
         {/* Bottom Row: Social Icons & Copyright */}
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-center pt-4" style={{ marginTop: '20px', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
           <p className="m-0 font-mono-data text-uppercase" style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '11px', letterSpacing: '0.05em' }}>
-            &copy; ٢٠٢٦ بورصة أكاديمي. جميع الحقوق محفوظة.
+            &copy; {new Date().getFullYear()} {settings.academy_name || 'بورصة أكاديمي'}. جميع الحقوق محفوظة.
           </p>
           <div className="d-flex align-items-center mt-3 mt-md-0" style={{ gap: '15px' }}>
             <a href="#" className="social-icon-premium">
