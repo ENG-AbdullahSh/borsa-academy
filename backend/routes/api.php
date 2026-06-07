@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AdminQuizController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CertificateController;
+use App\Http\Controllers\Api\ContactMessageController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\CourseCurriculumController;
 use App\Http\Controllers\Api\CourseSectionController;
@@ -28,6 +29,11 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/upload', [UploadController::class, 'uploadFile']);
 
+// ── Contact Form ────────────────────────────────────────────────────────
+// Public route — rate-limited to 5 submissions per minute per IP
+Route::post('/contact', [ContactMessageController::class, 'send'])
+    ->middleware('throttle:5,1');
+
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
@@ -40,6 +46,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::post('/notifications/mark-read', [NotificationController::class, 'markAsRead']);
+    Route::get('/my-contact-messages', [ContactMessageController::class, 'myMessages']);
     Route::middleware('role:student')->group(function (): void {
         Route::post('/enrollments', [EnrollmentController::class, 'store']);
         Route::get('/my-courses', [EnrollmentController::class, 'index']);
@@ -91,6 +98,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/admin/lessons', [LessonController::class, 'store']);
         Route::put('/admin/lessons/{id}', [LessonController::class, 'update'])->whereNumber('id');
         Route::delete('/admin/lessons/{id}', [LessonController::class, 'destroy'])->whereNumber('id');
+
+        // ── Contact Messages ────────────────────────────────────────────
+        Route::get('/admin/contact-messages', [ContactMessageController::class, 'index']);
+        Route::get('/admin/contact-messages/{contactMessage}', [ContactMessageController::class, 'show']);
+        Route::post('/admin/contact-messages/{contactMessage}/reply', [ContactMessageController::class, 'reply']);
+        Route::patch('/admin/contact-messages/{contactMessage}', [ContactMessageController::class, 'update']);
+        Route::delete('/admin/contact-messages/{contactMessage}', [ContactMessageController::class, 'destroy']);
     });
 
 });

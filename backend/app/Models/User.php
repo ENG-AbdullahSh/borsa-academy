@@ -51,4 +51,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(QuizAttempt::class);
     }
+
+    public function contactMessages(): HasMany
+    {
+        return $this->hasMany(ContactMessage::class);
+    }
 }

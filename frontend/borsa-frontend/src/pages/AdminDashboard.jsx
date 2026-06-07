@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import AdminCourses from './AdminCourses';
 import AdminCurriculum from './AdminCurriculum';
 import AdminInstructors from './AdminInstructors';
+import AdminMessages from './AdminMessages';
 import AdminQuizManager from './AdminQuizManager';
 import AdminSettings from './AdminSettings';
 import ProfileSettings from './ProfileSettings';
@@ -14,6 +15,7 @@ const TABS = [
   { id: 'curriculum', label: 'المحتوى التعليمي', icon: 'menu_book' },
   { id: 'quizzes', label: 'الاختبارات', icon: 'quiz' },
   { id: 'instructors', label: 'المدربون', icon: 'group' },
+  { id: 'messages', label: 'الرسائل', icon: 'forum' },
   { id: 'profile', label: 'الملف الشخصي', icon: 'account_circle' },
   { id: 'settings', label: 'الإعدادات', icon: 'settings' },
 ];
@@ -61,6 +63,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [retryKey, setRetryKey] = useState(0);
+  const [unreadMsgCount, setUnreadMsgCount] = useState(0);
 
   useEffect(() => {
     if (!token) return undefined;
@@ -100,6 +103,14 @@ export default function AdminDashboard() {
 
     return () => controller.abort();
   }, [retryKey, token]);
+
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${API_BASE_URL}/admin/contact-messages`, { headers: apiHeaders(token) })
+      .then(r => r.json())
+      .then(json => setUnreadMsgCount(json.unread_count ?? 0))
+      .catch(() => {});
+  }, [token, activeTab]);
 
   const statCards = useMemo(() => ([
     {
@@ -261,15 +272,14 @@ export default function AdminDashboard() {
     </>
   );
 
-  const renderInstructors = () => (
-    <AdminInstructors />
-  );
-
   const renderContent = () => {
     if (activeTab === 'courses') return <AdminCourses />;
     if (activeTab === 'curriculum') return <AdminCurriculum />;
     if (activeTab === 'quizzes') return <AdminQuizManager />;
-    if (activeTab === 'instructors') return renderInstructors();
+    if (activeTab === 'instructors') return <AdminInstructors />;
+    if (activeTab === 'messages') {
+      return <AdminMessages onUnreadCountChange={setUnreadMsgCount} />;
+    }
     if (activeTab === 'profile') return <ProfileSettings />;
     if (activeTab === 'settings') return <AdminSettings />;
     return renderOverview();
@@ -308,6 +318,7 @@ export default function AdminDashboard() {
             <nav className="d-flex flex-column gap-1">
               {TABS.map((tab) => {
                 const selected = activeTab === tab.id;
+                const showUnreadCount = tab.id === 'messages' && unreadMsgCount > 0;
 
                 return (
                   <button
@@ -325,9 +336,26 @@ export default function AdminDashboard() {
                   >
                     <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '22px' }}>{tab.icon}</span>
                     {sidebarOpen && (
-                      <span style={{ fontSize: '14px', fontFamily: 'var(--font-sans)', fontWeight: selected ? 700 : 500 }}>
-                        {tab.label}
-                      </span>
+                      <>
+                        <span style={{ fontSize: '14px', fontFamily: 'var(--font-sans)', fontWeight: selected ? 700 : 500 }}>
+                          {tab.label}
+                        </span>
+                        {showUnreadCount && (
+                          <span
+                            className="rounded-pill px-2 py-1 me-auto"
+                            style={{ color: '#81cfff', background: 'rgba(129,207,255,0.14)', fontSize: '10px' }}
+                          >
+                            {unreadMsgCount}
+                          </span>
+                        )}
+                      </>
+                    )}
+                    {!sidebarOpen && showUnreadCount && (
+                      <span
+                        className="position-absolute rounded-circle"
+                        style={{ width: '8px', height: '8px', background: '#81cfff', transform: 'translate(-13px, -12px)' }}
+                        aria-label={`${unreadMsgCount} رسائل غير مقروءة`}
+                      />
                     )}
                   </button>
                 );
@@ -367,13 +395,14 @@ export default function AdminDashboard() {
       <nav className="admin-mobile-tabs d-flex d-md-none" aria-label="أقسام لوحة التحكم">
         {TABS.map((tab) => {
           const selected = activeTab === tab.id;
+          const showUnreadCount = tab.id === 'messages' && unreadMsgCount > 0;
 
           return (
             <button
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className="btn border-0 flex-fill d-flex flex-column align-items-center justify-content-center gap-1 py-2"
+              className="btn border-0 flex-fill d-flex flex-column align-items-center justify-content-center gap-1 py-2 position-relative"
               style={{
                 backgroundColor: 'transparent',
                 color: selected ? '#00e676' : '#6b7280',
@@ -383,6 +412,14 @@ export default function AdminDashboard() {
             >
               <span className="material-symbols-outlined" style={{ fontSize: '21px' }}>{tab.icon}</span>
               <span style={{ fontWeight: selected ? 700 : 400 }}>{tab.label}</span>
+              {showUnreadCount && (
+                <span
+                  className="position-absolute rounded-pill px-1"
+                  style={{ top: '3px', left: 'calc(50% - 20px)', color: '#0b0e11', background: '#81cfff', fontSize: '9px', minWidth: '16px' }}
+                >
+                  {unreadMsgCount}
+                </span>
+              )}
             </button>
           );
         })}
