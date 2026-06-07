@@ -36,7 +36,7 @@ function AuthStatusScreen({ title, message }) {
 
 export default function ProtectedAdminRoute({ children }) {
   const location = useLocation();
-  const { token, user, loading } = useAuth();
+  const { isAuthenticated, user, loading } = useAuth();
 
   if (loading) {
     return (
@@ -47,12 +47,17 @@ export default function ProtectedAdminRoute({ children }) {
     );
   }
 
-  if (!token) {
-    return <Navigate to="/signin" replace state={{ from: location }} />;
-  }
-
-  if (!user) {
-    return <Navigate to="/signin" replace state={{ from: location }} />;
+  if (!isAuthenticated) {
+    return (
+      <Navigate
+        to="/signin"
+        replace
+        state={{
+          from: location,
+          message: 'يرجى تسجيل الدخول بحساب إداري للوصول إلى لوحة التحكم',
+        }}
+      />
+    );
   }
 
   if (user.role !== 'admin') {

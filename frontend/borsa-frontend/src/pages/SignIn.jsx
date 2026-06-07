@@ -27,24 +27,36 @@ const FEATURES = [
 ];
 
 const getLoginErrorMessage = (error) => {
-  if (error?.status === 422) {
-    return 'بيانات الدخول غير صحيحة.';
+  if (error?.data?.code === 'ACCOUNT_NOT_FOUND' || error?.status === 404) {
+    return 'لا يوجد حساب بهذا البريد الإلكتروني، يرجى إنشاء حساب جديد';
+  }
+
+  if (error?.data?.code === 'INVALID_CREDENTIALS') {
+    return 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
   }
 
   if (error?.status === 403) {
-    return 'هذا الحساب غير نشط.';
+    return error?.data?.message || 'هذا الحساب غير مفعل أو موقوف';
   }
 
-  return 'تعذر تسجيل الدخول. تأكد من تشغيل الخادم وحاول مرة أخرى.';
+  if (error?.status === 422) {
+    const firstValidationMessage = Object.values(error?.data?.errors || {}).flat().find(Boolean);
+    return firstValidationMessage || 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+  }
+
+  return error?.message || 'تعذر تسجيل الدخول. تأكد من تشغيل الخادم وحاول مرة أخرى.';
 };
 
 const getRedirectPath = (role, fromPath) => {
   if (role === 'admin') {
-    return fromPath && fromPath !== '/signin' ? fromPath : '/admin';
+    return fromPath?.startsWith('/admin') ? fromPath : '/admin';
   }
 
   if (role === 'student') {
-    return '/masari';
+    const isStudentPath = ['/student-dashboard', '/my-courses', '/masari']
+      .some((path) => fromPath?.startsWith(path));
+
+    return isStudentPath ? fromPath : '/student-dashboard';
   }
 
   return '/';
@@ -65,7 +77,7 @@ export default function SignIn() {
   const [remember, setRemember] = useState(false);
   const [loading, setLoading]   = useState(false);
   const [success, setSuccess]   = useState(false);
-  const [error, setError]       = useState('');
+  const [error, setError]       = useState(() => location.state?.message || '');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -77,7 +89,7 @@ export default function SignIn() {
     setLoading(true);
 
     try {
-      const result = await login({ email, password });
+      const result = await login({ email: email.trim(), password });
       const redirectPath = getRedirectPath(result.user?.role, location.state?.from?.pathname);
 
       setLoading(false);

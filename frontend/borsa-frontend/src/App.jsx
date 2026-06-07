@@ -21,6 +21,8 @@ import Certificates from './pages/Certificates';
 import CertificateDetails from './pages/CertificateDetails';
 import ProfilePage from './pages/ProfilePage';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
+import ProtectedAuthenticatedRoute from './components/ProtectedAuthenticatedRoute';
+import ProtectedStudentRoute from './components/ProtectedStudentRoute';
 import { AuthProvider } from './context/AuthProvider';
 import { NotificationProvider } from './context/NotificationContext';
 import { SettingsProvider } from './context/SettingsContext';
@@ -67,13 +69,62 @@ function AppShell() {
               </ProtectedAdminRoute>
             )}
           />
-          <Route path="/masari"     element={<Masari />} />
-          <Route path="/student-dashboard" element={<StudentDashboard />} />
-          <Route path="/my-courses" element={<MyCourses />} />
-          <Route path="/certificates" element={<Certificates />} />
-          <Route path="/certificates/:id" element={<CertificateDetails />} />
-          <Route path="/notifications" element={<NotificationsPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route
+            path="/masari"
+            element={(
+              <ProtectedStudentRoute>
+                <Masari />
+              </ProtectedStudentRoute>
+            )}
+          />
+          <Route
+            path="/student-dashboard"
+            element={(
+              <ProtectedStudentRoute>
+                <StudentDashboard />
+              </ProtectedStudentRoute>
+            )}
+          />
+          <Route
+            path="/my-courses"
+            element={(
+              <ProtectedStudentRoute>
+                <MyCourses />
+              </ProtectedStudentRoute>
+            )}
+          />
+          <Route
+            path="/certificates"
+            element={(
+              <ProtectedStudentRoute>
+                <Certificates />
+              </ProtectedStudentRoute>
+            )}
+          />
+          <Route
+            path="/certificates/:id"
+            element={(
+              <ProtectedStudentRoute>
+                <CertificateDetails />
+              </ProtectedStudentRoute>
+            )}
+          />
+          <Route
+            path="/notifications"
+            element={(
+              <ProtectedAuthenticatedRoute>
+                <NotificationsPage />
+              </ProtectedAuthenticatedRoute>
+            )}
+          />
+          <Route
+            path="/profile"
+            element={(
+              <ProtectedAuthenticatedRoute>
+                <ProfilePage />
+              </ProtectedAuthenticatedRoute>
+            )}
+          />
 
           {/* Auth pages — full-screen, no chrome */}
           <Route path="/signin" element={<SignIn />} />

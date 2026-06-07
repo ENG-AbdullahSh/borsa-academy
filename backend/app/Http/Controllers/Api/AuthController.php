@@ -9,7 +9,6 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -39,15 +38,26 @@ class AuthController extends Controller
 
         $user = User::where('email', $credentials['email'])->first();
 
-        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
-            ]);
+        if (! $user) {
+            return response()->json([
+                'message' => 'لا يوجد حساب بهذا البريد الإلكتروني، يرجى إنشاء حساب جديد',
+                'code' => 'ACCOUNT_NOT_FOUND',
+            ], 404);
+        }
+
+        if (! Hash::check($credentials['password'], $user->password)) {
+            return response()->json([
+                'message' => 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
+                'code' => 'INVALID_CREDENTIALS',
+            ], 422);
         }
 
         if ($user->status !== 'active') {
             return response()->json([
-                'message' => 'This account is not active.',
+                'message' => 'هذا الحساب غير مفعل أو موقوف',
+                'code' => $user->status === 'suspended'
+                    ? 'ACCOUNT_SUSPENDED'
+                    : 'ACCOUNT_INACTIVE',
             ], 403);
         }
 

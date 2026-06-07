@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
+import { useAuth } from '../hooks/useAuth';
 import { useSettings } from '../context/SettingsContext';
 import '../styles/auth.css';
 import borsaLogo from '../assets/Borsa Academy.jpeg';
@@ -25,11 +26,29 @@ const FEATURES = [
   'مجتمع تفاعلي وجلسات حية مع خبراء السوق',
 ];
 
+const getRegisterErrorMessage = (requestError) => {
+  const validationErrors = requestError?.data?.errors;
+  const firstValidationMessage = validationErrors
+    ? Object.values(validationErrors).flat().find(Boolean)
+    : null;
+
+  if (validationErrors?.email?.includes('هذا البريد مستخدم بالفعل')) {
+    return 'هذا البريد مستخدم بالفعل';
+  }
+
+  if (firstValidationMessage) {
+    return firstValidationMessage;
+  }
+
+  return requestError?.message || 'تعذر إنشاء الحساب. تأكد من تشغيل الخادم وحاول مرة أخرى.';
+};
+
 /* ═══════════════════════════════════════════════════════════════════
    SignUp Page
 ═══════════════════════════════════════════════════════════════════ */
 export default function SignUp() {
   const navigate = useNavigate();
+  const { register } = useAuth();
   const { settings } = useSettings();
 
   const [fullName, setFullName]         = useState('');
@@ -43,7 +62,7 @@ export default function SignUp() {
   const [success, setSuccess]           = useState(false);
   const [error, setError]               = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -65,12 +84,21 @@ export default function SignUp() {
     }
 
     setLoading(true);
-    /* Simulate async registration — replace with real API call */
-    setTimeout(() => {
+    try {
+      await register({
+        name: fullName.trim(),
+        email: email.trim(),
+        password,
+        password_confirmation: confirmPassword,
+      });
+
       setLoading(false);
       setSuccess(true);
-      setTimeout(() => navigate('/signin'), 2000);
-    }, 1600);
+      window.setTimeout(() => navigate('/student-dashboard', { replace: true }), 700);
+    } catch (requestError) {
+      setLoading(false);
+      setError(getRegisterErrorMessage(requestError));
+    }
   };
 
   return (
@@ -122,7 +150,7 @@ export default function SignUp() {
                 <SuccessIcon />
               </div>
               <h4>تم إنشاء حسابك بنجاح!</h4>
-              <p>مرحباً بك في بورصة أكاديمي — جارٍ توجيهك لتسجيل الدخول…</p>
+              <p>مرحباً بك في بورصة أكاديمي — جارٍ فتح لوحة الطالب…</p>
             </div>
           ) : (
             <>

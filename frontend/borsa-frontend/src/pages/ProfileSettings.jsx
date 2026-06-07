@@ -49,7 +49,7 @@ function PasswordInput({
 }
 
 export default function ProfileSettings() {
-  const { user, token } = useAuth();
+  const { user, token, fetchCurrentUser } = useAuth();
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [name, setName] = useState('');
   const [profileImageFile, setProfileImageFile] = useState(null);
@@ -140,14 +140,9 @@ export default function ProfileSettings() {
       });
       const data = await readJsonResponse(response);
 
-      if (data.user) {
-        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-        Object.assign(currentUser, data.user);
-        localStorage.setItem('user', JSON.stringify(currentUser));
-      }
+      if (data.user) await fetchCurrentUser(token);
 
       showToast('تم تحديث البيانات بنجاح');
-      window.setTimeout(() => window.location.reload(), 1500);
     } catch (error) {
       if (error.status === 422 && error.data?.errors) {
         showToast(Object.values(error.data.errors).flat().join('\n'), 'error');

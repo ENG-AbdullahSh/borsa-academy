@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AuthContext } from './AuthContext';
+import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
 const TOKEN_STORAGE_KEY = 'borsa_auth_token';
 const USER_STORAGE_KEY = 'borsa_auth_user';
 
@@ -9,45 +9,9 @@ function getStoredToken() {
   return localStorage.getItem(TOKEN_STORAGE_KEY);
 }
 
-function getStoredUser() {
-  const stored = localStorage.getItem(USER_STORAGE_KEY);
-
-  if (!stored) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(stored);
-  } catch {
-    localStorage.removeItem(USER_STORAGE_KEY);
-    return null;
-  }
-}
-
-function authHeaders(token, includeJson = false) {
-  return {
-    ...(includeJson ? { 'Content-Type': 'application/json' } : {}),
-    Authorization: `Bearer ${token}`,
-  };
-}
-
-async function readJsonResponse(response) {
-  const text = await response.text();
-  const data = text ? JSON.parse(text) : {};
-
-  if (!response.ok) {
-    const error = new Error(data.message || 'Request failed.');
-    error.status = response.status;
-    error.data = data;
-    throw error;
-  }
-
-  return data;
-}
-
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => getStoredToken());
-  const [user, setUser] = useState(() => getStoredUser());
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(() => Boolean(getStoredToken()));
 
   const clearAuth = useCallback(() => {
@@ -72,18 +36,23 @@ export function AuthProvider({ children }) {
       return null;
     }
 
-    const response = await fetch(`${API_BASE_URL}/me`, {
-      headers: authHeaders(activeToken),
-    });
-    const data = await readJsonResponse(response);
-    const currentUser = data.user;
+    try {
+      const response = await fetch(`${API_BASE_URL}/me`, {
+        headers: apiHeaders(activeToken),
+      });
+      const data = await readJsonResponse(response);
+      const currentUser = data.user;
 
-    if (!currentUser) {
-      throw new Error('Authenticated user was not returned.');
+      if (!currentUser) {
+        throw new Error('Authenticated user was not returned.');
+      }
+
+      saveAuth(activeToken, currentUser);
+      return currentUser;
+    } catch (error) {
+      clearAuth();
+      throw error;
     }
-
-    saveAuth(activeToken, currentUser);
-    return currentUser;
   }, [clearAuth, saveAuth, token]);
 
   useEffect(() => {
@@ -91,11 +60,12 @@ export function AuthProvider({ children }) {
     let isActive = true;
 
     if (!activeToken) {
+      localStorage.removeItem(USER_STORAGE_KEY);
       return undefined;
     }
 
     fetch(`${API_BASE_URL}/me`, {
-      headers: authHeaders(activeToken),
+      headers: apiHeaders(activeToken),
     })
       .then(readJsonResponse)
       .then((data) => {
@@ -123,13 +93,46 @@ export function AuthProvider({ children }) {
     };
   }, [clearAuth, saveAuth]);
 
+  const register = useCallback(async ({
+    name,
+    email,
+    password,
+    password_confirmation: passwordConfirmation,
+  }) => {
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/register`, {
+        method: 'POST',
+        headers: apiHeaders(null, true),
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          password_confirmation: passwordConfirmation,
+        }),
+      });
+      const data = await readJsonResponse(response);
+
+      if (!data.token || !data.user) {
+        throw new Error('Registration did not return an authenticated user.');
+      }
+
+      saveAuth(data.token, data.user);
+
+      return { token: data.token, user: data.user };
+    } finally {
+      setLoading(false);
+    }
+  }, [saveAuth]);
+
   const login = useCallback(async ({ email, password }) => {
     setLoading(true);
 
     try {
       const response = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: apiHeaders(null, true),
         body: JSON.stringify({ email, password }),
       });
       const data = await readJsonResponse(response);
@@ -155,7 +158,7 @@ export function AuthProvider({ children }) {
       if (activeToken) {
         await fetch(`${API_BASE_URL}/logout`, {
           method: 'POST',
-          headers: authHeaders(activeToken),
+          headers: apiHeaders(activeToken),
         });
       }
     } catch {
@@ -169,11 +172,12 @@ export function AuthProvider({ children }) {
     token,
     user,
     loading,
-    isAuthenticated: Boolean(token),
+    isAuthenticated: Boolean(token && user),
+    register,
     login,
     logout,
     fetchCurrentUser,
-  }), [fetchCurrentUser, loading, login, logout, token, user]);
+  }), [fetchCurrentUser, loading, login, logout, register, token, user]);
 
   return (
     <AuthContext.Provider value={value}>
@@ -181,4 +185,3 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
-

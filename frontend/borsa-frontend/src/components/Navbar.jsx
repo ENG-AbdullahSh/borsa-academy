@@ -40,9 +40,8 @@ export default function Navbar() {
   const navLinks = [
     { label: 'الرئيسية', path: '/' },
     { label: 'الكورسات', path: '/courses' },
-    // "مساري" is a student-only feature — hidden from admins
-    ...(user?.role !== 'admin' ? [{ label: 'مساري 📈', path: '/masari' }] : []),
-    ...(isAuthenticated && user?.role !== 'admin' ? [
+    ...(isAuthenticated && user?.role === 'student' ? [
+      { label: 'مساري 📈', path: '/masari' },
       { label: 'لوحة الطالب', path: '/student-dashboard' },
       { label: 'دوراتي', path: '/my-courses' },
       { label: 'شهاداتي', path: '/certificates' },
@@ -105,7 +104,8 @@ export default function Navbar() {
           <div className="d-none d-lg-flex align-items-center gap-3 flex-shrink-0">
             
             {/* Notification Bell Dropdown */}
-            <div className="position-relative" ref={notifRef}>
+            {isAuthenticated && (
+              <div className="position-relative" ref={notifRef}>
               <button 
                 onClick={() => setNotifOpen(!notifOpen)}
                 style={{
@@ -218,7 +218,8 @@ export default function Navbar() {
                   </div>
                 </div>
               )}
-            </div>
+              </div>
+            )}
 
             {isAuthenticated ? (
               <>
@@ -350,9 +351,16 @@ export default function Navbar() {
         <div className="d-flex flex-column gap-3 px-4">
           {isAuthenticated ? (
             <>
-              <div
+              <Link
+                to="/profile"
+                onClick={closeMobile}
                 className="d-flex align-items-center gap-2 px-2"
-                style={{ color: '#bacbb9', fontSize: '14px', fontFamily: 'var(--font-sans)' }}
+                style={{
+                  color: '#bacbb9',
+                  fontSize: '14px',
+                  fontFamily: 'var(--font-sans)',
+                  textDecoration: 'none',
+                }}
               >
                 {user?.avatar ? (
                   <img 
@@ -364,7 +372,7 @@ export default function Navbar() {
                   <FiUser size={18} />
                 )}
                 <span className="text-truncate">{user?.name || user?.email}</span>
-              </div>
+              </Link>
               <button
                 type="button"
                 onClick={handleLogout}
