@@ -234,13 +234,14 @@ export default function SignIn() {
                     />
                     <span className="auth-remember-label text-[13px] text-slate-400 hover:text-slate-300 transition-colors">تذكرني</span>
                   </label>
-                  <button
-                    type="button"
+                  <Link
+                    to="/forgot-password"
                     className="auth-forgot text-[13px] text-slate-500 hover:text-[#00E676] bg-transparent border-none cursor-pointer transition-colors"
                     id="signin-forgot"
+                    style={{ textDecoration: 'none' }}
                   >
                     نسيت كلمة المرور؟
-                  </button>
+                  </Link>
                 </div>
 
                 {/* CTA */}

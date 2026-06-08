@@ -50,9 +50,11 @@ const NotificationContext = createContext({
   markAsRead: () => {},
   markAllAsRead: () => {},
   reload: () => {},
+  addNotification: () => {},
 });
 
 export const useNotifications = () => useContext(NotificationContext);
+export const useNotification = () => useContext(NotificationContext);
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
@@ -169,6 +171,15 @@ export const NotificationProvider = ({ children }) => {
     setTimeout(() => setToast(null), 5000);
   }, []);
 
+  const addNotification = useCallback((notification) => {
+    setToast({
+      title: notification.title || (notification.type === 'success' ? 'نجاح' : 'إشعار'),
+      description: notification.message || notification.description || '',
+      time: notification.time || 'الآن',
+    });
+    setTimeout(() => setToast(null), 5000);
+  }, []);
+
   return (
     <NotificationContext.Provider
       value={{
@@ -178,6 +189,7 @@ export const NotificationProvider = ({ children }) => {
         markAsRead,
         markAllAsRead,
         reload: fetchNotifications,
+        addNotification,
       }}
     >
       {children}

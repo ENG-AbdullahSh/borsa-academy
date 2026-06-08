@@ -4,6 +4,7 @@ import AdminCurriculum from './AdminCurriculum';
 import AdminInstructors from './AdminInstructors';
 import AdminMessages from './AdminMessages';
 import AdminQuizManager from './AdminQuizManager';
+import AdminUsers from './AdminUsers';
 import AdminSettings from './AdminSettings';
 import ProfileSettings from './ProfileSettings';
 import { useAuth } from '../hooks/useAuth';
@@ -15,6 +16,7 @@ const TABS = [
   { id: 'curriculum', label: 'المحتوى التعليمي', icon: 'menu_book' },
   { id: 'quizzes', label: 'الاختبارات', icon: 'quiz' },
   { id: 'instructors', label: 'المدربون', icon: 'group' },
+  { id: 'users', label: 'المستخدمون', icon: 'people' },
   { id: 'messages', label: 'الرسائل', icon: 'forum' },
   { id: 'profile', label: 'الملف الشخصي', icon: 'account_circle' },
   { id: 'settings', label: 'الإعدادات', icon: 'settings' },
@@ -277,6 +279,7 @@ export default function AdminDashboard() {
     if (activeTab === 'curriculum') return <AdminCurriculum />;
     if (activeTab === 'quizzes') return <AdminQuizManager />;
     if (activeTab === 'instructors') return <AdminInstructors />;
+    if (activeTab === 'users') return <AdminUsers />;
     if (activeTab === 'messages') {
       return <AdminMessages onUnreadCountChange={setUnreadMsgCount} />;
     }

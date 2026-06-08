@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\AdminUserController;
+use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\AdminCertificateController;
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AdminQuizController;
@@ -27,6 +29,8 @@ Route::get('/settings', [SettingController::class, 'getSettings']);
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail']);
+Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 Route::post('/upload', [UploadController::class, 'uploadFile']);
 
 // ── Contact Form ────────────────────────────────────────────────────────
@@ -67,6 +71,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::middleware('role:admin')->group(function (): void {
         Route::put('/admin/settings', [SettingController::class, 'updateSettings']);
+        Route::apiResource('/admin/users', AdminUserController::class);
         Route::apiResource('/admin/instructors', InstructorController::class);
         Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
         Route::get('/admin/certificates', [AdminCertificateController::class, 'index']);

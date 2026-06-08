@@ -13,6 +13,8 @@ import AboutContact from './pages/AboutContact';
 import AdminDashboard from './pages/AdminDashboard';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Masari from './pages/Masari';
 import NotificationsPage from './pages/NotificationsPage';
 import MyCourses from './pages/MyCourses';
@@ -31,7 +33,7 @@ import { SettingsProvider } from './context/SettingsContext';
    Navbar / Ticker / Footer chrome — we detect them by pathname. */
 import { useLocation } from 'react-router-dom';
 
-const AUTH_PATHS = ['/signin', '/signup'];
+const AUTH_PATHS = ['/signin', '/signup', '/forgot-password', '/reset-password'];
 
 function AppShell() {
   const { pathname } = useLocation();
@@ -129,6 +131,8 @@ function AppShell() {
           {/* Auth pages — full-screen, no chrome */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
       </div>
 
