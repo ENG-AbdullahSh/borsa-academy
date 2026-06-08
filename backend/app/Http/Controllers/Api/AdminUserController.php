@@ -99,6 +99,16 @@ class AdminUserController extends Controller
         }
 
         if (
+            $user->role === 'instructor'
+            && $validated['role'] !== 'instructor'
+            && $user->instructorProfile()->exists()
+        ) {
+            return response()->json([
+                'message' => 'افصل حساب المستخدم عن ملف المدرب قبل تغيير دوره.',
+            ], 422);
+        }
+
+        if (
             $user->role === 'admin'
             && $validated['role'] !== 'admin'
             && ! User::query()

@@ -60,10 +60,10 @@ function lessonToForm(lesson) {
   };
 }
 
-export default function AdminCurriculum() {
+export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 'admin' }) {
   const { token } = useAuth();
   const [courses, setCourses] = useState([]);
-  const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [selectedCourseId, setSelectedCourseId] = useState(String(fixedCourseId || ''));
   const [curriculum, setCurriculum] = useState(null);
   const [sectionForm, setSectionForm] = useState(EMPTY_SECTION_FORM);
   const [lessonForm, setLessonForm] = useState(EMPTY_LESSON_FORM);
@@ -78,6 +78,7 @@ export default function AdminCurriculum() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const headers = useMemo(() => apiHeaders(token), [token]);
+  const apiScope = `${API_BASE_URL}/${scope}`;
   const sections = curriculum?.sections || [];
   const selectedCourse = courses.find((course) => String(course.id) === String(selectedCourseId));
   const firstSectionId = sections[0]?.id || '';
@@ -95,7 +96,7 @@ export default function AdminCurriculum() {
     setLoadingCurriculum(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/courses/${courseId}/curriculum`, {
+      const response = await fetch(`${apiScope}/courses/${courseId}/curriculum`, {
         headers,
         signal,
       });
@@ -111,7 +112,7 @@ export default function AdminCurriculum() {
         setLoadingCurriculum(false);
       }
     }
-  }, [headers, token]);
+  }, [apiScope, headers, token]);
 
   useEffect(() => {
     if (!token) {
@@ -124,15 +125,22 @@ export default function AdminCurriculum() {
       setLoadingCourses(true);
 
       try {
-        const response = await fetch(`${API_BASE_URL}/admin/courses?per_page=100`, {
+        const response = await fetch(
+          fixedCourseId
+            ? `${apiScope}/courses/${fixedCourseId}`
+            : `${apiScope}/courses?per_page=100`,
+          {
           headers,
           signal: controller.signal,
-        });
+          },
+        );
         const payload = await readJsonResponse(response);
-        const apiCourses = Array.isArray(payload.data) ? payload.data : [];
+        const apiCourses = fixedCourseId
+          ? (payload.data ? [payload.data] : [])
+          : (Array.isArray(payload.data) ? payload.data : []);
 
         setCourses(apiCourses);
-        setSelectedCourseId((current) => current || String(apiCourses[0]?.id || ''));
+        setSelectedCourseId(String(fixedCourseId || apiCourses[0]?.id || ''));
       } catch (error) {
         if (error.name !== 'AbortError') {
           setCourses([]);
@@ -148,7 +156,7 @@ export default function AdminCurriculum() {
     Promise.resolve().then(loadCourses);
 
     return () => controller.abort();
-  }, [headers, token]);
+  }, [apiScope, fixedCourseId, headers, token]);
 
   useEffect(() => {
     if (!selectedCourseId || !token) {
@@ -170,7 +178,7 @@ export default function AdminCurriculum() {
     setSubmitting(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/sections`, {
+      const response = await fetch(`${apiScope}/sections`, {
         method: 'POST',
         headers: apiHeaders(token, true),
         body: JSON.stringify(sectionPayload(sectionForm, selectedCourseId)),
@@ -190,7 +198,7 @@ export default function AdminCurriculum() {
     setSubmitting(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/sections/${sectionId}`, {
+      const response = await fetch(`${apiScope}/sections/${sectionId}`, {
         method: 'PUT',
         headers: apiHeaders(token, true),
         body: JSON.stringify(sectionPayload(sectionEditForm, selectedCourseId)),
@@ -210,7 +218,7 @@ export default function AdminCurriculum() {
     setSubmitting(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/sections/${sectionId}`, {
+      const response = await fetch(`${apiScope}/sections/${sectionId}`, {
         method: 'DELETE',
         headers,
       });
@@ -236,7 +244,7 @@ export default function AdminCurriculum() {
     setSubmitting(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/lessons`, {
+      const response = await fetch(`${apiScope}/lessons`, {
         method: 'POST',
         headers: apiHeaders(token, true),
         body: JSON.stringify(lessonPayload(lessonForm, sectionId)),
@@ -256,7 +264,7 @@ export default function AdminCurriculum() {
     setSubmitting(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/lessons/${lessonId}`, {
+      const response = await fetch(`${apiScope}/lessons/${lessonId}`, {
         method: 'PUT',
         headers: apiHeaders(token, true),
         body: JSON.stringify(lessonPayload(lessonEditForm, lessonEditForm.section_id)),
@@ -276,7 +284,7 @@ export default function AdminCurriculum() {
     setSubmitting(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/lessons/${lessonId}`, {
+      const response = await fetch(`${apiScope}/lessons/${lessonId}`, {
         method: 'DELETE',
         headers,
       });
@@ -305,12 +313,12 @@ export default function AdminCurriculum() {
 
     try {
       await Promise.all([
-        fetch(`${API_BASE_URL}/admin/lessons/${currentLesson.id}`, {
+        fetch(`${apiScope}/lessons/${currentLesson.id}`, {
           method: 'PUT',
           headers: apiHeaders(token, true),
           body: JSON.stringify({ order: targetOrder === currentOrder ? targetIndex : targetOrder }),
         }).then(readJsonResponse),
-        fetch(`${API_BASE_URL}/admin/lessons/${targetLesson.id}`, {
+        fetch(`${apiScope}/lessons/${targetLesson.id}`, {
           method: 'PUT',
           headers: apiHeaders(token, true),
           body: JSON.stringify({ order: targetOrder === currentOrder ? index : currentOrder }),
@@ -349,17 +357,19 @@ export default function AdminCurriculum() {
           </p>
         </div>
         <div className="d-flex flex-column flex-sm-row gap-2">
-          <select
-            value={selectedCourseId}
-            onChange={(event) => setSelectedCourseId(event.target.value)}
-            className="form-select custom-input"
-            disabled={loadingCourses}
-            style={{ minWidth: '280px' }}
-          >
-            {courses.map((course) => (
-              <option key={course.id} value={course.id}>{course.title}</option>
-            ))}
-          </select>
+          {!fixedCourseId && (
+            <select
+              value={selectedCourseId}
+              onChange={(event) => setSelectedCourseId(event.target.value)}
+              className="form-select custom-input"
+              disabled={loadingCourses}
+              style={{ minWidth: '280px' }}
+            >
+              {courses.map((course) => (
+                <option key={course.id} value={course.id}>{course.title}</option>
+              ))}
+            </select>
+          )}
           <button type="button" onClick={refreshCurriculum} className="btn btn-secondary-cta px-4" disabled={!selectedCourseId || loadingCurriculum}>
             تحديث
           </button>

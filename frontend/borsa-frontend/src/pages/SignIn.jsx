@@ -59,6 +59,13 @@ const getRedirectPath = (role, fromPath) => {
     return isStudentPath ? fromPath : '/student-dashboard';
   }
 
+  if (role === 'instructor') {
+    const isInstructorPath = ['/instructor-dashboard', '/instructor/courses']
+      .some((path) => fromPath?.startsWith(path));
+
+    return isInstructorPath ? fromPath : '/instructor-dashboard';
+  }
+
   return '/';
 };
 

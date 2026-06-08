@@ -3,16 +3,24 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Concerns\AuthorizesInstructorCourseOwnership;
 use App\Http\Requests\CourseSections\StoreCourseSectionRequest;
 use App\Http\Requests\CourseSections\UpdateCourseSectionRequest;
+use App\Models\Course;
 use App\Models\CourseSection;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class CourseSectionController extends Controller
 {
+    use AuthorizesInstructorCourseOwnership;
+
     public function store(StoreCourseSectionRequest $request): JsonResponse
     {
-        $section = CourseSection::create($request->validated());
+        $validated = $request->validated();
+        $this->authorizeCourseOwnership($request, Course::findOrFail($validated['course_id']));
+
+        $section = CourseSection::create($validated);
 
         return response()->json([
             'message' => 'Section created successfully.',
@@ -23,7 +31,15 @@ class CourseSectionController extends Controller
     public function update(UpdateCourseSectionRequest $request, int $id): JsonResponse
     {
         $section = CourseSection::findOrFail($id);
-        $section->update($request->validated());
+        $validated = $request->validated();
+
+        $this->authorizeCourseOwnership($request, $section->course);
+
+        if (isset($validated['course_id']) && $validated['course_id'] !== $section->course_id) {
+            $this->authorizeCourseOwnership($request, Course::findOrFail($validated['course_id']));
+        }
+
+        $section->update($validated);
 
         return response()->json([
             'message' => 'Section updated successfully.',
@@ -31,9 +47,11 @@ class CourseSectionController extends Controller
         ]);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
-        CourseSection::findOrFail($id)->delete();
+        $section = CourseSection::findOrFail($id);
+        $this->authorizeCourseOwnership($request, $section->course);
+        $section->delete();
 
         return response()->json([
             'message' => 'Section deleted successfully.',

@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\CourseCurriculumController;
 use App\Http\Controllers\Api\CourseSectionController;
 use App\Http\Controllers\Api\EnrollmentController;
 use App\Http\Controllers\Api\InstructorController;
+use App\Http\Controllers\Api\InstructorPortalController;
 use App\Http\Controllers\Api\LessonController;
 use App\Http\Controllers\Api\LessonProgressController;
 use App\Http\Controllers\Api\NotificationController;
@@ -67,6 +68,33 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/my-courses/{course}/quiz-status', [QuizController::class, 'status'])->whereNumber('course');
         Route::post('/lessons/{lesson}/complete', [LessonProgressController::class, 'complete'])->whereNumber('lesson');
         Route::delete('/lessons/{lesson}/complete', [LessonProgressController::class, 'destroy'])->whereNumber('lesson');
+    });
+
+    Route::middleware('role:instructor')->group(function (): void {
+        Route::get('/instructor/dashboard', [InstructorPortalController::class, 'dashboard']);
+        Route::get('/instructor/courses', [InstructorPortalController::class, 'courses']);
+        Route::get('/instructor/courses/{course}', [InstructorPortalController::class, 'course'])->whereNumber('course');
+        Route::get('/instructor/courses/{course}/curriculum', [InstructorPortalController::class, 'curriculum'])->whereNumber('course');
+        Route::get('/instructor/courses/{course}/students', [InstructorPortalController::class, 'students'])->whereNumber('course');
+        Route::get('/instructor/courses/{course}/quiz-results', [InstructorPortalController::class, 'quizResults'])->whereNumber('course');
+
+        Route::post('/instructor/sections', [CourseSectionController::class, 'store']);
+        Route::put('/instructor/sections/{id}', [CourseSectionController::class, 'update'])->whereNumber('id');
+        Route::delete('/instructor/sections/{id}', [CourseSectionController::class, 'destroy'])->whereNumber('id');
+        Route::post('/instructor/lessons', [LessonController::class, 'store']);
+        Route::put('/instructor/lessons/{id}', [LessonController::class, 'update'])->whereNumber('id');
+        Route::delete('/instructor/lessons/{id}', [LessonController::class, 'destroy'])->whereNumber('id');
+
+        Route::get('/instructor/courses/{course}/quiz', [AdminQuizController::class, 'show'])->whereNumber('course');
+        Route::post('/instructor/courses/{course}/quiz', [AdminQuizController::class, 'store'])->whereNumber('course');
+        Route::put('/instructor/quizzes/{quiz}', [AdminQuizController::class, 'update'])->whereNumber('quiz');
+        Route::delete('/instructor/quizzes/{quiz}', [AdminQuizController::class, 'destroy'])->whereNumber('quiz');
+        Route::post('/instructor/quizzes/{quiz}/questions', [AdminQuizController::class, 'storeQuestion'])->whereNumber('quiz');
+        Route::put('/instructor/quiz-questions/{question}', [AdminQuizController::class, 'updateQuestion'])->whereNumber('question');
+        Route::delete('/instructor/quiz-questions/{question}', [AdminQuizController::class, 'destroyQuestion'])->whereNumber('question');
+        Route::post('/instructor/quiz-questions/{question}/options', [AdminQuizController::class, 'storeOption'])->whereNumber('question');
+        Route::put('/instructor/quiz-options/{option}', [AdminQuizController::class, 'updateOption'])->whereNumber('option');
+        Route::delete('/instructor/quiz-options/{option}', [AdminQuizController::class, 'destroyOption'])->whereNumber('option');
     });
 
     Route::middleware('role:admin')->group(function (): void {

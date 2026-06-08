@@ -8,6 +8,9 @@ const EMPTY_FORM = {
   specialization: '',
   bio: '',
   profile_image_path: '',
+  user_id: '',
+  login_email: '',
+  password: '',
   file: null,
   preview: '',
 };
@@ -54,7 +57,15 @@ function ModalShell({ title, children, onClose }) {
   );
 }
 
-function InstructorForm({ form, onChange, onSubmit, submitting, submitLabel }) {
+function InstructorForm({
+  form,
+  onChange,
+  onSubmit,
+  submitting,
+  submitLabel,
+  isEdit,
+  availableUsers,
+}) {
   const [dragActive, setDragActive] = useState(false);
 
   const handleDrag = (e) => {
@@ -165,6 +176,63 @@ function InstructorForm({ form, onChange, onSubmit, submitting, submitLabel }) {
           <label className="form-label text-muted" style={{ fontSize: '12px' }}>النبذة التعريفية (Bio)</label>
           <textarea name="bio" value={form.bio || ''} onChange={handleChange} className="form-control custom-input" rows={4} placeholder="معلومات عن خبرات المدرب..." />
         </div>
+
+        <div className="col-12">
+          <div className="rounded-3 p-3" style={{ border: '1px solid rgba(117,255,158,0.16)', background: 'rgba(117,255,158,0.03)' }}>
+            <h3 className="h6 text-white fw-bold mb-1">حساب تسجيل الدخول</h3>
+            <p className="text-muted mb-3" style={{ fontSize: '12px' }}>
+              {isEdit
+                ? 'اربط الملف بحساب مدرب موجود أو اختر بدون حساب لإلغاء الربط.'
+                : 'يمكن إنشاء الملف فقط، ربط حساب مدرب موجود، أو إنشاء حساب دخول جديد.'}
+            </p>
+
+            <label className="form-label text-muted" style={{ fontSize: '12px' }}>ربط حساب مدرب موجود</label>
+            <select
+              name="user_id"
+              value={form.user_id}
+              onChange={handleChange}
+              className="form-select custom-input"
+              disabled={!isEdit && Boolean(form.login_email || form.password)}
+            >
+              <option value="">بدون حساب دخول</option>
+              {availableUsers.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name} - {user.email} ({user.status})
+                </option>
+              ))}
+            </select>
+
+            {!isEdit && (
+              <div className="row g-3 mt-1">
+                <div className="col-12 col-lg-6">
+                  <label className="form-label text-muted" style={{ fontSize: '12px' }}>بريد الدخول (اختياري)</label>
+                  <input
+                    type="email"
+                    name="login_email"
+                    value={form.login_email}
+                    onChange={handleChange}
+                    className="form-control custom-input"
+                    disabled={Boolean(form.user_id)}
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="col-12 col-lg-6">
+                  <label className="form-label text-muted" style={{ fontSize: '12px' }}>كلمة المرور (اختياري)</label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={form.password}
+                    onChange={handleChange}
+                    className="form-control custom-input"
+                    minLength={8}
+                    disabled={Boolean(form.user_id)}
+                    autoComplete="new-password"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <button type="submit" className="btn btn-primary-cta fw-bold py-2 px-4 align-self-start mt-2" disabled={submitting}>
@@ -178,6 +246,7 @@ function InstructorForm({ form, onChange, onSubmit, submitting, submitLabel }) {
 export default function AdminInstructors() {
   const { token } = useAuth();
   const [instructors, setInstructors] = useState([]);
+  const [instructorUsers, setInstructorUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -207,9 +276,17 @@ export default function AdminInstructors() {
         });
         const data = await readJsonResponse(response);
         setInstructors(Array.isArray(data) ? data : []);
+
+        const usersResponse = await fetch('http://127.0.0.1:8000/api/admin/users?role=instructor&per_page=100', {
+          headers: authHeaders,
+          signal: controller.signal,
+        });
+        const usersData = await readJsonResponse(usersResponse);
+        setInstructorUsers(Array.isArray(usersData.data) ? usersData.data : []);
       } catch (error) {
         if (error.name !== 'AbortError') {
           setInstructors([]);
+          setInstructorUsers([]);
           setMessage({ type: 'error', text: error.message || 'تعذر تحميل المدربين.' });
         }
       } finally {
@@ -269,6 +346,15 @@ export default function AdminInstructors() {
         profile_image_path: finalPath || null,
       };
 
+      if (isEdit) {
+        payload.user_id = form.user_id ? Number(form.user_id) : null;
+      } else if (form.user_id) {
+        payload.user_id = Number(form.user_id);
+      } else if (form.login_email || form.password) {
+        payload.login_email = form.login_email.trim();
+        payload.password = form.password;
+      }
+
       const response = await fetch(endpoint, {
         method: isEdit ? 'PUT' : 'POST',
         headers: {
@@ -325,6 +411,9 @@ export default function AdminInstructors() {
       specialization: instructor.specialization || '',
       bio: instructor.bio || '',
       profile_image_path: instructor.profile_image_path || '',
+      user_id: instructor.user_id ? String(instructor.user_id) : '',
+      login_email: '',
+      password: '',
       file: null,
       preview: instructor.profile_image_path ? `http://127.0.0.1:8000/storage/${instructor.profile_image_path}` : '',
     });
@@ -367,15 +456,16 @@ export default function AdminInstructors() {
                 <tr style={{ fontSize: '12px', color: '#bacbb9', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                   <th className="py-3 px-3">المدرب</th>
                   <th className="py-3 px-3">التخصص</th>
+                  <th className="py-3 px-3">حساب الدخول</th>
                   <th className="py-3 px-3">نبذة تعريفية</th>
                   <th className="py-3 px-3 text-center">إجراءات</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan="4" className="text-center text-muted py-5">جاري تحميل المدربين...</td></tr>
+                  <tr><td colSpan="5" className="text-center text-muted py-5">جاري تحميل المدربين...</td></tr>
                 ) : instructors.length === 0 ? (
-                  <tr><td colSpan="4" className="text-center text-muted py-5">لا يوجد مدربون مسجلون حالياً.</td></tr>
+                  <tr><td colSpan="5" className="text-center text-muted py-5">لا يوجد مدربون مسجلون حالياً.</td></tr>
                 ) : instructors.map((instructor) => (
                   <tr key={instructor.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                     <td className="py-3 px-3">
@@ -391,6 +481,19 @@ export default function AdminInstructors() {
                       </div>
                     </td>
                     <td className="py-3 px-3 text-muted" style={{ fontSize: '13px' }}>{instructor.specialization || '-'}</td>
+                    <td className="py-3 px-3" style={{ fontSize: '12px' }}>
+                      {instructor.user ? (
+                        <div className="d-flex flex-column gap-1">
+                          <span style={{ color: '#75ff9e' }}>حساب مرتبط</span>
+                          <span className="text-muted" dir="ltr">{instructor.user.email}</span>
+                          <span style={{ color: instructor.user.status === 'active' ? '#75ff9e' : '#ffd54f' }}>
+                            {instructor.user.status}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-muted">ملف فقط</span>
+                      )}
+                    </td>
                     <td className="py-3 px-3 text-muted" style={{ fontSize: '13px', maxWidth: '300px' }}>
                       <div className="text-truncate">{instructor.bio || '-'}</div>
                     </td>
@@ -416,6 +519,11 @@ export default function AdminInstructors() {
             onSubmit={handleSubmit}
             submitting={submitting}
             submitLabel={editingInstructor ? "حفظ التعديلات" : "حفظ المدرب"}
+            isEdit={Boolean(editingInstructor)}
+            availableUsers={instructorUsers.filter((user) => (
+              !instructors.some((instructor) => instructor.user_id === user.id)
+              || user.id === editingInstructor?.user_id
+            ))}
           />
         </ModalShell>
       )}

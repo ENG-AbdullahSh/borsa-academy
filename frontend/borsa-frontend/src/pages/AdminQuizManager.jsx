@@ -27,11 +27,12 @@ function requestMessage(error, fallback) {
   return error?.message || fallback;
 }
 
-export default function AdminQuizManager() {
+export default function AdminQuizManager({ courseId: fixedCourseId = '', scope = 'admin' }) {
   const { token } = useAuth();
   const headers = useMemo(() => apiHeaders(token), [token]);
+  const apiScope = `${API_BASE_URL}/${scope}`;
   const [courses, setCourses] = useState([]);
-  const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [selectedCourseId, setSelectedCourseId] = useState(String(fixedCourseId || ''));
   const [quiz, setQuiz] = useState(null);
   const [quizForm, setQuizForm] = useState(EMPTY_QUIZ);
   const [questionForm, setQuestionForm] = useState(EMPTY_QUESTION);
@@ -89,7 +90,7 @@ export default function AdminQuizManager() {
     setMessage(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/courses/${courseId}/quiz`, {
+      const response = await fetch(`${apiScope}/courses/${courseId}/quiz`, {
         headers,
         signal,
       });
@@ -103,7 +104,7 @@ export default function AdminQuizManager() {
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
-  }, [headers, hydrateQuiz, showMessage, token]);
+  }, [apiScope, headers, hydrateQuiz, showMessage, token]);
 
   useEffect(() => {
     if (!token) return undefined;
@@ -112,14 +113,21 @@ export default function AdminQuizManager() {
 
     const loadCourses = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/admin/courses?per_page=100`, {
+        const response = await fetch(
+          fixedCourseId
+            ? `${apiScope}/courses/${fixedCourseId}`
+            : `${apiScope}/courses?per_page=100`,
+          {
           headers,
           signal: controller.signal,
-        });
+          },
+        );
         const payload = await readJsonResponse(response);
-        const nextCourses = Array.isArray(payload.data) ? payload.data : [];
+        const nextCourses = fixedCourseId
+          ? (payload.data ? [payload.data] : [])
+          : (Array.isArray(payload.data) ? payload.data : []);
         setCourses(nextCourses);
-        setSelectedCourseId((current) => current || String(nextCourses[0]?.id || ''));
+        setSelectedCourseId(String(fixedCourseId || nextCourses[0]?.id || ''));
       } catch (error) {
         if (error.name !== 'AbortError') {
           showMessage('error', requestMessage(error, 'تعذر تحميل الكورسات.'));
@@ -130,7 +138,7 @@ export default function AdminQuizManager() {
 
     loadCourses();
     return () => controller.abort();
-  }, [headers, showMessage, token]);
+  }, [apiScope, fixedCourseId, headers, showMessage, token]);
 
   useEffect(() => {
     if (!selectedCourseId) return undefined;
@@ -150,8 +158,8 @@ export default function AdminQuizManager() {
     try {
       const response = await fetch(
         quiz
-          ? `${API_BASE_URL}/admin/quizzes/${quiz.id}`
-          : `${API_BASE_URL}/admin/courses/${selectedCourseId}/quiz`,
+          ? `${apiScope}/quizzes/${quiz.id}`
+          : `${apiScope}/courses/${selectedCourseId}/quiz`,
         {
           method: quiz ? 'PUT' : 'POST',
           headers: apiHeaders(token, true),
@@ -177,7 +185,7 @@ export default function AdminQuizManager() {
     setSaving(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/quizzes/${quiz.id}`, {
+      const response = await fetch(`${apiScope}/quizzes/${quiz.id}`, {
         method: 'DELETE',
         headers,
       });
@@ -234,7 +242,7 @@ export default function AdminQuizManager() {
     setSaving(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/quizzes/${quiz.id}/questions`, {
+      const response = await fetch(`${apiScope}/quizzes/${quiz.id}/questions`, {
         method: 'POST',
         headers: apiHeaders(token, true),
         body: JSON.stringify({
@@ -263,7 +271,7 @@ export default function AdminQuizManager() {
 
     try {
       const draft = questionDrafts[questionId];
-      const response = await fetch(`${API_BASE_URL}/admin/quiz-questions/${questionId}`, {
+      const response = await fetch(`${apiScope}/quiz-questions/${questionId}`, {
         method: 'PUT',
         headers: apiHeaders(token, true),
         body: JSON.stringify({
@@ -288,7 +296,7 @@ export default function AdminQuizManager() {
     setSaving(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/quiz-questions/${questionId}`, {
+      const response = await fetch(`${apiScope}/quiz-questions/${questionId}`, {
         method: 'DELETE',
         headers,
       });
@@ -307,7 +315,7 @@ export default function AdminQuizManager() {
 
     try {
       const draft = optionDrafts[optionId];
-      const response = await fetch(`${API_BASE_URL}/admin/quiz-options/${optionId}`, {
+      const response = await fetch(`${apiScope}/quiz-options/${optionId}`, {
         method: 'PUT',
         headers: apiHeaders(token, true),
         body: JSON.stringify({
@@ -329,7 +337,7 @@ export default function AdminQuizManager() {
     setSaving(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/quiz-options/${optionId}`, {
+      const response = await fetch(`${apiScope}/quiz-options/${optionId}`, {
         method: 'DELETE',
         headers,
       });
@@ -350,7 +358,7 @@ export default function AdminQuizManager() {
     setSaving(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/quiz-questions/${questionId}/options`, {
+      const response = await fetch(`${apiScope}/quiz-questions/${questionId}/options`, {
         method: 'POST',
         headers: apiHeaders(token, true),
         body: JSON.stringify({
@@ -377,14 +385,16 @@ export default function AdminQuizManager() {
           <h1 className="fw-bold text-white mb-1" style={{ fontSize: '28px' }}>إدارة الاختبارات</h1>
           <p className="text-muted mb-0">أنشئ اختباراً نهائياً لكل دورة وحدد درجة النجاح.</p>
         </div>
-        <select
-          value={selectedCourseId}
-          onChange={(event) => setSelectedCourseId(event.target.value)}
-          className="form-select custom-input"
-          style={{ maxWidth: '360px' }}
-        >
-          {courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}
-        </select>
+        {!fixedCourseId && (
+          <select
+            value={selectedCourseId}
+            onChange={(event) => setSelectedCourseId(event.target.value)}
+            className="form-select custom-input"
+            style={{ maxWidth: '360px' }}
+          >
+            {courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}
+          </select>
+        )}
       </div>
 
       {message && (

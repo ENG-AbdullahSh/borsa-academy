@@ -37,18 +37,25 @@ export default function Navbar() {
     fontWeight: isActive(path) ? '700' : '500',
   });
 
-  const navLinks = [
-    { label: 'الرئيسية', path: '/' },
-    { label: 'الكورسات', path: '/courses' },
-    ...(isAuthenticated && user?.role === 'student' ? [
-      { label: 'مساري 📈', path: '/masari' },
-      { label: 'لوحة الطالب', path: '/student-dashboard' },
-      { label: 'دوراتي', path: '/my-courses' },
-      { label: 'شهاداتي', path: '/certificates' },
-    ] : []),
-    { label: 'من نحن واتصل بنا', path: '/about' },
-    ...(user?.role === 'admin' ? [{ label: 'لوحة التحكم', path: '/admin' }] : []),
-  ];
+  const navLinks = user?.role === 'instructor'
+    ? [
+        { label: 'لوحة المدرب', path: '/instructor-dashboard' },
+        { label: 'دوراتي', path: '/instructor/courses' },
+        { label: 'الملف الشخصي', path: '/profile' },
+        { label: 'الإشعارات', path: '/notifications' },
+      ]
+    : [
+        { label: 'الرئيسية', path: '/' },
+        { label: 'الكورسات', path: '/courses' },
+        ...(isAuthenticated && user?.role === 'student' ? [
+          { label: 'مساري 📈', path: '/masari' },
+          { label: 'لوحة الطالب', path: '/student-dashboard' },
+          { label: 'دوراتي', path: '/my-courses' },
+          { label: 'شهاداتي', path: '/certificates' },
+        ] : []),
+        { label: 'من نحن واتصل بنا', path: '/about' },
+        ...(user?.role === 'admin' ? [{ label: 'لوحة التحكم', path: '/admin' }] : []),
+      ];
 
   const closeMobile = () => setMobileOpen(false);
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Concerns\AuthorizesInstructorCourseOwnership;
 use App\Http\Requests\Quizzes\StoreQuizOptionRequest;
 use App\Http\Requests\Quizzes\StoreQuizQuestionRequest;
 use App\Http\Requests\Quizzes\StoreQuizRequest;
@@ -15,16 +16,21 @@ use App\Models\QuizOption;
 use App\Models\QuizQuestion;
 use App\Services\QuizService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AdminQuizController extends Controller
 {
+    use AuthorizesInstructorCourseOwnership;
+
     public function __construct(
         private readonly QuizService $quizService,
     ) {}
 
-    public function show(Course $course): JsonResponse
+    public function show(Request $request, Course $course): JsonResponse
     {
+        $this->authorizeCourseOwnership($request, $course);
+
         $quiz = $course->quiz()
             ->with('questions.options')
             ->first();
@@ -36,6 +42,8 @@ class AdminQuizController extends Controller
 
     public function store(StoreQuizRequest $request, Course $course): JsonResponse
     {
+        $this->authorizeCourseOwnership($request, $course);
+
         if ($course->quiz()->exists()) {
             return response()->json([
                 'message' => 'This course already has a quiz.',
@@ -52,6 +60,7 @@ class AdminQuizController extends Controller
 
     public function update(UpdateQuizRequest $request, Quiz $quiz): JsonResponse
     {
+        $this->authorizeCourseOwnership($request, $quiz->course);
         $quiz->update($request->validated());
 
         return response()->json([
@@ -60,8 +69,9 @@ class AdminQuizController extends Controller
         ]);
     }
 
-    public function destroy(Quiz $quiz): JsonResponse
+    public function destroy(Request $request, Quiz $quiz): JsonResponse
     {
+        $this->authorizeCourseOwnership($request, $quiz->course);
         $quiz->delete();
 
         return response()->json([
@@ -71,6 +81,7 @@ class AdminQuizController extends Controller
 
     public function storeQuestion(StoreQuizQuestionRequest $request, Quiz $quiz): JsonResponse
     {
+        $this->authorizeCourseOwnership($request, $quiz->course);
         $validated = $request->validated();
         $options = $validated['options'];
         unset($validated['options']);
@@ -92,6 +103,7 @@ class AdminQuizController extends Controller
         UpdateQuizQuestionRequest $request,
         QuizQuestion $question,
     ): JsonResponse {
+        $this->authorizeCourseOwnership($request, $question->quiz->course);
         $question->update($request->validated());
 
         return response()->json([
@@ -100,8 +112,9 @@ class AdminQuizController extends Controller
         ]);
     }
 
-    public function destroyQuestion(QuizQuestion $question): JsonResponse
+    public function destroyQuestion(Request $request, QuizQuestion $question): JsonResponse
     {
+        $this->authorizeCourseOwnership($request, $question->quiz->course);
         $question->delete();
 
         return response()->json([
@@ -113,6 +126,7 @@ class AdminQuizController extends Controller
         StoreQuizOptionRequest $request,
         QuizQuestion $question,
     ): JsonResponse {
+        $this->authorizeCourseOwnership($request, $question->quiz->course);
         $validated = $request->validated();
 
         $option = DB::transaction(function () use ($question, $validated): QuizOption {
@@ -133,6 +147,7 @@ class AdminQuizController extends Controller
         UpdateQuizOptionRequest $request,
         QuizOption $option,
     ): JsonResponse {
+        $this->authorizeCourseOwnership($request, $option->question->quiz->course);
         $validated = $request->validated();
 
         if (
@@ -161,8 +176,9 @@ class AdminQuizController extends Controller
         ]);
     }
 
-    public function destroyOption(QuizOption $option): JsonResponse
+    public function destroyOption(Request $request, QuizOption $option): JsonResponse
     {
+        $this->authorizeCourseOwnership($request, $option->question->quiz->course);
         if ($option->question->options()->count() <= 2) {
             return response()->json([
                 'message' => 'Each question must keep at least two options.',
