@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { useSettings } from '../context/SettingsContext';
-import { API_BASE_URL } from '../utils/api';
+import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
 import '../styles/auth.css';
 import borsaLogo from '../assets/Borsa Academy.jpeg';
 
@@ -29,6 +29,7 @@ export default function ResetPassword() {
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
@@ -57,10 +58,7 @@ export default function ResetPassword() {
     try {
       const res = await fetch(`${API_BASE_URL}/reset-password`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        headers: apiHeaders(null, true),
         body: JSON.stringify({ 
           token,
           email,
@@ -69,20 +67,13 @@ export default function ResetPassword() {
         }),
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        if (res.status === 422) {
-          const firstError = Object.values(data.errors || {}).flat().find(Boolean);
-          throw new Error(firstError || 'البيانات غير صالحة.');
-        }
-        throw new Error(data.message || 'تعذر إعادة تعيين كلمة المرور.');
-      }
+      await readJsonResponse(res);
 
       setSuccess(true);
       setTimeout(() => navigate('/signin', { replace: true }), 3000);
     } catch (err) {
-      setError(err.message || 'حدث خطأ ما. حاول مرة أخرى.');
+      const firstError = Object.values(err.data?.errors || {}).flat().find(Boolean);
+      setError(firstError || err.message || 'حدث خطأ ما. حاول مرة أخرى.');
     } finally {
       setLoading(false);
     }
@@ -182,7 +173,7 @@ export default function ResetPassword() {
                     <div className="auth-password-control">
                       <input
                         id="reset-password-confirm"
-                        type={showPassword ? 'text' : 'password'}
+                        type={showPasswordConfirmation ? 'text' : 'password'}
                         className="auth-input auth-password-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
                         placeholder="••••••••••••"
                         value={passwordConfirmation}
@@ -190,6 +181,14 @@ export default function ResetPassword() {
                         required
                         minLength={8}
                       />
+                      <button
+                        type="button"
+                        className="auth-password-toggle"
+                        onClick={() => setShowPasswordConfirmation((current) => !current)}
+                        aria-label={showPasswordConfirmation ? 'إخفاء تأكيد كلمة المرور' : 'إظهار تأكيد كلمة المرور'}
+                      >
+                        {showPasswordConfirmation ? <FiEyeOff /> : <FiEye />}
+                      </button>
                     </div>
                   </div>
 

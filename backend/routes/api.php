@@ -71,7 +71,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::middleware('role:admin')->group(function (): void {
         Route::put('/admin/settings', [SettingController::class, 'updateSettings']);
-        Route::apiResource('/admin/users', AdminUserController::class);
+        Route::get('/admin/users', [AdminUserController::class, 'index']);
+        Route::get('/admin/users/{user}', [AdminUserController::class, 'show'])->whereNumber('user');
+        Route::put('/admin/users/{user}/status', [AdminUserController::class, 'updateStatus'])->whereNumber('user');
+        Route::put('/admin/users/{user}/role', [AdminUserController::class, 'updateRole'])->whereNumber('user');
         Route::apiResource('/admin/instructors', InstructorController::class);
         Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
         Route::get('/admin/certificates', [AdminCertificateController::class, 'index']);

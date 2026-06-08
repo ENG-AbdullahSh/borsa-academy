@@ -14,14 +14,17 @@ class CustomResetPassword extends ResetPassword
      * @param  mixed  $notifiable
      * @return \Illuminate\Notifications\Messages\MailMessage
      */
-    public function toMail($notifiable)
+    public function toMail($notifiable): MailMessage
     {
         if (static::$toMailCallback) {
             return call_user_func(static::$toMailCallback, $notifiable, $this->token);
         }
 
-        $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
-        $url = $frontendUrl . '/reset-password?token=' . $this->token . '&email=' . urlencode($notifiable->getEmailForPasswordReset());
+        $query = http_build_query([
+            'token' => $this->token,
+            'email' => $notifiable->getEmailForPasswordReset(),
+        ]);
+        $url = rtrim(config('app.frontend_url'), '/').'/reset-password?'.$query;
 
         return (new MailMessage)
             ->subject(Lang::get('إعادة تعيين كلمة المرور - أكاديمية البورصة'))

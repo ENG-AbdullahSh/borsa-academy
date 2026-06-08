@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
-import { API_BASE_URL } from '../utils/api';
+import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
 import '../styles/auth.css';
 import borsaLogo from '../assets/Borsa Academy.jpeg';
 
@@ -22,6 +22,7 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
@@ -37,22 +38,16 @@ export default function ForgotPassword() {
     try {
       const res = await fetch(`${API_BASE_URL}/forgot-password`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        headers: apiHeaders(null, true),
         body: JSON.stringify({ email: email.trim() }),
       });
+      const data = await readJsonResponse(res);
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || 'تعذر إرسال رابط إعادة التعيين.');
-      }
-
+      setSuccessMessage(data.message || 'إذا كان البريد مسجلاً لدينا، سيتم إرسال رابط استعادة كلمة المرور');
       setSuccess(true);
     } catch (err) {
-      setError(err.message || 'حدث خطأ ما. حاول مرة أخرى.');
+      const firstError = Object.values(err.data?.errors || {}).flat().find(Boolean);
+      setError(firstError || err.message || 'حدث خطأ ما. حاول مرة أخرى.');
     } finally {
       setLoading(false);
     }
@@ -104,7 +99,7 @@ export default function ForgotPassword() {
                 <SuccessIcon />
               </div>
               <h4>تم إرسال رابط إعادة التعيين!</h4>
-              <p>يرجى التحقق من بريدك الإلكتروني لتعيين كلمة مرور جديدة.</p>
+              <p>{successMessage}</p>
               <Link to="/signin" className="auth-switch" style={{ marginTop: '20px', display: 'inline-block' }}>
                 العودة إلى تسجيل الدخول
               </Link>

@@ -3,60 +3,68 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Auth\Events\PasswordReset;
-use App\Models\User;
+use Illuminate\Support\Str;
 
 class PasswordResetController extends Controller
 {
+    private const GENERIC_LINK_MESSAGE = 'إذا كان البريد مسجلاً لدينا، سيتم إرسال رابط استعادة كلمة المرور';
+
     /**
-     * Send a reset link to the given user.
+     * Send a reset link without revealing whether the account exists.
      */
-    public function sendResetLinkEmail(Request $request)
+    public function sendResetLinkEmail(Request $request): JsonResponse
     {
-        $request->validate(['email' => 'required|email']);
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+        ]);
 
-        // We will send the password reset link to this user. Once we have attempted
-        // to send the link, we will examine the response then see the message we
-        // need to show to the user. Finally, we'll send out a proper response.
-        $status = Password::broker()->sendResetLink(
-            $request->only('email')
-        );
+        Password::broker()->sendResetLink([
+            'email' => $validated['email'],
+        ]);
 
-        return $status == Password::RESET_LINK_SENT
-                    ? response()->json(['message' => __($status)])
-                    : response()->json(['message' => __($status)], 400);
+        return response()->json([
+            'message' => self::GENERIC_LINK_MESSAGE,
+        ]);
     }
 
     /**
-     * Reset the given user's password.
+     * Reset the password and invalidate both the token and active API sessions.
      */
-    public function reset(Request $request)
+    public function reset(Request $request): JsonResponse
     {
-        $request->validate([
-            'token' => 'required',
-            'email' => 'required|email',
-            'password' => 'required|string|min:8|confirmed',
+        $validated = $request->validate([
+            'token' => ['required', 'string'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
         $status = Password::broker()->reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user, $password) {
+            $validated,
+            function (User $user, string $password): void {
                 $user->forceFill([
-                    'password' => Hash::make($password)
-                ])->setRememberToken(\Illuminate\Support\Str::random(60));
+                    'password' => $password,
+                    'remember_token' => Str::random(60),
+                ])->save();
 
-                $user->save();
+                $user->tokens()->delete();
 
                 event(new PasswordReset($user));
             }
         );
 
-        return $status == Password::PASSWORD_RESET
-                    ? response()->json(['message' => __($status)])
-                    : response()->json(['message' => __($status)], 400);
+        if ($status !== Password::PASSWORD_RESET) {
+            return response()->json([
+                'message' => 'رابط استعادة كلمة المرور غير صالح أو منتهي الصلاحية.',
+            ], 422);
+        }
+
+        return response()->json([
+            'message' => 'تمت إعادة تعيين كلمة المرور بنجاح.',
+        ]);
     }
 }
