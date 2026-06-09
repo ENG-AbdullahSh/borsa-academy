@@ -103,44 +103,28 @@ export default function ProfileSettings() {
     setIsUpdatingProfile(true);
 
     try {
-      let avatarPath = user?.avatar;
-
-      if (profileImageFile) {
-        const uploadFormData = new FormData();
-        uploadFormData.append('file', profileImageFile);
-        uploadFormData.append('directory', 'avatars');
-
-        const uploadResponse = await fetch(`${API_BASE_URL}/upload`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
-          },
-          body: uploadFormData,
-        });
-        const uploadData = await readJsonResponse(uploadResponse);
-
-        if (uploadData.path) {
-          avatarPath = uploadData.path;
-        }
-      }
-
       const payload = new FormData();
       payload.append('_method', 'PUT');
       payload.append('name', name);
 
-      if (avatarPath) {
-        payload.append('profile_image', avatarPath);
+      if (profileImageFile) {
+        payload.append('profile_image', profileImageFile);
       }
 
       const response = await fetch(`${API_BASE_URL}/profile/update`, {
-        method: 'POST',
-        headers: apiHeaders(token),
+        method: 'POST', // Use POST with _method=PUT to support FormData
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+          // Do NOT set Content-Type here; fetch will automatically set it to multipart/form-data with the correct boundary
+        },
         body: payload,
       });
       const data = await readJsonResponse(response);
 
-      if (data.user) await fetchCurrentUser(token);
+      if (data.user) {
+        await fetchCurrentUser(token); // Update global auth context
+      }
 
       showToast('تم تحديث البيانات بنجاح');
     } catch (error) {

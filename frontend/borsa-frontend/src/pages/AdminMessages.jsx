@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
+import UserAvatar from '../components/UserAvatar';
 
 const PER_PAGE = 15;
 
@@ -113,6 +114,11 @@ function MessageRow({ message, busyAction, onArchive, onDelete, onMarkRead, onVi
               style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#81cfff', boxShadow: '0 0 6px #81cfff' }}
             />
           )}
+          <UserAvatar
+            name={message.user?.name || message.sender_name || message.name}
+            avatarUrl={message.user?.avatar_url || null}
+            size={36}
+          />
           <div>
             <div className="text-white fw-semibold" style={{ fontSize: '13px' }}>{message.sender_name || message.name}</div>
             <div className="text-muted mb-1" dir="ltr" style={{ fontSize: '11px', textAlign: 'right' }}>

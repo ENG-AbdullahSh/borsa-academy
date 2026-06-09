@@ -11,29 +11,20 @@ use Illuminate\Validation\ValidationException;
 
 class ProfileController extends Controller
 {
-    /**
-     * Update the authenticated user's name and/or profile image.
-     *
-     * Accepts:
-     *   - name             (string, required)
-     *   - profile_image_path (string, nullable) – relative path returned by POST /api/upload
-     */
     public function updateProfile(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name'                => ['required', 'string', 'min:2', 'max:100'],
-            'profile_image_path'  => ['nullable', 'string', 'max:500'],
-            'profile_image'       => ['nullable', 'string', 'max:500'],
+            'name'          => ['required', 'string', 'min:2', 'max:100'],
+            'profile_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:4096'],
         ]);
 
         $user = $request->user();
-
         $user->name = $validated['name'];
 
-        if (array_key_exists('profile_image_path', $validated) && $validated['profile_image_path']) {
-            $user->avatar = $validated['profile_image_path'];
-        } elseif (array_key_exists('profile_image', $validated) && $validated['profile_image']) {
-            $user->avatar = $validated['profile_image'];
+        if ($request->hasFile('profile_image')) {
+            // Save image to the public disk under 'avatars' directory
+            $path = $request->file('profile_image')->store('avatars', 'public');
+            $user->avatar = $path;
         }
 
         $user->save();
@@ -41,12 +32,12 @@ class ProfileController extends Controller
         return response()->json([
             'message' => 'Profile updated successfully.',
             'user'    => [
-                'id'                 => $user->id,
-                'name'               => $user->name,
-                'email'              => $user->email,
-                'role'               => $user->role,
-                'avatar'             => $user->avatar,
-                'profile_image_path' => $user->avatar,
+                'id'         => $user->id,
+                'name'       => $user->name,
+                'email'      => $user->email,
+                'role'       => $user->role,
+                'avatar'     => $user->avatar,
+                'avatar_url' => $user->avatar_url,
             ],
         ]);
     }

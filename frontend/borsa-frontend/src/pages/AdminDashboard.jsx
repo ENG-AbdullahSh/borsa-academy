@@ -8,6 +8,7 @@ import AdminUsers from './AdminUsers';
 import AdminSettings from './AdminSettings';
 import ProfileSettings from './ProfileSettings';
 import AdminActivityWidget from '../components/AdminActivityWidget';
+import UserAvatar from '../components/UserAvatar';
 import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
 
@@ -375,13 +376,11 @@ export default function AdminDashboard() {
             className="d-flex align-items-center gap-3 pt-4 border-top px-3 mt-4"
             style={{ borderColor: 'rgba(255,255,255,0.05)', justifyContent: sidebarOpen ? 'flex-start' : 'center' }}
           >
-            <div
-              className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 fw-bold"
-              style={{ width: '40px', height: '40px', color: '#003918', background: '#75ff9e' }}
-              aria-hidden="true"
-            >
-              {profileInitial}
-            </div>
+            <UserAvatar 
+              name={user?.name || 'A'} 
+              avatarUrl={user?.avatar_url || null} 
+              size={40} 
+            />
             {sidebarOpen && (
               <div className="overflow-hidden">
                 <p className="m-0 text-white fw-bold text-truncate" style={{ fontSize: '14px' }}>{user?.name || 'مدير النظام'}</p>

@@ -22,6 +22,13 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = ['avatar_url'];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -49,8 +56,8 @@ class User extends Authenticatable
             return $this->avatar;
         }
 
-        // Relative path in storage — build the public URL
-        return url('storage/' . ltrim($this->avatar, '/'));
+        // Relative path in storage — build the public URL using asset()
+        return asset('storage/' . ltrim($this->avatar, '/'));
     }
 
     public function enrollments(): HasMany
