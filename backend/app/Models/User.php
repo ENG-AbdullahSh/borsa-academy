@@ -34,6 +34,25 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * Get the full URL of the user's avatar.
+     * Returns the storage URL if an avatar is stored, otherwise null.
+     */
+    public function getAvatarUrlAttribute(): ?string
+    {
+        if (empty($this->avatar)) {
+            return null;
+        }
+
+        // Already a full URL (e.g. from external provider)
+        if (filter_var($this->avatar, FILTER_VALIDATE_URL)) {
+            return $this->avatar;
+        }
+
+        // Relative path in storage — build the public URL
+        return url('storage/' . ltrim($this->avatar, '/'));
+    }
+
     public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class);

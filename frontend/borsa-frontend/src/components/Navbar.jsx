@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import borsaLogo from '../assets/Borsa Academy.jpeg';
-import { FiBell, FiCheckCircle, FiLogOut, FiUser } from 'react-icons/fi';
+import { FiBell, FiCheckCircle, FiLogOut } from 'react-icons/fi';
+import UserAvatar from './UserAvatar';
 import { useAuth } from '../hooks/useAuth';
 import { useNotifications } from '../context/NotificationContext';
 import { useSettings } from '../context/SettingsContext';
@@ -235,15 +236,12 @@ export default function Navbar() {
                   className="d-flex align-items-center gap-2 px-2 text-decoration-none btn-link-opacity"
                   style={{ color: '#bacbb9', fontSize: '13px', fontFamily: 'var(--font-sans)' }}
                 >
-                  {user?.avatar ? (
-                    <img 
-                      src={`http://127.0.0.1:8000/storage/${user.avatar}`} 
-                      alt={user.name} 
-                      style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} 
-                    />
-                  ) : (
-                    <FiUser size={18} />
-                  )}
+                  <UserAvatar
+                    name={user?.name || ''}
+                    avatarUrl={user?.avatar_url || null}
+                    size={28}
+                    style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+                  />
                   <span className="text-truncate" style={{ maxWidth: '140px' }}>
                     {user?.name || user?.email}
                   </span>
@@ -369,15 +367,12 @@ export default function Navbar() {
                   textDecoration: 'none',
                 }}
               >
-                {user?.avatar ? (
-                  <img 
-                    src={`http://127.0.0.1:8000/storage/${user.avatar}`} 
-                    alt={user.name} 
-                    style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} 
-                  />
-                ) : (
-                  <FiUser size={18} />
-                )}
+                <UserAvatar
+                  name={user?.name || ''}
+                  avatarUrl={user?.avatar_url || null}
+                  size={32}
+                  style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+                />
                 <span className="text-truncate">{user?.name || user?.email}</span>
               </Link>
               <button

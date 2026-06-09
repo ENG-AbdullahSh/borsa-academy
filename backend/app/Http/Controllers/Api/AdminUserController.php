@@ -23,7 +23,7 @@ class AdminUserController extends Controller
         ]);
 
         $users = User::query()
-            ->select(['id', 'name', 'email', 'role', 'status', 'created_at'])
+            ->select(['id', 'name', 'email', 'role', 'status', 'avatar', 'created_at'])
             ->withCount(['enrollments', 'certificates'])
             ->when($validated['search'] ?? null, function ($query, string $search): void {
                 $term = '%'.addcslashes(trim($search), '%_\\').'%';
@@ -144,14 +144,16 @@ class AdminUserController extends Controller
     private function userData(User $user): array
     {
         return [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $user->role,
-            'status' => $user->status,
-            'created_at' => $user->created_at,
-            'enrollments_count' => $user->enrollments_count,
-            'certificates_count' => $user->certificates_count,
+            'id'                  => $user->id,
+            'name'                => $user->name,
+            'email'               => $user->email,
+            'role'                => $user->role,
+            'status'              => $user->status,
+            'avatar'              => $user->avatar,
+            'avatar_url'          => $user->avatar_url,
+            'created_at'          => $user->created_at,
+            'enrollments_count'   => $user->enrollments_count,
+            'certificates_count'  => $user->certificates_count,
         ];
     }
 }

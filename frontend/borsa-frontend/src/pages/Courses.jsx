@@ -50,12 +50,29 @@ const fallbackImageFor = (id = 0) => {
   return FALLBACK_IMAGES[index];
 };
 
+const BACKEND_URL = 'http://127.0.0.1:8000';
+
+const resolveImage = (course, index) => {
+  // 1. If thumbnail is a full HTTP URL, use it directly
+  if (course.thumbnail && /^https?:\/\//i.test(course.thumbnail)) {
+    return course.thumbnail;
+  }
+  // 2. If image_path is a relative storage path, build the full URL
+  if (course.image_path && !course.image_path.startsWith('http')) {
+    return `${BACKEND_URL}/storage/${course.image_path}`;
+  }
+  // 3. If image_path is already a full URL
+  if (course.image_path && /^https?:\/\//i.test(course.image_path)) {
+    return course.image_path;
+  }
+  // 4. Fallback
+  return fallbackImageFor(course.id ?? index);
+};
+
 const normalizeCourse = (course, index) => {
   const price = Number(course.price ?? 0);
   const durationHours = Number(course.duration_hours ?? 0);
-  const image = course.thumbnail && /^https?:\/\//i.test(course.thumbnail)
-    ? course.thumbnail
-    : fallbackImageFor(course.id ?? index);
+  const image = resolveImage(course, index);
 
   return {
     id: course.id,

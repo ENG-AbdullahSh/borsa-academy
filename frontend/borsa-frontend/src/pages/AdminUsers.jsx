@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNotification } from '../context/NotificationContext';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
+import UserAvatar from '../components/UserAvatar';
 
 const USERS_ENDPOINT = `${API_BASE_URL}/admin/users`;
 const PER_PAGE = 15;
@@ -316,12 +317,11 @@ export default function AdminUsers() {
                     <tr key={listedUser.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                       <td className="py-3 px-3">
                         <div className="d-flex align-items-center gap-3">
-                          <div
-                            className="rounded-circle d-flex align-items-center justify-content-center text-white"
-                            style={{ width: '42px', height: '42px', background: 'rgba(255,255,255,0.1)' }}
-                          >
-                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>person</span>
-                          </div>
+                          <UserAvatar
+                            name={listedUser.name || ''}
+                            avatarUrl={listedUser.avatar_url || null}
+                            size={42}
+                          />
                           <div>
                             <div className="text-white fw-bold" style={{ fontSize: '14px' }}>
                               {listedUser.name}
@@ -414,13 +414,16 @@ export default function AdminUsers() {
             <div className="text-center text-muted py-4">جاري تحميل التفاصيل...</div>
           ) : (
             <div className="d-flex flex-column gap-3" style={{ direction: 'rtl' }}>
-              <div>
-                <div className="text-muted small mb-1">الاسم</div>
-                <div className="text-white fw-bold">{selectedUser.name}</div>
-              </div>
-              <div>
-                <div className="text-muted small mb-1">البريد الإلكتروني</div>
-                <div className="text-white" dir="ltr" style={{ textAlign: 'right' }}>{selectedUser.email}</div>
+              <div className="d-flex align-items-center gap-3 mb-2">
+                <UserAvatar
+                  name={selectedUser.name || ''}
+                  avatarUrl={selectedUser.avatar_url || null}
+                  size={56}
+                />
+                <div>
+                  <div className="text-white fw-bold" style={{ fontSize: '16px' }}>{selectedUser.name}</div>
+                  <div className="text-muted" style={{ fontSize: '12px' }} dir="ltr">{selectedUser.email}</div>
+                </div>
               </div>
               <div className="row g-3">
                 <div className="col-6">

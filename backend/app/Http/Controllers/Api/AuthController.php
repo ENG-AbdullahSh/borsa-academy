@@ -80,8 +80,11 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
+        $user = $request->user();
         return response()->json([
-            'user' => $request->user(),
+            'user' => array_merge($user->toArray(), [
+                'avatar_url' => $user->avatar_url,
+            ]),
         ]);
     }
 }
