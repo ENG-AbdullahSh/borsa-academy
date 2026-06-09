@@ -51,6 +51,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::post('/notifications/mark-read', [NotificationController::class, 'markAsRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
     Route::get('/my-contact-messages', [ContactMessageController::class, 'myMessages']);
     Route::middleware('role:student')->group(function (): void {
         Route::post('/enrollments', [EnrollmentController::class, 'store']);
@@ -141,6 +142,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/admin/contact-messages/{contactMessage}/reply', [ContactMessageController::class, 'reply']);
         Route::patch('/admin/contact-messages/{contactMessage}', [ContactMessageController::class, 'update']);
         Route::delete('/admin/contact-messages/{contactMessage}', [ContactMessageController::class, 'destroy']);
+
+        // ── Admin Monitoring ────────────────────────────────────────────
+        Route::get('/admin/activity', [\App\Http\Controllers\Api\AdminActivityController::class, 'index'])->middleware('admin');
     });
 
 });

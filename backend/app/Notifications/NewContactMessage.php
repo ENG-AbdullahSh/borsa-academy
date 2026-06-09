@@ -6,13 +6,12 @@ use App\Models\ContactMessage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
-class ContactMessageReplied extends Notification
+class NewContactMessage extends Notification
 {
     use Queueable;
 
     public function __construct(
         public readonly ContactMessage $contactMessage,
-        public readonly string $replyMessage,
     ) {}
 
     /**
@@ -28,13 +27,16 @@ class ContactMessageReplied extends Notification
      */
     public function toArray(object $notifiable): array
     {
+        $preview = mb_strimwidth($this->contactMessage->message, 0, 80, '...');
+
         return [
-            'title'              => 'تم الرد على رسالتك',
-            'message'            => $this->replyMessage,
-            'action_url'         => '/notifications',
+            'title'              => 'رسالة جديدة من ' . $this->contactMessage->name,
+            'message'            => "[{$this->contactMessage->subject}] {$preview}",
+            'action_url'         => '/admin/messages',
             'contact_message_id' => $this->contactMessage->id,
-            'original_subject'   => $this->contactMessage->subject,
-            'replied_by'         => $this->contactMessage->replier?->name ?? 'الإدارة',
+            'sender_name'        => $this->contactMessage->name,
+            'sender_email'       => $this->contactMessage->email,
+            'subject'            => $this->contactMessage->subject,
         ];
     }
 }

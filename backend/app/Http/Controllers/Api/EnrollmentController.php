@@ -51,11 +51,10 @@ class EnrollmentController extends Controller
         }
 
         // Fire enrollment notification to the student
-        $user->notify(new AcademyNotification(
-            title: 'تم تسجيلك في الكورس بنجاح! 🎉',
-            message: 'لقد انضممت إلى كورس "' . $course->title . '". ابدأ التعلم الآن وحقق أهدافك.',
-            actionUrl: '/my-courses',
-        ));
+        event(new \App\Events\CourseEnrollmentEvent($user, $course));
+        
+        // Fire admin monitoring event
+        event(new \App\Events\UserStartedCourseEvent($user, $course));
 
         return response()->json([
             'message' => 'Enrollment created successfully.',

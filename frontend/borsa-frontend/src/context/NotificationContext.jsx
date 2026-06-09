@@ -49,6 +49,7 @@ const NotificationContext = createContext({
   loading: false,
   markAsRead: () => {},
   markAllAsRead: () => {},
+  deleteNotification: () => {},
   reload: () => {},
   addNotification: () => {},
 });
@@ -81,10 +82,12 @@ export const NotificationProvider = ({ children }) => {
 
       const normalized = raw.map((n) => ({
         id:         n.id,
+        type:       n.type        || 'system',
         title:      n.title       || 'إشعار',
         description: n.message    || '',
         time:       formatRelativeTime(n.created_at),
         action_url: n.action_url  || null,
+        certificate_url: n.certificate_url || null,
         isUnread:   !n.is_read,
       }));
 
@@ -180,6 +183,27 @@ export const NotificationProvider = ({ children }) => {
     setTimeout(() => setToast(null), 5000);
   }, []);
 
+  // ── Delete a single notification ────────────────────────────────────────
+  const deleteNotification = useCallback(async (id) => {
+    setNotifications((prev) => {
+      const notifToDelete = prev.find((n) => n.id === id);
+      if (notifToDelete && notifToDelete.isUnread) {
+        setUnreadCount((c) => Math.max(0, c - 1));
+        prevUnreadRef.current = Math.max(0, prevUnreadRef.current - 1);
+      }
+      return prev.filter((n) => n.id !== id);
+    });
+
+    try {
+      const res = await authFetch(`/notifications/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        addNotification({ title: 'نجاح', message: 'تم حذف الإشعار بنجاح', type: 'success' });
+      }
+    } catch { /* optimistic — ignore */ }
+  }, [addNotification]);
+
   return (
     <NotificationContext.Provider
       value={{
@@ -188,6 +212,7 @@ export const NotificationProvider = ({ children }) => {
         loading,
         markAsRead,
         markAllAsRead,
+        deleteNotification,
         reload: fetchNotifications,
         addNotification,
       }}

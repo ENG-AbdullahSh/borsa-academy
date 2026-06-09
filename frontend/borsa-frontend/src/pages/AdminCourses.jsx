@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { useNotification } from '../context/NotificationContext';
 
 const ADMIN_COURSES_API_URL = 'http://127.0.0.1:8000/api/admin/courses';
 
@@ -168,7 +169,7 @@ function CourseForm({ form, onChange, onSubmit, submitting, submitLabel, compact
           <select name="instructor_id" value={form.instructor_id} onChange={handleChange} className="form-select custom-input" required>
              <option value="" disabled>اختر المدرب</option>
              {form.available_instructors?.map(inst => (
-               <option key={inst.id} value={inst.id}>{inst.name}</option>
+               <option key={inst.id} value={inst.id}>{inst.name || inst.user?.name}</option>
              ))}
           </select>
         </div>
@@ -290,6 +291,7 @@ function ModalShell({ title, children, onClose }) {
 
 export default function AdminCourses() {
   const { token } = useAuth();
+  const { addNotification } = useNotification();
   const [courses, setCourses] = useState([]);
   const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
   const [page, setPage] = useState(1);
@@ -303,7 +305,6 @@ export default function AdminCourses() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [message, setMessage] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const authHeaders = useMemo(() => ({
@@ -352,8 +353,11 @@ export default function AdminCourses() {
           headers: authHeaders,
           signal: controller.signal,
         });
-        const instData = await instResponse.json();
-        const apiInstructors = Array.isArray(instData) ? instData : [];
+        let apiInstructors = [];
+        if (instResponse.ok) {
+          const instData = await instResponse.json();
+          apiInstructors = Array.isArray(instData) ? instData : (Array.isArray(instData?.data) ? instData.data : []);
+        }
 
         setCourses(apiCourses);
         // Inject available_instructors to forms
@@ -368,7 +372,7 @@ export default function AdminCourses() {
       } catch (error) {
         if (error.name !== 'AbortError') {
           setCourses([]);
-          setMessage({ type: 'error', text: error.message || 'تعذر تحميل الكورسات.' });
+          addNotification({ type: 'error', title: '❌ تعذر التحميل', message: error.message || 'تعذر تحميل الكورسات.' });
         }
       } finally {
         if (!controller.signal.aborted) {
@@ -382,12 +386,6 @@ export default function AdminCourses() {
     return () => controller.abort();
   }, [authHeaders, levelFilter, page, refreshKey, search, statusFilter, token]);
 
-  const showMessage = (type, text) => {
-    setMessage({ type, text });
-    window.setTimeout(() => {
-      setMessage((current) => (current?.text === text ? null : current));
-    }, 5000);
-  };
 
   const submitCourse = async (event, mode) => {
     event.preventDefault();
@@ -440,15 +438,15 @@ export default function AdminCourses() {
 
       if (isEdit) {
         setEditingCourse(null);
-        showMessage('success', 'تم تحديث الكورس بنجاح.');
+        addNotification({ type: 'success', title: '✅ تم التحديث', message: 'تم تحديث الكورس بنجاح.' });
       } else {
         setAddForm({ ...EMPTY_FORM, available_instructors: addForm.available_instructors });
-        showMessage('success', 'تمت إضافة الكورس بنجاح.');
+        addNotification({ type: 'success', title: '✅ تمت الإضافة', message: 'تمت إضافة الكورس بنجاح!' });
       }
 
       setRefreshKey((current) => current + 1);
     } catch (error) {
-      showMessage('error', error.message || 'تعذر حفظ الكورس.');
+      addNotification({ type: 'error', title: '❌ خطأ', message: error.message || 'تعذر حفظ الكورس.' });
     } finally {
       setSubmitting(false);
     }
@@ -467,10 +465,10 @@ export default function AdminCourses() {
       await readJsonResponse(response);
 
       setDeletingCourse(null);
-      showMessage('success', 'تم حذف الكورس بنجاح.');
+      addNotification({ type: 'success', title: '🗑️ تم الحذف', message: 'تم حذف الكورس بنجاح.' });
       setRefreshKey((current) => current + 1);
     } catch (error) {
-      showMessage('error', error.message || 'تعذر حذف الكورس.');
+      addNotification({ type: 'error', title: '❌ خطأ', message: error.message || 'تعذر حذف الكورس.' });
     } finally {
       setDeleting(false);
     }
@@ -478,7 +476,7 @@ export default function AdminCourses() {
 
   const openEditModal = (course) => {
     setEditingCourse(course);
-    setEditForm(courseToForm(course));
+    setEditForm({ ...courseToForm(course), available_instructors: addForm.available_instructors });
   };
 
   return (
@@ -509,19 +507,6 @@ export default function AdminCourses() {
           </div>
         </div>
 
-        {message && (
-          <div
-            className="rounded-3 px-4 py-3"
-            style={{
-              color: message.type === 'success' ? '#75ff9e' : '#fecaca',
-              background: message.type === 'success' ? 'rgba(0,230,118,0.08)' : 'rgba(255,82,82,0.08)',
-              border: `1px solid ${message.type === 'success' ? 'rgba(0,230,118,0.24)' : 'rgba(255,82,82,0.24)'}`,
-              fontSize: '14px',
-            }}
-          >
-            {message.text}
-          </div>
-        )}
 
         <section className="glass-card p-4 rounded-3">
           <div className="d-flex align-items-center justify-content-between gap-3 mb-4">

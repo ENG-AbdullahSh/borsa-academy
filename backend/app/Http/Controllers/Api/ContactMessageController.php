@@ -8,7 +8,9 @@ use App\Http\Requests\ReplyToContactMessageRequest;
 use App\Mail\ContactMessage as ContactMail;
 use App\Mail\ContactMessageReply;
 use App\Models\ContactMessage;
+use App\Models\User;
 use App\Notifications\ContactMessageReplied;
+use App\Notifications\NewContactMessage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -80,7 +82,20 @@ class ContactMessageController extends Controller
             ]);
         }
 
-        // ── 3. Return success (based on DB save, not email) ────────
+        // ── 3. Notify all admins in-app (non-fatal) ────────────────
+        try {
+            $admins = User::where('role', 'admin')->get();
+            foreach ($admins as $admin) {
+                $admin->notify(new NewContactMessage($record));
+            }
+        } catch (Throwable $e) {
+            Log::warning('Admin contact notification failed (non-fatal)', [
+                'contact_message_id' => $record->id,
+                'error'              => $e->getMessage(),
+            ]);
+        }
+
+        // ── 4. Return success (based on DB save, not email) ────────
         return response()->json([
             'success' => true,
             'message' => 'تم إرسال رسالتك بنجاح',
@@ -214,7 +229,7 @@ class ContactMessageController extends Controller
 
         if ($contactMessage->user_id) {
             try {
-                $contactMessage->user?->notify(new ContactMessageReplied($contactMessage));
+                $contactMessage->user?->notify(new ContactMessageReplied($contactMessage, $data['reply_message']));
             } catch (Throwable $e) {
                 Log::warning('Contact message in-app reply notification failed (non-fatal)', [
                     'contact_message_id' => $contactMessage->id,

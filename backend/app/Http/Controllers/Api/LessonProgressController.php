@@ -58,6 +58,12 @@ class LessonProgressController extends Controller
             return $this->courseProgressService->syncEnrollment($lockedEnrollment);
         });
 
+        event(new \App\Events\LessonCompletedEvent($request->user(), $lessonModel));
+
+        if ($progress['course_completed']) {
+            event(new \App\Events\CourseFinishedEvent($request->user(), $lessonModel->section->course, $progress['certificate_id'] ?? 0));
+        }
+
         return response()->json([
             'success' => true,
             'course_id' => $progress['course_id'],

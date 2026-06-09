@@ -141,6 +141,9 @@ class CertificateController extends Controller
             'certNumber'  => $certificate->certificate_number,
         ])->setPaper('a4', 'landscape');
 
+        event(new \App\Events\FileDownloadedEvent($request->user(), 'certificate-' . $id . '.pdf'));
+        event(new \App\Events\UserGeneratedCertificateEvent($request->user(), $certificate->course));
+
         return $pdf->download('certificate-' . $id . '.pdf');
     }
 }

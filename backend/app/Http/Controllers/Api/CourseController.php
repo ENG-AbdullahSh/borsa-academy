@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Courses\StoreCourseRequest;
 use App\Http\Requests\Courses\UpdateCourseRequest;
 use App\Models\Course;
+use App\Models\Instructor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -106,11 +107,14 @@ class CourseController extends Controller
         $validated = $request->validated();
         $validated['slug'] = $this->makeUniqueSlug($validated['slug'] ?? $validated['title']);
 
+        // Resolve instructor_name from the FK so the denormalized column stays in sync
+        $validated['instructor_name'] = Instructor::findOrFail($validated['instructor_id'])->name;
+
         $course = Course::create($validated);
 
         return response()->json([
-            'message' => 'Course created successfully.',
-            'data' => $course,
+            'message' => 'تمت إضافة الكورس بنجاح.',
+            'data'    => $course->load('instructor'),
         ], 201);
     }
 
@@ -123,11 +127,16 @@ class CourseController extends Controller
             $validated['slug'] = $this->makeUniqueSlug($validated['slug'] ?: $course->title, $course->id);
         }
 
+        // Keep instructor_name denormalized column in sync when instructor_id changes
+        if (array_key_exists('instructor_id', $validated)) {
+            $validated['instructor_name'] = Instructor::findOrFail($validated['instructor_id'])->name;
+        }
+
         $course->update($validated);
 
         return response()->json([
-            'message' => 'Course updated successfully.',
-            'data' => $course->refresh(),
+            'message' => 'تم تحديث الكورس بنجاح.',
+            'data'    => $course->refresh()->load('instructor'),
         ]);
     }
 

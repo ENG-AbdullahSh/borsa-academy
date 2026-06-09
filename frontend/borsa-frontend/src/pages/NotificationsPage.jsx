@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNotifications } from '../context/NotificationContext';
-import { FiTrash2, FiBell, FiCheckCircle } from 'react-icons/fi';
+import { FiTrash2, FiBell, FiCheckCircle, FiMessageSquare, FiAward, FiBookOpen, FiInfo } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 
 export default function NotificationsPage() {
   const { notifications, markAllAsRead, markAsRead, deleteNotification } = useNotifications();
   const [filter, setFilter] = useState('all');
+  const navigate = useNavigate();
 
   const filteredNotifications = notifications.filter(n => {
     if (filter === 'all') return true;
@@ -97,67 +99,165 @@ export default function NotificationsPage() {
               <p style={{ fontSize: '18px' }}>لا توجد إشعارات هنا</p>
             </div>
           ) : (
-            filteredNotifications.map(notif => (
-              <div 
-                key={notif.id}
-                onClick={() => markAsRead(notif.id)}
-                style={{
-                  background: notif.isUnread ? 'rgba(17, 24, 39, 0.9)' : 'rgba(17, 24, 39, 0.4)',
-                  border: notif.isUnread ? '1px solid rgba(0, 230, 118, 0.3)' : '1px solid rgba(255,255,255,0.05)',
-                  borderRadius: '16px',
-                  padding: '20px',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '16px',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-              >
-                {notif.isUnread && (
-                  <div style={{
-                    position: 'absolute',
-                    top: 0, right: 0, bottom: 0, width: '4px',
-                    background: '#00E676',
-                    boxShadow: '0 0 10px rgba(0,230,118,0.5)'
-                  }} />
-                )}
+            filteredNotifications.map(notif => {
+              const isReply = notif.title && notif.title.includes('رد');
+              const isAchievement = notif.type === 'achievement';
+              const isCourse = notif.type === 'course';
+              const isSystem = notif.type === 'system';
+              
+              let icon = <FiBell size={18} color="#94A3B8" />;
+              let iconBg = 'rgba(255, 255, 255, 0.05)';
+              let iconBorder = '1px solid rgba(255,255,255,0.1)';
+              let borderLeft = '1px solid rgba(255,255,255,0.05)';
 
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <h3 style={{ margin: 0, fontSize: '16px', color: notif.isUnread ? '#fff' : '#E2E8F0', fontWeight: notif.isUnread ? '700' : '500' }}>
-                      {notif.title}
-                    </h3>
-                    <span style={{ fontSize: '12px', color: '#64748B' }}>{notif.time}</span>
-                  </div>
-                  <p style={{ margin: 0, color: '#94A3B8', fontSize: '14px', lineHeight: '1.6' }}>
-                    {notif.description}
-                  </p>
-                </div>
+              if (isReply) {
+                icon = <FiMessageSquare size={18} color="#00E676" />;
+                iconBg = 'rgba(0, 230, 118, 0.1)';
+                iconBorder = '1px solid rgba(0, 230, 118, 0.2)';
+                borderLeft = '4px solid #00E676';
+              } else if (isAchievement) {
+                icon = <FiAward size={18} color="#FFD700" />;
+                iconBg = 'rgba(255, 215, 0, 0.1)';
+                iconBorder = '1px solid rgba(255, 215, 0, 0.3)';
+                borderLeft = '4px solid #FFD700';
+              } else if (isCourse) {
+                icon = <FiBookOpen size={18} color="#3B82F6" />;
+                iconBg = 'rgba(59, 130, 246, 0.1)';
+                iconBorder = '1px solid rgba(59, 130, 246, 0.2)';
+                borderLeft = '4px solid #3B82F6';
+              } else if (isSystem) {
+                icon = <FiInfo size={18} color="#A855F7" />;
+                iconBg = 'rgba(168, 85, 247, 0.1)';
+                iconBorder = '1px solid rgba(168, 85, 247, 0.2)';
+                borderLeft = '4px solid #A855F7';
+              }
+              
+              const handleNotificationClick = () => {
+                markAsRead(notif.id);
+                if (notif.action_url) {
+                  navigate(notif.action_url);
+                }
+              };
 
-                <button
-                  onClick={(e) => { e.stopPropagation(); deleteNotification(notif.id); }}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#64748B',
-                    padding: '8px',
+              return (
+                <div 
+                  key={notif.id}
+                  onClick={handleNotificationClick}
+                  className={isAchievement ? 'achievement-pulse' : ''}
+                  style={isAchievement ? {
+                    borderRadius: '16px',
+                    padding: '20px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '16px',
                     cursor: 'pointer',
-                    borderRadius: '8px',
-                    transition: 'all 0.2s',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  } : {
+                    background: notif.isUnread ? 'rgba(17, 24, 39, 0.9)' : 'rgba(17, 24, 39, 0.4)',
+                    border: notif.isUnread ? '1px solid rgba(0, 230, 118, 0.3)' : '1px solid rgba(255,255,255,0.05)',
+                    borderLeft: borderLeft,
+                    borderRadius: '16px',
+                    padding: '20px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '16px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                >
+                  {isAchievement && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '-20px',
+                      right: '-20px',
+                      width: '100px',
+                      height: '100px',
+                      background: 'radial-gradient(circle, rgba(255,215,0,0.15) 0%, rgba(255,215,0,0) 70%)',
+                      pointerEvents: 'none'
+                    }} />
+                  )}
+
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    flexShrink: 0,
+                    borderRadius: '10px',
+                    background: iconBg,
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                  onMouseOver={(e) => { e.currentTarget.style.color = '#EF4444'; e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; }}
-                  onMouseOut={(e) => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.background = 'transparent'; }}
-                  aria-label="حذف الإشعار"
-                >
-                  <FiTrash2 size={18} />
-                </button>
-              </div>
-            ))
+                    justifyContent: 'center',
+                    border: iconBorder,
+                    zIndex: 1
+                  }}>
+                    {icon}
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0, zIndex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <h3 style={{ margin: 0, fontSize: '16px', color: notif.isUnread ? '#fff' : '#E2E8F0', fontWeight: '800' }}>
+                        {notif.title}
+                      </h3>
+                      <span style={{ fontSize: '12px', color: '#64748B', flexShrink: 0 }}>{notif.time}</span>
+                    </div>
+                    <p style={{ 
+                      margin: 0, 
+                      color: '#94A3B8', 
+                      fontSize: '14px', 
+                      lineHeight: '1.6',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden' 
+                    }}>
+                      {notif.description || notif.message}
+                    </p>
+                    {isAchievement && notif.action_url && (
+                      <div style={{ marginTop: '12px' }}>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          color: '#FFD700',
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          background: 'rgba(255, 215, 0, 0.1)',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(255, 215, 0, 0.2)'
+                        }}>
+                          <FiAward size={14} />
+                          عرض الشهادة
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteNotification(notif.id); }}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#64748B',
+                      padding: '8px',
+                      cursor: 'pointer',
+                      borderRadius: '8px',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    onMouseOver={(e) => { e.currentTarget.style.color = '#EF4444'; e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.background = 'transparent'; }}
+                    aria-label="حذف الإشعار"
+                  >
+                    <FiTrash2 size={18} />
+                  </button>
+                </div>
+              );
+            })
           )}
         </div>
 
@@ -165,3 +265,4 @@ export default function NotificationsPage() {
     </div>
   );
 }
+

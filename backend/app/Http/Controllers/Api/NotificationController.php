@@ -20,9 +20,11 @@ class NotificationController extends Controller
             ->get()
             ->map(fn (DatabaseNotification $n): array => [
                 'id'         => $n->id,
+                'type'       => $n->data['type'] ?? 'system',
                 'title'      => $n->data['title'] ?? '',
                 'message'    => $n->data['message'] ?? '',
                 'action_url' => $n->data['action_url'] ?? null,
+                'certificate_url' => $n->data['certificate_url'] ?? null,
                 'is_read'    => $n->read_at !== null,
                 'read_at'    => $n->read_at?->toIso8601String(),
                 'created_at' => $n->created_at->toIso8601String(),
@@ -71,5 +73,21 @@ class NotificationController extends Controller
         $notification->markAsRead();
 
         return response()->json(['message' => 'Notification marked as read.']);
+    }
+
+    /**
+     * Delete a notification
+     */
+    public function destroy(Request $request, string $id): JsonResponse
+    {
+        $notification = $request->user()->notifications()->find($id);
+
+        if (! $notification) {
+            return response()->json(['message' => 'Notification not found.'], 404);
+        }
+
+        $notification->delete();
+
+        return response()->json(['message' => 'Notification deleted successfully.']);
     }
 }

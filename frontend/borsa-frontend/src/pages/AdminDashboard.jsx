@@ -7,6 +7,7 @@ import AdminQuizManager from './AdminQuizManager';
 import AdminUsers from './AdminUsers';
 import AdminSettings from './AdminSettings';
 import ProfileSettings from './ProfileSettings';
+import AdminActivityWidget from '../components/AdminActivityWidget';
 import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
 
@@ -268,6 +269,10 @@ export default function AdminDashboard() {
                 </table>
               </div>
             )}
+          </section>
+
+          <section style={{ marginTop: '24px' }}>
+            <AdminActivityWidget />
           </section>
         </>
       )}
