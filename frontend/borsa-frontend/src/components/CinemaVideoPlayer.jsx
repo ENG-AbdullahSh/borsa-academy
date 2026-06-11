@@ -8,6 +8,7 @@ export default function CinemaVideoPlayer({ videoUrl, src, courseId = 'default',
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const [hasError, setHasError] = useState(false);
+  const [isPlayerReady, setIsPlayerReady] = useState(false);
 
   // Accept both videoUrl and src props for maximum compatibility with parent components
   const finalUrl = videoUrl || src;
@@ -15,6 +16,7 @@ export default function CinemaVideoPlayer({ videoUrl, src, courseId = 'default',
   useEffect(() => {
     console.log('🎬 CinemaVideoPlayer - finalUrl:', finalUrl);
     setHasError(false);
+    setIsPlayerReady(false);
   }, [finalUrl]);
 
   useEffect(() => {
@@ -58,6 +60,13 @@ export default function CinemaVideoPlayer({ videoUrl, src, courseId = 'default',
       }
     }
 
+    // Mark player as ready to hide spinner.
+    // Also listen to canplay on the raw <video> element as a fallback —
+    // some browsers fire canplay before Plyr emits 'ready'.
+    const handleReady = () => setIsPlayerReady(true);
+    player.on('ready', handleReady);
+    videoEl.addEventListener('canplay', handleReady, { once: true });
+
     // Auto-advance: fire onVideoEnded when the video finishes
     const handleEnded = () => {
       console.log('🎬 Video ended:', finalUrl);
@@ -78,7 +87,9 @@ export default function CinemaVideoPlayer({ videoUrl, src, courseId = 'default',
 
       // Destroy Plyr — use try/catch because Plyr may throw if the node is already gone
       try {
+        videoEl.removeEventListener('canplay', handleReady);
         if (playerRef.current) {
+          playerRef.current.off('ready', handleReady);
           playerRef.current.off('ended', handleEnded);
           playerRef.current.destroy();
           playerRef.current = null;
@@ -128,13 +139,31 @@ export default function CinemaVideoPlayer({ videoUrl, src, courseId = 'default',
           // crossOrigin="use-credentials" is required when the source is our /api/lessons/{id}/stream
           // endpoint, so the browser sends Sanctum session cookies with Range requests.
           // For external URLs (e.g. sample videos) we omit it to avoid a failed preflight.
-          <div ref={containerRef} className="w-full h-full">
+          <div ref={containerRef} className="w-full h-full" style={{ position: 'relative' }}>
+            {/* Loading spinner — shown until Plyr fires 'ready' */}
+            {!isPlayerReady && (
+              <div style={{
+                position: 'absolute', inset: 0,
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                background: '#000', zIndex: 10, gap: '12px',
+              }}>
+                <div style={{
+                  width: '48px', height: '48px',
+                  border: '4px solid rgba(0,255,127,0.2)',
+                  borderTopColor: '#00ff7f',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite',
+                }} />
+                <span style={{ color: '#00ff7f', fontSize: '13px', opacity: 0.8 }}>جارٍ التحضير…</span>
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+              </div>
+            )}
             <video
               className="w-full h-full"
               playsInline
               controls
-              preload="metadata"
-              crossOrigin="use-credentials"
+              preload="none"
             >
               <source src={finalUrl} type="video/mp4" />
               متصفحك لا يدعم تشغيل الفيديو.

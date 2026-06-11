@@ -65,17 +65,34 @@ class VideoStreamController extends Controller
         $length = $end - $start + 1;
 
         // ── 4. Build response headers ────────────────────────────────────
+        $lastModified = gmdate('D, d M Y H:i:s', filemtime($fullPath)) . ' GMT';
+        $etag         = '"' . md5($fullPath . $fileSize . filemtime($fullPath)) . '"';
+
+        // 304 Not Modified shortcut — saves re-streaming the whole range
+        $ifNoneMatch  = $request->header('If-None-Match');
+        $ifModified   = $request->header('If-Modified-Since');
+        if (
+            ($ifNoneMatch && $ifNoneMatch === $etag) ||
+            ($ifModified  && $ifModified  === $lastModified)
+        ) {
+            return response('', 304);
+        }
+
         $headers = [
             'Content-Type'                     => $mimeType,
             'Content-Length'                   => $length,
             'Content-Range'                    => "bytes {$start}-{$end}/{$fileSize}",
             'Accept-Ranges'                    => 'bytes',
-            'Cache-Control'                    => 'no-store, no-cache',
+            // private: only user's browser caches (not shared CDN/proxies since video is auth-protected)
+            // max-age=3600: browser may reuse cached chunks for 1 hour without re-asking
+            'Cache-Control'                    => 'private, max-age=3600',
+            'ETag'                             => $etag,
+            'Last-Modified'                    => $lastModified,
             'X-Content-Type-Options'           => 'nosniff',
             // Allow the React frontend to read these headers cross-origin
             'Access-Control-Allow-Origin'      => $request->header('Origin', '*'),
             'Access-Control-Allow-Credentials' => 'true',
-            'Access-Control-Expose-Headers'    => 'Content-Length, Content-Range, Accept-Ranges',
+            'Access-Control-Expose-Headers'    => 'Content-Length, Content-Range, Accept-Ranges, ETag',
         ];
 
         // ── 5. Stream the requested byte range ───────────────────────────

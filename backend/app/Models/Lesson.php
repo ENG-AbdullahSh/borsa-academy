@@ -25,14 +25,21 @@ class Lesson extends Model
 {
     /**
      * Get the video URL.
-     * If an uploaded video path exists, returns its public URL; otherwise returns the video_url value.
+     *
+     * For uploaded videos, we serve the file directly from public storage
+     * (e.g. http://localhost:8000/storage/lessons/videos/xxx.mp4) instead of
+     * routing through the PHP /stream controller.
+     *
+     * Why: php artisan serve is single-threaded.  Pumping a large video file
+     * through PHP blocks every other request and causes severe loading delays.
+     * Serving from public storage lets the OS/webserver stream bytes natively
+     * with zero PHP overhead, full HTTP Range support, and instant start times.
      */
     public function getVideoUrlAttribute(?string $value): ?string
     {
         if (!empty($this->video_path)) {
-            // Route through the dedicated streaming endpoint that handles
-            // HTTP Range requests — required for video seeking in all browsers.
-            return url("/api/lessons/{$this->id}/stream");
+            // Return a direct public-storage URL — no PHP processing involved.
+            return asset('storage/' . $this->video_path);
         }
         return $value;
     }
