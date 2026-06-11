@@ -183,7 +183,7 @@ function InstructorForm({
             <p className="text-muted mb-3" style={{ fontSize: '12px' }}>
               {isEdit
                 ? 'اربط الملف بحساب مدرب موجود أو اختر بدون حساب لإلغاء الربط.'
-                : 'يمكن إنشاء الملف فقط، ربط حساب مدرب موجود، أو إنشاء حساب دخول جديد.'}
+                : 'اربط المدرب بحساب مدرب موجود أو أنشئ حساب دخول جديد ليظهر ضمن المستخدمين.'}
             </p>
 
             <label className="form-label text-muted" style={{ fontSize: '12px' }}>ربط حساب مدرب موجود</label>
@@ -194,7 +194,7 @@ function InstructorForm({
               className="form-select custom-input"
               disabled={!isEdit && Boolean(form.login_email || form.password)}
             >
-              <option value="">بدون حساب دخول</option>
+              <option value="">{isEdit ? 'بدون حساب دخول' : 'اختر حساب مدرب موجود'}</option>
               {availableUsers.map((user) => (
                 <option key={user.id} value={user.id}>
                   {user.name} - {user.email} ({user.status})
@@ -205,7 +205,7 @@ function InstructorForm({
             {!isEdit && (
               <div className="row g-3 mt-1">
                 <div className="col-12 col-lg-6">
-                  <label className="form-label text-muted" style={{ fontSize: '12px' }}>بريد الدخول (اختياري)</label>
+                  <label className="form-label text-muted" style={{ fontSize: '12px' }}>بريد الدخول</label>
                   <input
                     type="email"
                     name="login_email"
@@ -213,11 +213,12 @@ function InstructorForm({
                     onChange={handleChange}
                     className="form-control custom-input"
                     disabled={Boolean(form.user_id)}
+                    required={!isEdit && !form.user_id}
                     autoComplete="off"
                   />
                 </div>
                 <div className="col-12 col-lg-6">
-                  <label className="form-label text-muted" style={{ fontSize: '12px' }}>كلمة المرور (اختياري)</label>
+                  <label className="form-label text-muted" style={{ fontSize: '12px' }}>كلمة المرور</label>
                   <input
                     type="password"
                     name="password"
@@ -226,6 +227,7 @@ function InstructorForm({
                     className="form-control custom-input"
                     minLength={8}
                     disabled={Boolean(form.user_id)}
+                    required={!isEdit && !form.user_id}
                     autoComplete="new-password"
                   />
                 </div>
@@ -312,6 +314,13 @@ export default function AdminInstructors() {
     setSubmitting(true);
 
     const isEdit = !!editingInstructor;
+
+    if (!isEdit && !form.user_id && (!form.login_email.trim() || !form.password)) {
+      showMessage('error', 'لإضافة مدرب جديد، اربطه بحساب مدرب موجود أو أدخل بريد وكلمة مرور لحساب دخول جديد.');
+      setSubmitting(false);
+      return;
+    }
+
     const endpoint = isEdit ? `${ADMIN_INSTRUCTORS_API_URL}/${editingInstructor.id}` : ADMIN_INSTRUCTORS_API_URL;
 
     try {

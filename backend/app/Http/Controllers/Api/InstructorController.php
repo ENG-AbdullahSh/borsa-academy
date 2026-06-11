@@ -106,10 +106,24 @@ class InstructorController extends Controller
 
     public function destroy(Instructor $instructor): JsonResponse
     {
-        $instructor->delete();
+        $linkedUser = $instructor->user;
+
+        DB::transaction(function () use ($instructor, $linkedUser): void {
+            if ($linkedUser) {
+                $linkedUser->update([
+                    'role' => 'student',
+                ]);
+
+                $linkedUser->tokens()->delete();
+            }
+
+            $instructor->delete();
+        });
 
         return response()->json([
-            'message' => 'تم حذف ملف المدرب. لم يتم حذف حساب المستخدم المرتبط.',
+            'message' => $linkedUser
+                ? 'تم حذف ملف المدرب وتم تحويل الحساب المرتبط إلى طالب.'
+                : 'تم حذف ملف المدرب بنجاح.',
         ]);
     }
 
@@ -153,6 +167,12 @@ class InstructorController extends Controller
     private function validated(Request $request, ?Instructor $instructor = null): array
     {
         $validated = $request->validate($this->rules($instructor));
+
+        if (! $instructor && ! $request->filled('user_id') && ! $request->filled('login_email')) {
+            throw ValidationException::withMessages([
+                'login_email' => 'يجب ربط المدرب بحساب مستخدم موجود أو إنشاء حساب دخول جديد.',
+            ]);
+        }
 
         if ($request->filled('user_id') && $request->filled('login_email')) {
             throw ValidationException::withMessages([
