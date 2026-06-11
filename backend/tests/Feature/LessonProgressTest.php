@@ -12,6 +12,11 @@ use Laravel\Sanctum\Sanctum;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
+    $this->admin = User::factory()->create([
+        'role' => 'admin',
+        'status' => 'active',
+    ]);
+
     $this->student = User::factory()->create([
         'role' => 'student',
         'status' => 'active',
@@ -51,7 +56,33 @@ beforeEach(function (): void {
     ]);
 });
 
+function createLessonQuiz($test, Lesson $lesson): array
+{
+    Sanctum::actingAs($test->admin);
+
+    $quiz = $test->postJson("/api/admin/lessons/{$lesson->id}/quiz", [
+        'title' => 'Checkpoint',
+        'description' => 'Pass to continue.',
+        'passing_score' => 70,
+        'is_active' => true,
+    ])->assertCreated()->json('data');
+
+    $question = $test->postJson("/api/admin/quizzes/{$quiz['id']}/questions", [
+        'question_text' => 'Correct answer?',
+        'points' => 1,
+        'order' => 1,
+        'options' => [
+            ['option_text' => 'Yes', 'is_correct' => true, 'order' => 1],
+            ['option_text' => 'No', 'is_correct' => false, 'order' => 2],
+        ],
+    ])->assertCreated()->json('data');
+
+    return compact('quiz', 'question');
+}
+
 test('a student can complete lessons and undo completion', function () {
+    $firstQuiz = createLessonQuiz($this, $this->firstLesson);
+    $secondQuiz = createLessonQuiz($this, $this->secondLesson);
     $enrollment = Enrollment::create([
         'user_id' => $this->student->id,
         'course_id' => $this->course->id,
@@ -66,6 +97,34 @@ test('a student can complete lessons and undo completion', function () {
             'success' => true,
             'course_id' => $this->course->id,
             'lesson_id' => $this->firstLesson->id,
+            'completed_lessons' => 0,
+            'total_lessons' => 2,
+            'progress_percentage' => 0,
+            'course_completed' => false,
+        ]);
+
+    expect($enrollment->refresh())
+        ->progress->toBe(0)
+        ->completed->toBeFalse();
+
+    $this->postJson("/api/lessons/{$this->firstLesson->id}/quiz/submit", [
+        'answers' => [
+            [
+                'question_id' => $firstQuiz['question']['id'],
+                'option_id' => $firstQuiz['question']['options'][0]['id'],
+            ],
+        ],
+    ])->assertCreated()
+        ->assertJsonPath('progress_percentage', 50)
+        ->assertJsonPath('lesson_quiz_status.gate_passed', true);
+
+    expect($enrollment->refresh())
+        ->progress->toBe(50)
+        ->completed->toBeFalse();
+
+    $this->postJson("/api/lessons/{$this->secondLesson->id}/complete")
+        ->assertOk()
+        ->assertJson([
             'completed_lessons' => 1,
             'total_lessons' => 2,
             'progress_percentage' => 50,
@@ -76,14 +135,16 @@ test('a student can complete lessons and undo completion', function () {
         ->progress->toBe(50)
         ->completed->toBeFalse();
 
-    $this->postJson("/api/lessons/{$this->secondLesson->id}/complete")
-        ->assertOk()
-        ->assertJson([
-            'completed_lessons' => 2,
-            'total_lessons' => 2,
-            'progress_percentage' => 100,
-            'course_completed' => true,
-        ]);
+    $this->postJson("/api/lessons/{$this->secondLesson->id}/quiz/submit", [
+        'answers' => [
+            [
+                'question_id' => $secondQuiz['question']['id'],
+                'option_id' => $secondQuiz['question']['options'][0]['id'],
+            ],
+        ],
+    ])->assertCreated()
+        ->assertJsonPath('progress_percentage', 100)
+        ->assertJsonPath('course_completed', true);
 
     expect($enrollment->refresh())
         ->progress->toBe(100)
@@ -92,7 +153,7 @@ test('a student can complete lessons and undo completion', function () {
     expect(Certificate::query()
         ->where('user_id', $this->student->id)
         ->where('course_id', $this->course->id)
-        ->count())->toBe(1);
+        ->count())->toBe(2);
 
     $this->deleteJson("/api/lessons/{$this->secondLesson->id}/complete")
         ->assertOk()
@@ -109,6 +170,7 @@ test('a student can complete lessons and undo completion', function () {
 });
 
 test('course and overall progress endpoints return synchronized statistics', function () {
+    $firstQuiz = createLessonQuiz($this, $this->firstLesson);
     Enrollment::create([
         'user_id' => $this->student->id,
         'course_id' => $this->course->id,
@@ -117,6 +179,14 @@ test('course and overall progress endpoints return synchronized statistics', fun
 
     Sanctum::actingAs($this->student);
     $this->postJson("/api/lessons/{$this->firstLesson->id}/complete")->assertOk();
+    $this->postJson("/api/lessons/{$this->firstLesson->id}/quiz/submit", [
+        'answers' => [
+            [
+                'question_id' => $firstQuiz['question']['id'],
+                'option_id' => $firstQuiz['question']['options'][0]['id'],
+            ],
+        ],
+    ])->assertCreated();
 
     $this->getJson("/api/my-courses/{$this->course->id}/progress")
         ->assertOk()

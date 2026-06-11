@@ -8,6 +8,7 @@ use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
 use App\Services\CourseProgressService;
+use App\Services\QuizService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,7 @@ class LessonProgressController extends Controller
 {
     public function __construct(
         private readonly CourseProgressService $courseProgressService,
+        private readonly QuizService $quizService,
     ) {}
 
     public function complete(Request $request, int $lesson): JsonResponse
@@ -64,16 +66,24 @@ class LessonProgressController extends Controller
             event(new \App\Events\CourseFinishedEvent($request->user(), $lessonModel->section->course, $progress['certificate_id'] ?? 0));
         }
 
+        $lessonStatus = $this->quizService->lessonGateStatus($request->user()->id, $lessonModel);
+
         return response()->json([
             'success' => true,
             'course_id' => $progress['course_id'],
             'lesson_id' => $lessonModel->id,
+            'section_id' => $lessonModel->section_id,
+            'video_completed' => $lessonStatus['video_completed'],
+            'lesson_completed' => $lessonStatus['gate_passed'],
+            'lesson_quiz_status' => $lessonStatus,
             'completed_lessons' => $progress['completed_lessons'],
             'total_lessons' => $progress['total_lessons'],
             'progress_percentage' => $progress['progress_percentage'],
             'course_completed' => $progress['course_completed'],
             'certificate_id' => $progress['certificate_id'],
             'certificate_status' => $progress['certificate_status'],
+            'section_certificates' => $progress['section_certificates'],
+            'section_statuses' => $progress['section_statuses'],
         ]);
     }
 
@@ -111,16 +121,24 @@ class LessonProgressController extends Controller
             return $this->courseProgressService->syncEnrollment($lockedEnrollment);
         });
 
+        $lessonStatus = $this->quizService->lessonGateStatus($request->user()->id, $lessonModel);
+
         return response()->json([
             'success' => true,
             'course_id' => $progress['course_id'],
             'lesson_id' => $lessonModel->id,
+            'section_id' => $lessonModel->section_id,
+            'video_completed' => $lessonStatus['video_completed'],
+            'lesson_completed' => $lessonStatus['gate_passed'],
+            'lesson_quiz_status' => $lessonStatus,
             'completed_lessons' => $progress['completed_lessons'],
             'total_lessons' => $progress['total_lessons'],
             'progress_percentage' => $progress['progress_percentage'],
             'course_completed' => $progress['course_completed'],
             'certificate_id' => $progress['certificate_id'],
             'certificate_status' => $progress['certificate_status'],
+            'section_certificates' => $progress['section_certificates'],
+            'section_statuses' => $progress['section_statuses'],
         ]);
     }
 
@@ -142,17 +160,24 @@ class LessonProgressController extends Controller
         }
 
         $progress = $this->courseProgressService->syncEnrollment($enrollment);
-        $completedLessonIds = LessonProgress::query()
+        $videoCompletedLessonIds = LessonProgress::query()
             ->where('user_id', $request->user()->id)
             ->where('course_id', $course->id)
             ->where('completed', true)
             ->pluck('lesson_id')
+            ->values();
+        $completedLessonIds = collect($progress['section_statuses'])
+            ->flatMap(fn (array $section): array => collect($section['lessons'])
+                ->where('gate_passed', true)
+                ->pluck('lesson_id')
+                ->all())
             ->values();
 
         return response()->json([
             'success' => true,
             ...$progress,
             'completed_lesson_ids' => $completedLessonIds,
+            'video_completed_lesson_ids' => $videoCompletedLessonIds,
         ]);
     }
 

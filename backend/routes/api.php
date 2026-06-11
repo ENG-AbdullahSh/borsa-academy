@@ -66,9 +66,12 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/my-certificates', [CertificateController::class, 'index']);
         Route::get('/my-certificates/{certificate}', [CertificateController::class, 'show'])->whereNumber('certificate');
         Route::get('/my-courses/{courseId}/certificate', [CertificateController::class, 'course'])->whereNumber('courseId');
+        Route::get('/my-courses/{courseId}/sections/{section}/certificate', [CertificateController::class, 'section'])->whereNumber('courseId')->whereNumber('section');
         Route::get('/certificates/{id}/download', [CertificateController::class, 'downloadPdf'])->whereNumber('id');
         Route::get('/courses/{course}/quiz', [QuizController::class, 'show'])->whereNumber('course');
         Route::post('/courses/{course}/quiz/submit', [QuizController::class, 'submit'])->whereNumber('course');
+        Route::get('/lessons/{lesson}/quiz', [QuizController::class, 'showLesson'])->whereNumber('lesson');
+        Route::post('/lessons/{lesson}/quiz/submit', [QuizController::class, 'submitLesson'])->whereNumber('lesson');
         Route::get('/my-quiz-attempts', [QuizController::class, 'attempts']);
         Route::get('/my-courses/{course}/quiz-status', [QuizController::class, 'status'])->whereNumber('course');
         Route::post('/lessons/{lesson}/complete', [LessonProgressController::class, 'complete'])->whereNumber('lesson');
@@ -93,6 +96,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::get('/instructor/courses/{course}/quiz', [AdminQuizController::class, 'show'])->whereNumber('course');
         Route::post('/instructor/courses/{course}/quiz', [AdminQuizController::class, 'store'])->whereNumber('course');
+        Route::get('/instructor/lessons/{lesson}/quiz', [AdminQuizController::class, 'showLesson'])->whereNumber('lesson');
+        Route::post('/instructor/lessons/{lesson}/quiz', [AdminQuizController::class, 'storeLesson'])->whereNumber('lesson');
         Route::put('/instructor/quizzes/{quiz}', [AdminQuizController::class, 'update'])->whereNumber('quiz');
         Route::delete('/instructor/quizzes/{quiz}', [AdminQuizController::class, 'destroy'])->whereNumber('quiz');
         Route::post('/instructor/quizzes/{quiz}/questions', [AdminQuizController::class, 'storeQuestion'])->whereNumber('quiz');
@@ -114,6 +119,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/admin/certificates', [AdminCertificateController::class, 'index']);
         Route::get('/admin/courses/{course}/quiz', [AdminQuizController::class, 'show'])->whereNumber('course');
         Route::post('/admin/courses/{course}/quiz', [AdminQuizController::class, 'store'])->whereNumber('course');
+        Route::get('/admin/lessons/{lesson}/quiz', [AdminQuizController::class, 'showLesson'])->whereNumber('lesson');
+        Route::post('/admin/lessons/{lesson}/quiz', [AdminQuizController::class, 'storeLesson'])->whereNumber('lesson');
         Route::put('/admin/quizzes/{quiz}', [AdminQuizController::class, 'update'])->whereNumber('quiz');
         Route::delete('/admin/quizzes/{quiz}', [AdminQuizController::class, 'destroy'])->whereNumber('quiz');
         Route::post('/admin/quizzes/{quiz}/questions', [AdminQuizController::class, 'storeQuestion'])->whereNumber('quiz');

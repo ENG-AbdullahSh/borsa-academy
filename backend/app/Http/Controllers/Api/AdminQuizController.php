@@ -11,6 +11,7 @@ use App\Http\Requests\Quizzes\UpdateQuizOptionRequest;
 use App\Http\Requests\Quizzes\UpdateQuizQuestionRequest;
 use App\Http\Requests\Quizzes\UpdateQuizRequest;
 use App\Models\Course;
+use App\Models\Lesson;
 use App\Models\Quiz;
 use App\Models\QuizOption;
 use App\Models\QuizQuestion;
@@ -54,6 +55,42 @@ class AdminQuizController extends Controller
 
         return response()->json([
             'message' => 'Quiz created successfully.',
+            'data' => $this->formatQuiz($quiz->load('questions.options')),
+        ], 201);
+    }
+
+    public function showLesson(Request $request, Lesson $lesson): JsonResponse
+    {
+        $lesson->load('section.course');
+        $this->authorizeCourseOwnership($request, $lesson->section->course);
+
+        $quiz = $lesson->quiz()
+            ->with('questions.options')
+            ->first();
+
+        return response()->json([
+            'data' => $quiz ? $this->formatQuiz($quiz) : null,
+        ]);
+    }
+
+    public function storeLesson(StoreQuizRequest $request, Lesson $lesson): JsonResponse
+    {
+        $lesson->load('section.course');
+        $this->authorizeCourseOwnership($request, $lesson->section->course);
+
+        if ($lesson->quiz()->exists()) {
+            return response()->json([
+                'message' => 'This lesson already has a quiz.',
+            ], 409);
+        }
+
+        $quiz = $lesson->quiz()->create([
+            ...$request->validated(),
+            'course_id' => $lesson->section->course_id,
+        ]);
+
+        return response()->json([
+            'message' => 'Lesson quiz created successfully.',
             'data' => $this->formatQuiz($quiz->load('questions.options')),
         ], 201);
     }
@@ -203,11 +240,14 @@ class AdminQuizController extends Controller
      */
     private function formatQuiz(Quiz $quiz): array
     {
-        $quiz->loadMissing('questions.options');
+        $quiz->loadMissing(['lesson', 'questions.options']);
 
         return [
             'id' => $quiz->id,
             'course_id' => $quiz->course_id,
+            'lesson_id' => $quiz->lesson_id,
+            'lesson_title' => $quiz->lesson?->title,
+            'section_id' => $quiz->lesson?->section_id,
             'title' => $quiz->title,
             'description' => $quiz->description,
             'passing_score' => $quiz->passing_score,

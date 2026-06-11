@@ -22,11 +22,18 @@ class CertificateResource extends JsonResource
             'id' => $this->id,
             'user_id' => $this->user_id,
             'course_id' => $this->course_id,
+            'section_id' => $this->section_id,
+            'scope_type' => $this->scope_type ?? 'course',
+            'scope_id' => $this->scope_id,
             'certificate_number' => $this->certificate_number,
             'student_name' => $this->user?->name,
             'course_title' => $this->course?->title,
+            'section_title' => $this->section?->title,
+            'certificate_title' => $this->section
+                ? (($this->course?->title ?? 'Course') . ' - ' . $this->section->title)
+                : $this->course?->title,
             'issued_at' => $this->issued_at,
-            'progress_percentage' => (int) ($progress ?? 100),
+            'progress_percentage' => $this->scope_type === 'section' ? 100 : (int) ($progress ?? 100),
             'verification_url' => url("/certificates/verify/{$this->certificate_number}"),
         ];
     }

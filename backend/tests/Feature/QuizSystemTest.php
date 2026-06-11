@@ -80,6 +80,48 @@ function createQuizThroughApi($test): array
     return compact('quiz', 'firstQuestion', 'secondQuestion');
 }
 
+function createLessonQuizThroughApi($test, ?Lesson $lesson = null): array
+{
+    Sanctum::actingAs($test->admin);
+    $lesson ??= $test->lesson;
+
+    $quiz = $test->postJson("/api/admin/lessons/{$lesson->id}/quiz", [
+        'title' => 'Lesson Checkpoint',
+        'description' => 'Pass this quiz to unlock the next video.',
+        'passing_score' => 70,
+        'is_active' => true,
+    ])->assertCreated()->json('data');
+
+    $question = $test->postJson("/api/admin/quizzes/{$quiz['id']}/questions", [
+        'question_text' => 'What unlocks the next lesson?',
+        'points' => 1,
+        'order' => 1,
+        'options' => [
+            ['option_text' => 'Passing this quiz', 'is_correct' => true, 'order' => 1],
+            ['option_text' => 'Only opening the video', 'is_correct' => false, 'order' => 2],
+        ],
+    ])->assertCreated()->json('data');
+
+    return compact('quiz', 'question');
+}
+
+function passLessonQuiz($test, array $lessonQuiz, ?Lesson $lesson = null): void
+{
+    $lesson ??= $test->lesson;
+    Sanctum::actingAs($test->student);
+
+    $test->postJson("/api/lessons/{$lesson->id}/complete")->assertOk();
+    $test->postJson("/api/lessons/{$lesson->id}/quiz/submit", [
+        'answers' => [
+            [
+                'question_id' => $lessonQuiz['question']['id'],
+                'option_id' => $lessonQuiz['question']['options'][0]['id'],
+            ],
+        ],
+    ])->assertCreated()
+        ->assertJsonPath('attempt.passed', true);
+}
+
 test('admin can manage one valid quiz per course', function () {
     $data = createQuizThroughApi($this);
 
@@ -136,6 +178,7 @@ test('question creation requires two options and exactly one correct option', fu
 });
 
 test('quiz stays locked until course completion and hides correct answers', function () {
+    $lessonQuiz = createLessonQuizThroughApi($this);
     createQuizThroughApi($this);
     Sanctum::actingAs($this->student);
 
@@ -144,11 +187,30 @@ test('quiz stays locked until course completion and hides correct answers', func
 
     $this->postJson("/api/lessons/{$this->lesson->id}/complete")
         ->assertOk()
-        ->assertJsonPath('progress_percentage', 100)
+        ->assertJsonPath('progress_percentage', 0)
+        ->assertJsonPath('lesson_quiz_status.can_take_quiz', true)
         ->assertJsonPath('certificate_id', null)
-        ->assertJsonPath('certificate_status.locked_reason', 'quiz_not_passed');
+        ->assertJsonPath('certificate_status.locked_reason', 'lesson_quiz_not_passed');
 
-    expect(Certificate::query()->count())->toBe(0);
+    expect(Certificate::query()->where('scope_type', 'course')->count())->toBe(0);
+
+    $lessonResponse = $this->getJson("/api/lessons/{$this->lesson->id}/quiz")
+        ->assertOk()
+        ->assertJsonPath('data.passing_score', 70)
+        ->assertJsonCount(1, 'data.questions');
+
+    expect(json_encode($lessonResponse->json('data')))->not->toContain('is_correct');
+
+    $this->postJson("/api/lessons/{$this->lesson->id}/quiz/submit", [
+        'answers' => [
+            [
+                'question_id' => $lessonQuiz['question']['id'],
+                'option_id' => $lessonQuiz['question']['options'][0]['id'],
+            ],
+        ],
+    ])->assertCreated()
+        ->assertJsonPath('progress_percentage', 100)
+        ->assertJsonPath('certificate_status.locked_reason', 'quiz_not_passed');
 
     $response = $this->getJson("/api/courses/{$this->course->id}/quiz")
         ->assertOk()
@@ -163,9 +225,10 @@ test('quiz stays locked until course completion and hides correct answers', func
 });
 
 test('failed attempts keep the certificate locked and a passing attempt unlocks it', function () {
+    $lessonQuiz = createLessonQuizThroughApi($this);
     $data = createQuizThroughApi($this);
+    passLessonQuiz($this, $lessonQuiz);
     Sanctum::actingAs($this->student);
-    $this->postJson("/api/lessons/{$this->lesson->id}/complete")->assertOk();
 
     $this->postJson("/api/courses/{$this->course->id}/quiz/submit", [
         'answers' => [
@@ -182,7 +245,8 @@ test('failed attempts keep the certificate locked and a passing attempt unlocks 
         ->assertJsonPath('attempt.passed', false)
         ->assertJsonPath('certificate_unlocked', false);
 
-    expect(Certificate::query()->count())->toBe(0);
+    expect(Certificate::query()->where('scope_type', 'course')->count())->toBe(0)
+        ->and(Certificate::query()->where('scope_type', 'section')->count())->toBe(1);
 
     $passingResponse = $this->postJson("/api/courses/{$this->course->id}/quiz/submit", [
         'answers' => [
@@ -202,8 +266,9 @@ test('failed attempts keep the certificate locked and a passing attempt unlocks 
 
     $certificateId = $passingResponse->json('certificate_id');
 
-    expect(Certificate::query()->count())->toBe(1)
-        ->and(QuizAttempt::query()->count())->toBe(2);
+    expect(Certificate::query()->where('scope_type', 'course')->count())->toBe(1)
+        ->and(Certificate::query()->where('scope_type', 'section')->count())->toBe(1)
+        ->and(QuizAttempt::query()->count())->toBe(3);
 
     $this->getJson("/api/my-courses/{$this->course->id}/quiz-status")
         ->assertOk()
@@ -230,21 +295,33 @@ test('failed attempts keep the certificate locked and a passing attempt unlocks 
         ->assertJsonPath('already_passed', true)
         ->assertJsonPath('certificate_id', $certificateId);
 
-    expect(QuizAttempt::query()->count())->toBe(2)
-        ->and(Certificate::query()->count())->toBe(1);
+    expect(QuizAttempt::query()->count())->toBe(3)
+        ->and(Certificate::query()->where('scope_type', 'course')->count())->toBe(1);
 
     $this->getJson('/api/my-quiz-attempts')
         ->assertOk()
-        ->assertJsonCount(2, 'data');
+        ->assertJsonCount(3, 'data');
 });
 
 test('a completed course without an active quiz still issues a certificate', function () {
+    $lessonQuiz = createLessonQuizThroughApi($this);
     Sanctum::actingAs($this->student);
 
     $this->postJson("/api/lessons/{$this->lesson->id}/complete")
         ->assertOk()
+        ->assertJsonPath('certificate_status.certificate_unlocked', false);
+
+    $this->postJson("/api/lessons/{$this->lesson->id}/quiz/submit", [
+        'answers' => [
+            [
+                'question_id' => $lessonQuiz['question']['id'],
+                'option_id' => $lessonQuiz['question']['options'][0]['id'],
+            ],
+        ],
+    ])->assertCreated()
         ->assertJsonPath('certificate_status.has_active_quiz', false)
         ->assertJsonPath('certificate_status.certificate_unlocked', true);
 
-    expect(Certificate::query()->count())->toBe(1);
+    expect(Certificate::query()->where('scope_type', 'course')->count())->toBe(1)
+        ->and(Certificate::query()->where('scope_type', 'section')->count())->toBe(1);
 });

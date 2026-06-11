@@ -36,7 +36,7 @@ export default function CertificateCard({ certificate }) {
         </h2>
         <p className="text-muted mb-2">قد أتم/ت بنجاح دورة</p>
         <h3 className="text-white fw-bold mb-5" style={{ fontSize: 'clamp(22px, 3vw, 34px)' }}>
-          {certificate.course_title}
+          {certificate.certificate_title || certificate.course_title}
         </h3>
 
         <div className="row g-3 text-start">

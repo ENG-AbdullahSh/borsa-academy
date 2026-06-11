@@ -33,6 +33,8 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
   const apiScope = `${API_BASE_URL}/${scope}`;
   const [courses, setCourses] = useState([]);
   const [selectedCourseId, setSelectedCourseId] = useState(String(fixedCourseId || ''));
+  const [curriculum, setCurriculum] = useState(null);
+  const [selectedLessonId, setSelectedLessonId] = useState('');
   const [quiz, setQuiz] = useState(null);
   const [quizForm, setQuizForm] = useState(EMPTY_QUIZ);
   const [questionForm, setQuestionForm] = useState(EMPTY_QUESTION);
@@ -42,6 +44,14 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
+  const lessons = useMemo(() => (
+    (curriculum?.sections || []).flatMap((section) => (
+      (section.lessons || []).map((lesson) => ({
+        ...lesson,
+        section_title: section.title,
+      }))
+    ))
+  ), [curriculum]);
 
   const showMessage = useCallback((type, text) => {
     setMessage({ type, text });
@@ -83,14 +93,18 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
     ))));
   }, []);
 
-  const loadQuiz = useCallback(async (courseId, signal) => {
-    if (!courseId || !token) return;
+  const loadQuiz = useCallback(async (lessonId, signal) => {
+    if (!lessonId || !token) {
+      hydrateQuiz(null);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     setMessage(null);
 
     try {
-      const response = await fetch(`${apiScope}/courses/${courseId}/quiz`, {
+      const response = await fetch(`${apiScope}/lessons/${lessonId}/quiz`, {
         headers,
         signal,
       });
@@ -100,6 +114,46 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
       if (error.name !== 'AbortError') {
         hydrateQuiz(null);
         showMessage('error', requestMessage(error, 'تعذر تحميل اختبار الدورة.'));
+      }
+    } finally {
+      if (!signal?.aborted) setLoading(false);
+    }
+  }, [apiScope, headers, hydrateQuiz, showMessage, token]);
+
+  const loadCurriculum = useCallback(async (courseId, signal) => {
+    if (!courseId || !token) {
+      setCurriculum(null);
+      setSelectedLessonId('');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${apiScope}/courses/${courseId}/curriculum`, {
+        headers,
+        signal,
+      });
+      const payload = await readJsonResponse(response);
+      const nextCurriculum = payload.data || null;
+      const nextLessons = (nextCurriculum?.sections || []).flatMap((section) => section.lessons || []);
+
+      setCurriculum(nextCurriculum);
+      setSelectedLessonId((current) => (
+        nextLessons.some((lesson) => String(lesson.id) === String(current))
+          ? current
+          : String(nextLessons[0]?.id || '')
+      ));
+
+      if (nextLessons.length === 0) {
+        hydrateQuiz(null);
+      }
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        setCurriculum(null);
+        setSelectedLessonId('');
+        hydrateQuiz(null);
+        showMessage('error', requestMessage(error, 'تعذر تحميل دروس الدورة.'));
       }
     } finally {
       if (!signal?.aborted) setLoading(false);
@@ -128,6 +182,9 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
           : (Array.isArray(payload.data) ? payload.data : []);
         setCourses(nextCourses);
         setSelectedCourseId(String(fixedCourseId || nextCourses[0]?.id || ''));
+        if (nextCourses.length === 0) {
+          setLoading(false);
+        }
       } catch (error) {
         if (error.name !== 'AbortError') {
           showMessage('error', requestMessage(error, 'تعذر تحميل الكورسات.'));
@@ -144,11 +201,22 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
     if (!selectedCourseId) return undefined;
 
     const controller = new AbortController();
-    Promise.resolve().then(() => loadQuiz(selectedCourseId, controller.signal));
+    Promise.resolve().then(() => loadCurriculum(selectedCourseId, controller.signal));
     return () => controller.abort();
-  }, [loadQuiz, selectedCourseId]);
+  }, [loadCurriculum, selectedCourseId]);
 
-  const refresh = () => loadQuiz(selectedCourseId);
+  useEffect(() => {
+    if (!selectedLessonId) {
+      hydrateQuiz(null);
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    Promise.resolve().then(() => loadQuiz(selectedLessonId, controller.signal));
+    return () => controller.abort();
+  }, [hydrateQuiz, loadQuiz, selectedLessonId]);
+
+  const refresh = () => loadQuiz(selectedLessonId);
 
   const saveQuiz = async (event) => {
     event.preventDefault();
@@ -159,7 +227,7 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
       const response = await fetch(
         quiz
           ? `${apiScope}/quizzes/${quiz.id}`
-          : `${apiScope}/courses/${selectedCourseId}/quiz`,
+          : `${apiScope}/lessons/${selectedLessonId}/quiz`,
         {
           method: quiz ? 'PUT' : 'POST',
           headers: apiHeaders(token, true),
@@ -385,16 +453,36 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
           <h1 className="fw-bold text-white mb-1" style={{ fontSize: '28px' }}>إدارة الاختبارات</h1>
           <p className="text-muted mb-0">أنشئ اختباراً نهائياً لكل دورة وحدد درجة النجاح.</p>
         </div>
-        {!fixedCourseId && (
+        <div className="d-flex flex-column flex-lg-row gap-2" style={{ minWidth: fixedCourseId ? '360px' : '620px' }}>
+          {!fixedCourseId && (
+            <select
+              value={selectedCourseId}
+              onChange={(event) => {
+                setSelectedCourseId(event.target.value);
+                setSelectedLessonId('');
+              }}
+              className="form-select custom-input"
+              style={{ minWidth: '280px' }}
+            >
+              {courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}
+            </select>
+          )}
           <select
-            value={selectedCourseId}
-            onChange={(event) => setSelectedCourseId(event.target.value)}
+            value={selectedLessonId}
+            onChange={(event) => setSelectedLessonId(event.target.value)}
             className="form-select custom-input"
-            style={{ maxWidth: '360px' }}
+            disabled={lessons.length === 0}
+            style={{ minWidth: '300px' }}
           >
-            {courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}
+            {lessons.length === 0 ? (
+              <option value="">أضف درسا أولا</option>
+            ) : lessons.map((lesson) => (
+              <option key={lesson.id} value={lesson.id}>
+                {lesson.section_title} - {lesson.title}
+              </option>
+            ))}
           </select>
-        )}
+        </div>
       </div>
 
       {message && (
@@ -414,6 +502,11 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
         <div className="py-5 text-center"><span className="spinner-border" style={{ color: '#75ff9e' }} /></div>
       ) : (
         <>
+          {lessons.length === 0 && (
+            <div className="glass-card rounded-3 p-4 text-center text-muted">
+              أضف درسا في محتوى الدورة قبل إنشاء اختبار.
+            </div>
+          )}
           <form onSubmit={saveQuiz} className="glass-card rounded-3 p-4">
             <div className="d-flex justify-content-between align-items-center mb-4">
               <div>
@@ -473,7 +566,7 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
                 />
               </div>
               <div className="col-12">
-                <button type="submit" className="btn btn-primary-cta px-4 py-2 fw-bold" disabled={saving || !selectedCourseId}>
+                <button type="submit" className="btn btn-primary-cta px-4 py-2 fw-bold" disabled={saving || !selectedLessonId}>
                   {quiz ? 'حفظ الإعدادات' : 'إنشاء الاختبار'}
                 </button>
               </div>

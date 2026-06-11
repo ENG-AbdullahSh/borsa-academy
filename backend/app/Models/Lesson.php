@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
@@ -76,5 +77,10 @@ class Lesson extends Model
     public function lessonProgress(): HasMany
     {
         return $this->hasMany(LessonProgress::class);
+    }
+
+    public function quiz(): HasOne
+    {
+        return $this->hasOne(Quiz::class);
     }
 }

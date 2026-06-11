@@ -33,6 +33,7 @@ export default function CourseDetail() {
   const [curriculumRefreshKey, setCurriculumRefreshKey] = useState(0);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isQuizOpen, setIsQuizOpen] = useState(false);
+  const [quizLesson, setQuizLesson] = useState(null);
   const [quizStatus, setQuizStatus] = useState(null);
   const [quizStatusLoading, setQuizStatusLoading] = useState(false);
   // Tracks which lesson the video player is currently showing
@@ -291,6 +292,12 @@ export default function CourseDetail() {
   }, []);
 
   const handleLessonProgressChange = useCallback((lessonId, completed, progress) => {
+    const nextLessonPatch = {
+      video_completed: progress.video_completed ?? completed,
+      completed: progress.lesson_completed ?? completed,
+      quiz_status: progress.lesson_quiz_status,
+    };
+
     setCurriculum((current) => {
       if (!current) return current;
 
@@ -300,12 +307,20 @@ export default function CourseDetail() {
         course_completed: progress.course_completed,
         sections: (current.sections || []).map((section) => ({
           ...section,
+          certificate_status: (progress.section_statuses || []).find((status) => status.section_id === section.id)
+            || section.certificate_status,
+          completed: (progress.section_statuses || []).find((status) => status.section_id === section.id)?.section_completed
+            ?? section.completed,
           lessons: (section.lessons || []).map((lesson) => (
-            lesson.id === lessonId ? { ...lesson, completed } : lesson
+            lesson.id === lessonId ? { ...lesson, ...nextLessonPatch } : lesson
           )),
         })),
       };
     });
+
+    setActiveLesson((current) => (
+      current?.id === lessonId ? { ...current, ...nextLessonPatch } : current
+    ));
 
     setEnrollment((current) => current ? {
       ...current,
@@ -329,10 +344,18 @@ export default function CourseDetail() {
         });
         const payload = await readJsonResponse(response);
         handleLessonProgressChange(currentLesson.id, true, payload);
+        if (payload.lesson_quiz_status?.can_take_quiz) {
+          setQuizLesson({ ...currentLesson, video_completed: true, quiz_status: payload.lesson_quiz_status });
+          setIsQuizOpen(true);
+        } else if (!payload.lesson_quiz_status?.quiz_passed) {
+          setNotice(payload.lesson_quiz_status?.locked_message || 'يجب اجتياز اختبار الدرس قبل فتح الدرس التالي.');
+        }
       } catch (err) {
         console.warn('⚠️ Auto-complete failed:', err);
       }
     }
+
+    return;
 
     // 2. Auto-advance to the next lesson
     const currentIndex = allPlayableLessons.findIndex((l) => l.id === currentLesson.id);
@@ -343,6 +366,35 @@ export default function CourseDetail() {
   }, [currentLesson, token, isAuthenticated, allPlayableLessons, handleLessonProgressChange]);
 
   const handleQuizPassed = useCallback((payload) => {
+    if (payload.lesson_id) {
+      handleLessonProgressChange(payload.lesson_id, true, {
+        ...payload,
+        video_completed: true,
+        lesson_completed: true,
+        lesson_quiz_status: {
+          ...(quizLesson?.quiz_status || {}),
+          lesson_id: payload.lesson_id,
+          section_id: payload.section_id,
+          video_completed: true,
+          lesson_completed: true,
+          gate_passed: true,
+          quiz_passed: true,
+          can_take_quiz: false,
+          passed_attempt: payload.attempt,
+          latest_attempt: payload.attempt,
+          locked_reason: null,
+          locked_message: null,
+        },
+        });
+      const currentIndex = allPlayableLessons.findIndex((lesson) => lesson.id === payload.lesson_id);
+      const nextLesson = allPlayableLessons[currentIndex + 1] || null;
+      if (nextLesson) {
+        setActiveLesson(nextLesson);
+      }
+      setNotice('تم اجتياز اختبار الدرس. يمكنك المتابعة إلى الدرس التالي.');
+      return;
+    }
+
     setQuizStatus((current) => ({
       ...(current || {}),
       quiz_passed: true,
@@ -354,7 +406,7 @@ export default function CourseDetail() {
       passed_attempt: payload.attempt,
       latest_attempt: payload.attempt,
     }));
-  }, []);
+  }, [allPlayableLessons, handleLessonProgressChange, quizLesson]);
 
   if (!isCourseIdValid) {
     return (
@@ -505,7 +557,10 @@ export default function CourseDetail() {
                   <>
                     {progressPercentage >= 100 && quizStatus?.has_active_quiz && (
                       <button
-                        onClick={() => setIsQuizOpen(true)}
+                        onClick={() => {
+                          setQuizLesson(null);
+                          setIsQuizOpen(true);
+                        }}
                         disabled={quizStatusLoading || quizStatus.quiz_passed || !quizStatus.quiz_ready}
                         className="btn px-4 py-2 fw-bold interactive btn-primary-cta d-flex align-items-center gap-2"
                         style={{ borderRadius: '8px', fontSize: '13px', fontFamily: 'var(--font-sans)', opacity: quizStatus.quiz_passed ? 0.7 : 1 }}
@@ -535,7 +590,9 @@ export default function CourseDetail() {
             <CourseQuiz
               isOpen={isQuizOpen}
               onClose={() => setIsQuizOpen(false)}
-              courseId={courseId}
+              courseId={quizLesson ? null : courseId}
+              lessonId={quizLesson?.id || null}
+              lessonTitle={quizLesson?.title || ''}
               onPassed={handleQuizPassed}
             />
 
@@ -588,7 +645,10 @@ export default function CourseDetail() {
               progressPercent={progressPercentage}
               courseId={courseId}
               quizStatus={quizStatus}
-              onStartQuiz={() => setIsQuizOpen(true)}
+              onStartQuiz={(lesson) => {
+                setQuizLesson(lesson || null);
+                setIsQuizOpen(true);
+              }}
               onLessonProgressChange={handleLessonProgressChange}
               activeLessonId={currentLesson?.id || null}
               onLessonSelect={handleLessonSelect}

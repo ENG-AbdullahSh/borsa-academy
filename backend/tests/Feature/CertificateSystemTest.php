@@ -12,6 +12,11 @@ use Laravel\Sanctum\Sanctum;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
+    $this->admin = User::factory()->create([
+        'role' => 'admin',
+        'status' => 'active',
+    ]);
+
     $this->student = User::factory()->create([
         'name' => 'Certificate Student',
         'role' => 'student',
@@ -51,34 +56,54 @@ beforeEach(function (): void {
     ]);
 });
 
-test('completing the final lesson automatically issues one certificate', function () {
-    Sanctum::actingAs($this->student);
+function createAndPassLessonQuiz($test): void
+{
+    Sanctum::actingAs($test->admin);
 
-    $response = $this->postJson("/api/lessons/{$this->lesson->id}/complete")
-        ->assertOk()
-        ->assertJsonPath('progress_percentage', 100)
-        ->assertJsonPath('course_completed', true);
+    $quiz = $test->postJson("/api/admin/lessons/{$test->lesson->id}/quiz", [
+        'title' => 'Certificate Gate',
+        'description' => 'Pass to unlock certificates.',
+        'passing_score' => 70,
+        'is_active' => true,
+    ])->assertCreated()->json('data');
 
-    $certificate = Certificate::query()->sole();
+    $question = $test->postJson("/api/admin/quizzes/{$quiz['id']}/questions", [
+        'question_text' => 'Correct answer?',
+        'points' => 1,
+        'order' => 1,
+        'options' => [
+            ['option_text' => 'Yes', 'is_correct' => true, 'order' => 1],
+            ['option_text' => 'No', 'is_correct' => false, 'order' => 2],
+        ],
+    ])->assertCreated()->json('data');
 
-    expect($response->json('certificate_id'))->toBe($certificate->id)
-        ->and($certificate->user_id)->toBe($this->student->id)
-        ->and($certificate->course_id)->toBe($this->course->id)
-        ->and($certificate->certificate_number)->toStartWith('BA-')
-        ->and($certificate->issued_at)->not->toBeNull();
+    Sanctum::actingAs($test->student);
+    $test->postJson("/api/lessons/{$test->lesson->id}/complete")->assertOk();
+    $test->postJson("/api/lessons/{$test->lesson->id}/quiz/submit", [
+        'answers' => [
+            [
+                'question_id' => $question['id'],
+                'option_id' => $question['options'][0]['id'],
+            ],
+        ],
+    ])->assertCreated();
+}
 
-    $this->postJson("/api/lessons/{$this->lesson->id}/complete")
-        ->assertOk()
-        ->assertJsonPath('certificate_id', $certificate->id);
+test('completing the final lesson quiz issues section and course certificates', function () {
+    createAndPassLessonQuiz($this);
 
-    expect(Certificate::query()->count())->toBe(1);
+    $courseCertificate = Certificate::query()->where('scope_type', 'course')->sole();
+    $sectionCertificate = Certificate::query()->where('scope_type', 'section')->sole();
+
+    expect($courseCertificate->user_id)->toBe($this->student->id)
+        ->and($courseCertificate->course_id)->toBe($this->course->id)
+        ->and($courseCertificate->certificate_number)->toStartWith('BA-')
+        ->and($courseCertificate->issued_at)->not->toBeNull()
+        ->and($sectionCertificate->section_id)->toBe($this->lesson->section_id);
 });
 
 test('a student can list and view only their certificates', function () {
-    $this->enrollment->update([
-        'progress' => 100,
-        'completed' => true,
-    ]);
+    createAndPassLessonQuiz($this);
 
     Sanctum::actingAs($this->student);
 
@@ -92,7 +117,7 @@ test('a student can list and view only their certificates', function () {
 
     $this->getJson('/api/my-certificates')
         ->assertOk()
-        ->assertJsonCount(1, 'data')
+        ->assertJsonCount(2, 'data')
         ->assertJsonPath('data.0.id', $certificateId);
 
     $this->getJson("/api/my-certificates/{$certificateId}")
@@ -109,8 +134,8 @@ test('a certificate requires a completed enrollment', function () {
     Sanctum::actingAs($this->student);
 
     $this->getJson("/api/my-courses/{$this->course->id}/certificate")
-        ->assertUnprocessable()
-        ->assertJsonPath('message', 'The course must be completed before a certificate is issued.');
+        ->assertStatus(423)
+        ->assertJsonPath('locked_reason', 'lesson_quiz_missing');
 
     expect(Certificate::query()->count())->toBe(0);
 
@@ -122,10 +147,7 @@ test('a certificate requires a completed enrollment', function () {
 });
 
 test('admins can list certificates and students cannot use the admin endpoint', function () {
-    $this->enrollment->update([
-        'progress' => 100,
-        'completed' => true,
-    ]);
+    createAndPassLessonQuiz($this);
 
     Sanctum::actingAs($this->student);
     $this->getJson("/api/my-courses/{$this->course->id}/certificate")->assertOk();
@@ -136,11 +158,11 @@ test('admins can list certificates and students cannot use the admin endpoint', 
 
     $this->getJson('/api/admin/certificates')
         ->assertOk()
-        ->assertJsonCount(1, 'data')
+        ->assertJsonCount(2, 'data')
         ->assertJsonPath('data.0.student_name', $this->student->name)
         ->assertJsonPath('data.0.course_title', $this->course->title);
 
     $this->getJson('/api/admin/dashboard')
         ->assertOk()
-        ->assertJsonPath('stats.total_certificates', 1);
+        ->assertJsonPath('stats.total_certificates', 2);
 });

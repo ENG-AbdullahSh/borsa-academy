@@ -4,7 +4,7 @@ import CertificateCard from './CertificateCard';
 import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
 
-export default function CertificateModal({ isOpen, onClose, courseId }) {
+export default function CertificateModal({ isOpen, onClose, courseId, sectionId = null }) {
   const { token } = useAuth();
   const [certificate, setCertificate] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -20,7 +20,10 @@ export default function CertificateModal({ isOpen, onClose, courseId }) {
       setError('');
 
       try {
-        const response = await fetch(`${API_BASE_URL}/my-courses/${courseId}/certificate`, {
+        const endpoint = sectionId
+          ? `${API_BASE_URL}/my-courses/${courseId}/sections/${sectionId}/certificate`
+          : `${API_BASE_URL}/my-courses/${courseId}/certificate`;
+        const response = await fetch(endpoint, {
           headers: apiHeaders(token),
           signal: controller.signal,
         });
@@ -42,7 +45,7 @@ export default function CertificateModal({ isOpen, onClose, courseId }) {
 
     fetchCertificate();
     return () => controller.abort();
-  }, [courseId, isOpen, token]);
+  }, [courseId, isOpen, sectionId, token]);
 
   if (!isOpen) return null;
 

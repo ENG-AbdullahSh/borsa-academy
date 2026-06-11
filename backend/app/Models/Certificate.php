@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'course_id', 'certificate_number', 'issued_at'])]
+#[Fillable(['user_id', 'course_id', 'section_id', 'scope_type', 'scope_id', 'certificate_number', 'issued_at'])]
 class Certificate extends Model
 {
     /**
@@ -27,5 +27,10 @@ class Certificate extends Model
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
+    }
+
+    public function section(): BelongsTo
+    {
+        return $this->belongsTo(CourseSection::class, 'section_id');
     }
 }

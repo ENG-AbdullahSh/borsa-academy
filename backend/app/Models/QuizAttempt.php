@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'user_id',
     'quiz_id',
     'course_id',
+    'lesson_id',
     'score',
     'total_points',
     'percentage',
@@ -43,6 +44,11 @@ class QuizAttempt extends Model
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
+    }
+
+    public function lesson(): BelongsTo
+    {
+        return $this->belongsTo(Lesson::class);
     }
 
     public function answers(): HasMany
