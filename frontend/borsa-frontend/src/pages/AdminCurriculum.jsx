@@ -566,24 +566,128 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
               style={{ direction: 'ltr', textAlign: 'left' }}
             />
           </div>
+
+          {/* ── Video file upload ── */}
           <div className="col-12 col-lg-5">
-            <label className="form-label text-muted" style={{ fontSize: '12px' }}>رفع ملف فيديو (اختياري - يدعم حتى 500MB)</label>
+            <label className="form-label text-muted" style={{ fontSize: '12px' }}>
+              رفع ملف فيديو
+              <span style={{ color: '#64748b', marginRight: '4px' }}>(اختياري · حتى 500MB)</span>
+            </label>
+            <label
+              htmlFor={`video-file-${fileInputKey}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                cursor: 'pointer',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                border: lessonVideoFile
+                  ? '1px solid rgba(117,255,158,0.4)'
+                  : '1px dashed rgba(255,255,255,0.15)',
+                background: lessonVideoFile
+                  ? 'rgba(117,255,158,0.06)'
+                  : 'rgba(255,255,255,0.03)',
+                transition: 'border-color 0.2s, background 0.2s',
+                minHeight: '42px',
+              }}
+            >
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: '20px', color: lessonVideoFile ? '#75ff9e' : '#64748b', flexShrink: 0 }}
+              >
+                {lessonVideoFile ? 'check_circle' : 'video_file'}
+              </span>
+              <span style={{
+                fontSize: '13px',
+                color: lessonVideoFile ? '#75ff9e' : '#94a3b8',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                direction: 'ltr',
+              }}>
+                {lessonVideoFile ? lessonVideoFile.name : 'اختر ملف فيديو...'}
+              </span>
+              {lessonVideoFile && (
+                <span
+                  className="material-symbols-outlined"
+                  style={{ fontSize: '16px', color: '#ef4444', marginRight: 'auto', flexShrink: 0 }}
+                  onClick={(e) => { e.preventDefault(); setLessonVideoFile(null); setFileInputKey(Date.now()); }}
+                  title="إزالة الملف"
+                >
+                  cancel
+                </span>
+              )}
+            </label>
             <input
+              id={`video-file-${fileInputKey}`}
               key={fileInputKey}
               type="file"
               accept="video/*"
               onChange={handleVideoFileChange}
-              className="form-control custom-input"
+              style={{ display: 'none' }}
             />
           </div>
+
+          {/* ── PDF file upload ── */}
           <div className="col-12 col-lg-5">
-            <label className="form-label text-muted" style={{ fontSize: '12px' }}>رفع ملف PDF (اختياري)</label>
+            <label className="form-label text-muted" style={{ fontSize: '12px' }}>
+              رفع ملف PDF
+              <span style={{ color: '#64748b', marginRight: '4px' }}>(اختياري)</span>
+            </label>
+            <label
+              htmlFor={`pdf-file-${fileInputKey}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                cursor: 'pointer',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                border: lessonPdfFile
+                  ? '1px solid rgba(56,189,248,0.4)'
+                  : '1px dashed rgba(255,255,255,0.15)',
+                background: lessonPdfFile
+                  ? 'rgba(56,189,248,0.06)'
+                  : 'rgba(255,255,255,0.03)',
+                transition: 'border-color 0.2s, background 0.2s',
+                minHeight: '42px',
+              }}
+            >
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: '20px', color: lessonPdfFile ? '#38bdf8' : '#64748b', flexShrink: 0 }}
+              >
+                {lessonPdfFile ? 'check_circle' : 'picture_as_pdf'}
+              </span>
+              <span style={{
+                fontSize: '13px',
+                color: lessonPdfFile ? '#38bdf8' : '#94a3b8',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                direction: 'ltr',
+              }}>
+                {lessonPdfFile ? lessonPdfFile.name : 'اختر ملف PDF...'}
+              </span>
+              {lessonPdfFile && (
+                <span
+                  className="material-symbols-outlined"
+                  style={{ fontSize: '16px', color: '#ef4444', marginRight: 'auto', flexShrink: 0 }}
+                  onClick={(e) => { e.preventDefault(); setLessonPdfFile(null); setFileInputKey(Date.now()); }}
+                  title="إزالة الملف"
+                >
+                  cancel
+                </span>
+              )}
+            </label>
             <input
+              id={`pdf-file-${fileInputKey}`}
               key={`pdf-${fileInputKey}`}
               type="file"
               accept=".pdf"
-              onChange={(event) => setLessonPdfFile(event.target.files[0])}
-              className="form-control custom-input"
+              onChange={(event) => setLessonPdfFile(event.target.files[0] || null)}
+              style={{ display: 'none' }}
             />
           </div>
           <div className="col-6 col-lg-1">
