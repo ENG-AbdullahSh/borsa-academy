@@ -4,6 +4,7 @@ import CinemaVideoPlayer from '../components/CinemaVideoPlayer';
 import CourseCurriculum from '../components/CourseCurriculum';
 import VideoNotesSidebar from '../components/VideoNotesSidebar';
 import CourseQuiz from '../components/CourseQuiz';
+import LessonPdfViewer from '../components/LessonPdfViewer';
 import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
 import { courseImage, levelLabel } from '../utils/courseDisplay';
@@ -34,6 +35,8 @@ export default function CourseDetail() {
   const [isQuizOpen, setIsQuizOpen] = useState(false);
   const [quizStatus, setQuizStatus] = useState(null);
   const [quizStatusLoading, setQuizStatusLoading] = useState(false);
+  // Tracks which lesson the video player is currently showing
+  const [activeLesson, setActiveLesson] = useState(null);
 
   const courseId = Number(id);
   const isCourseIdValid = Number.isFinite(courseId) && courseId > 0;
@@ -52,13 +55,18 @@ export default function CourseDetail() {
     ];
   }, [course]);
 
+  // Flat ordered list of all playable lessons (used for auto-advance)
+  const allPlayableLessons = useMemo(() =>
+    sections.flatMap((section) => section.lessons || []).filter((l) => !l.is_locked && l.video_url),
+  [sections]);
+
   const firstPlayableLesson = useMemo(() => {
     if (!canAccessCourse) return null;
+    return allPlayableLessons[0] || null;
+  }, [canAccessCourse, allPlayableLessons]);
 
-    return sections
-      .flatMap((section) => section.lessons || [])
-      .find((lesson) => !lesson.is_locked && lesson.video_url) || null;
-  }, [canAccessCourse, sections]);
+  // Resolved lesson shown in the player — falls back to first playable
+  const currentLesson = activeLesson || firstPlayableLesson;
 
   const fetchEnrollment = useCallback(async (signal) => {
     if (!isAuthenticated || !token || !courseId) {
@@ -276,6 +284,12 @@ export default function CourseDetail() {
     }
   };
 
+  // Switch the player to a specific lesson (called by curriculum sidebar click)
+  const handleLessonSelect = useCallback((lesson) => {
+    if (!lesson?.video_url) return;
+    setActiveLesson(lesson);
+  }, []);
+
   const handleLessonProgressChange = useCallback((lessonId, completed, progress) => {
     setCurriculum((current) => {
       if (!current) return current;
@@ -301,6 +315,32 @@ export default function CourseDetail() {
     } : current);
     setQuizStatus(progress.certificate_status || null);
   }, []);
+
+  // Called by CinemaVideoPlayer when the video reaches the end
+  const handleVideoEnded = useCallback(async () => {
+    if (!currentLesson || !token || !isAuthenticated) return;
+
+    // 1. Auto-mark as complete if not already
+    if (!currentLesson.completed) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/lessons/${currentLesson.id}/complete`, {
+          method: 'POST',
+          headers: apiHeaders(token),
+        });
+        const payload = await readJsonResponse(response);
+        handleLessonProgressChange(currentLesson.id, true, payload);
+      } catch (err) {
+        console.warn('⚠️ Auto-complete failed:', err);
+      }
+    }
+
+    // 2. Auto-advance to the next lesson
+    const currentIndex = allPlayableLessons.findIndex((l) => l.id === currentLesson.id);
+    const nextLesson = allPlayableLessons[currentIndex + 1] || null;
+    if (nextLesson) {
+      setActiveLesson(nextLesson);
+    }
+  }, [currentLesson, token, isAuthenticated, allPlayableLessons, handleLessonProgressChange]);
 
   const handleQuizPassed = useCallback((payload) => {
     setQuizStatus((current) => ({
@@ -409,10 +449,12 @@ export default function CourseDetail() {
                 <section className="position-relative glass-card rounded-3 overflow-hidden h-100" style={{ minHeight: '380px', borderRadius: '12px' }}>
                   {canAccessCourse ? (
                     <CinemaVideoPlayer
+                      key={currentLesson?.id ?? 'default'}
                       innerRef={videoRef}
-                      src={firstPlayableLesson?.video_url || SAMPLE_VIDEO}
+                      src={currentLesson?.video_url || SAMPLE_VIDEO}
                       courseId={String(course.id)}
-                      lessonId={String(firstPlayableLesson?.id || '1_1')}
+                      lessonId={String(currentLesson?.id || '1_1')}
+                      onVideoEnded={handleVideoEnded}
                     />
                   ) : (
                     <div className="h-100 d-flex flex-column align-items-center justify-content-center text-center p-4" style={{ minHeight: '380px' }}>
@@ -442,7 +484,7 @@ export default function CourseDetail() {
               </div>
               <div className="col-12 col-xl-4">
                 {canAccessCourse ? (
-                  <VideoNotesSidebar videoRef={videoRef} courseId={String(course.id)} lessonId={String(firstPlayableLesson?.id || '1_1')} />
+                  <VideoNotesSidebar videoRef={videoRef} courseId={String(course.id)} lessonId={String(currentLesson?.id || '1_1')} />
                 ) : (
                   <div className="glass-card p-4 rounded-3 h-100 d-flex flex-column justify-content-center">
                     <img src={courseImage(course)} alt={course.title} className="w-100 rounded-3 object-cover mb-3" style={{ height: '180px' }} />
@@ -532,29 +574,8 @@ export default function CourseDetail() {
               </div>
             </div>
 
-            {canAccessCourse && (
-              <section className="glass-card p-4 rounded-3">
-                <h3 className="h5 text-white fw-bold mb-3" style={{ fontFamily: 'var(--font-sans)' }}>المواد القابلة للتنزيل</h3>
-                <div className="row g-3">
-                  {[
-                    { icon: 'picture_as_pdf', color: '#75ff9e', name: 'Course_Handbook.pdf', meta: 'ملف تدريبي أساسي' },
-                    { icon: 'terminal', color: '#81cfff', name: 'Trading_Worksheet.xlsx', meta: 'نموذج متابعة عملي' },
-                  ].map((resource) => (
-                    <div key={resource.name} className="col-12 col-md-6">
-                      <div className="p-3 rounded border d-flex align-items-center justify-content-between hover-glow" style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.08)', cursor: 'pointer' }}>
-                        <div className="d-flex align-items-center gap-3">
-                          <span className="material-symbols-outlined" style={{ color: resource.color, fontSize: '28px' }}>{resource.icon}</span>
-                          <div>
-                            <p className="m-0 text-white font-mono-data fw-semibold" style={{ fontSize: '12px' }}>{resource.name}</p>
-                            <p className="m-0 text-muted" style={{ fontSize: '11px', fontFamily: 'var(--font-sans)' }}>{resource.meta}</p>
-                          </div>
-                        </div>
-                        <span className="material-symbols-outlined text-muted">download</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
+            {canAccessCourse && currentLesson?.pdf_url && (
+              <LessonPdfViewer lesson={currentLesson} />
             )}
           </div>
 
@@ -569,6 +590,8 @@ export default function CourseDetail() {
               quizStatus={quizStatus}
               onStartQuiz={() => setIsQuizOpen(true)}
               onLessonProgressChange={handleLessonProgressChange}
+              activeLessonId={currentLesson?.id || null}
+              onLessonSelect={handleLessonSelect}
             />
           </aside>
         </div>

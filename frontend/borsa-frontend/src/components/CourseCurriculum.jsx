@@ -37,6 +37,8 @@ export default function CourseCurriculum({
   quizStatus = null,
   onStartQuiz,
   onLessonProgressChange,
+  activeLessonId = null,
+  onLessonSelect,
 }) {
   const { token } = useAuth();
   const [expandedSections, setExpandedSections] = useState({});
@@ -158,83 +160,136 @@ export default function CourseCurriculum({
             <span className="material-symbols-outlined text-muted" style={{ fontSize: '42px' }}>playlist_add</span>
             <p className="text-muted mt-3 mb-0">لم يتم إضافة دروس لهذه الدورة بعد.</p>
           </div>
-        ) : sections.map((section, index) => {
-          const isExpanded = expandedSections[section.id] ?? index === 0;
+        ) : (() => {
+          // ── Build a flat, ordered list of ALL lessons across all sections.
+          // This is used to determine sequential accessibility:
+          // lesson[n] is accessible only when lesson[n-1] is completed.
+          const allLessons = sections.flatMap((s) => s.lessons || []);
 
-          return (
-            <div key={section.id} className="accordion-section rounded border overflow-hidden" style={{ borderColor: 'rgba(255,255,255,0.06)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
-              <button
-                type="button"
-                onClick={() => toggleSection(section.id)}
-                className="w-100 btn p-3 border-0 bg-transparent text-start d-flex align-items-center justify-content-between text-white section-header-btn"
-              >
-                <span className="fw-semibold" style={{ fontSize: '13px', fontFamily: 'var(--font-sans)' }}>
-                  {section.title}
-                </span>
-                <span
-                  className="material-symbols-outlined text-muted transition-transform"
-                  style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+          return sections.map((section, index) => {
+            const isExpanded = expandedSections[section.id] ?? index === 0;
+
+            return (
+              <div key={section.id} className="accordion-section rounded border overflow-hidden" style={{ borderColor: 'rgba(255,255,255,0.06)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+                <button
+                  type="button"
+                  onClick={() => toggleSection(section.id)}
+                  className="w-100 btn p-3 border-0 bg-transparent text-start d-flex align-items-center justify-content-between text-white section-header-btn"
                 >
-                  expand_more
-                </span>
-              </button>
+                  <span className="fw-semibold" style={{ fontSize: '13px', fontFamily: 'var(--font-sans)' }}>
+                    {section.title}
+                  </span>
+                  <span
+                    className="material-symbols-outlined text-muted transition-transform"
+                    style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                  >
+                    expand_more
+                  </span>
+                </button>
 
-              <div className={`section-content ${isExpanded ? 'expanded' : ''}`}>
-                <div className="px-2 pb-2 d-flex flex-column gap-1 border-top pt-2" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-                  {(section.lessons || []).length === 0 ? (
-                    <div className="p-2 text-muted" style={{ fontSize: '12px' }}>لا توجد دروس داخل هذا القسم.</div>
-                  ) : (section.lessons || []).map((lesson) => {
-                    const isUpdating = updatingLessonId === lesson.id;
+                <div className={`section-content ${isExpanded ? 'expanded' : ''}`}>
+                  <div className="px-2 pb-2 d-flex flex-column gap-1 border-top pt-2" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                    {(section.lessons || []).length === 0 ? (
+                      <div className="p-2 text-muted" style={{ fontSize: '12px' }}>لا توجد دروس داخل هذا القسم.</div>
+                    ) : (section.lessons || []).map((lesson) => {
+                      const isUpdating = updatingLessonId === lesson.id;
+                      const isActive = lesson.id === activeLessonId;
 
-                    return (
-                      <div
-                        key={lesson.id}
-                        className={`p-2 rounded font-mono-data lesson-item ${lesson.is_locked ? 'locked' : 'current'}`}
-                      >
-                        <div className="d-flex align-items-center justify-content-between gap-2">
-                          <div className="d-flex align-items-center gap-2 min-w-0">
-                            <span className="material-symbols-outlined" style={{ color: lesson.is_locked ? '#64748b' : '#00e676', fontSize: '18px' }}>
-                              {lesson.is_locked ? 'lock' : 'play_circle'}
-                            </span>
-                            <div className="d-flex flex-column">
-                              <span className={`lesson-title ${!lesson.is_locked ? 'fw-bold text-white' : ''}`}>
-                                {lesson.title}
+                      // ── Sequential access logic ──
+                      // A lesson is sequentially locked when the PREVIOUS lesson
+                      // (in the flat allLessons order) has not been completed yet.
+                      const lessonIndex = allLessons.findIndex((l) => l.id === lesson.id);
+                      const prevLesson = lessonIndex > 0 ? allLessons[lessonIndex - 1] : null;
+                      const isSequentiallyLocked = isEnrolled && prevLesson !== null && !prevLesson.completed;
+
+                      // Final clickability: backend lock OR sequential lock prevents navigation
+                      const isHardLocked = lesson.is_locked;
+                      const canNavigate = !isHardLocked && !isSequentiallyLocked && isEnrolled && lesson.video_url;
+
+                      // Icon + colour decisions
+                      let iconName;
+                      let iconColor;
+                      if (isHardLocked) {
+                        iconName = 'lock';
+                        iconColor = '#64748b';
+                      } else if (isSequentiallyLocked) {
+                        iconName = 'lock_clock';
+                        iconColor = '#94a3b8';
+                      } else if (isActive) {
+                        iconName = 'play_circle';
+                        iconColor = '#75ff9e';
+                      } else {
+                        iconName = 'play_circle';
+                        iconColor = '#00e676';
+                      }
+
+                      const sequentialTooltip = isSequentiallyLocked ? 'أكمل الدرس السابق أولاً' : undefined;
+
+                      return (
+                        <div
+                          key={lesson.id}
+                          className={`p-2 rounded font-mono-data lesson-item ${(isHardLocked || isSequentiallyLocked) ? 'locked' : 'current'}`}
+                          style={{
+                            cursor: canNavigate ? 'pointer' : 'default',
+                            borderLeft: isActive ? '3px solid #75ff9e' : '3px solid transparent',
+                            backgroundColor: isActive ? 'rgba(117,255,158,0.06)' : undefined,
+                            transition: 'border-color 0.2s, background-color 0.2s',
+                            opacity: isSequentiallyLocked && !isHardLocked ? 0.6 : 1,
+                          }}
+                          title={sequentialTooltip}
+                          onClick={() => {
+                            if (canNavigate) {
+                              onLessonSelect?.(lesson);
+                            }
+                          }}
+                          role={canNavigate ? 'button' : undefined}
+                          tabIndex={canNavigate ? 0 : undefined}
+                          onKeyDown={(e) => {
+                            if ((e.key === 'Enter' || e.key === ' ') && canNavigate) {
+                              onLessonSelect?.(lesson);
+                            }
+                          }}
+                        >
+                          <div className="d-flex align-items-center justify-content-between gap-2">
+                            <div className="d-flex align-items-center gap-2 min-w-0">
+                              <span className="material-symbols-outlined" style={{ color: iconColor, fontSize: '18px' }}>
+                                {iconName}
                               </span>
-                              {lesson.is_preview && !isEnrolled && (
-                                <span style={{ color: '#81cfff', fontSize: '10px' }}>معاينة مجانية</span>
+                              <div className="d-flex flex-column">
+                                <span
+                                  className={`lesson-title ${!isHardLocked && !isSequentiallyLocked ? 'fw-bold text-white' : ''}`}
+                                  style={{ color: isActive ? '#75ff9e' : undefined }}
+                                >
+                                  {lesson.title}
+                                </span>
+                                {isSequentiallyLocked && (
+                                  <span style={{ color: '#94a3b8', fontSize: '10px' }}>أكمل الدرس السابق أولاً</span>
+                                )}
+                                {lesson.is_preview && !isEnrolled && (
+                                  <span style={{ color: '#81cfff', fontSize: '10px' }}>معاينة مجانية</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="d-flex align-items-center gap-2 flex-shrink-0">
+                              {isEnrolled && !isHardLocked && !isSequentiallyLocked && (
+                                isUpdating ? (
+                                  <span className="spinner-border spinner-border-sm" aria-hidden="true" style={{ width: '14px', height: '14px', color: '#75ff9e' }} />
+                                ) : lesson.completed ? (
+                                  <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#75ff9e' }} title="مكتمل">check_circle</span>
+                                ) : null
                               )}
+                              <span className="lesson-duration">{formatDuration(lesson.duration_minutes)}</span>
                             </div>
                           </div>
-                          <span className="lesson-duration flex-shrink-0">{formatDuration(lesson.duration_minutes)}</span>
                         </div>
-
-                        {isEnrolled && !lesson.is_locked && (
-                          <button
-                            type="button"
-                            onClick={() => toggleLessonCompletion(lesson)}
-                            disabled={updatingLessonId !== null}
-                            className="btn border-0 bg-transparent p-0 mt-2 d-flex align-items-center gap-2"
-                            style={{ color: lesson.completed ? '#75ff9e' : '#94a3b8', fontSize: '12px', fontFamily: 'var(--font-sans)' }}
-                            aria-pressed={Boolean(lesson.completed)}
-                          >
-                            {isUpdating ? (
-                              <span className="spinner-border spinner-border-sm" aria-hidden="true" />
-                            ) : (
-                              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                                {lesson.completed ? 'check_box' : 'check_box_outline_blank'}
-                              </span>
-                            )}
-                            {lesson.completed ? 'مكتمل' : 'تم الإنجاز'}
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          });
+        })()}
       </div>
 
       <div className="p-3 border-top" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>

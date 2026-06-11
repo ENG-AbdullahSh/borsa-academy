@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
+import axios from 'axios';
 
 const EMPTY_SECTION_FORM = {
   title: '',
@@ -76,6 +77,10 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [lessonVideoFile, setLessonVideoFile] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(null);
+  const [lessonPdfFile, setLessonPdfFile] = useState(null);
+  const [fileInputKey, setFileInputKey] = useState(Date.now());
 
   const headers = useMemo(() => apiHeaders(token), [token]);
   const apiScope = `${API_BASE_URL}/${scope}`;
@@ -171,6 +176,34 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
 
   const refreshCurriculum = () => setRefreshKey((current) => current + 1);
 
+  const handleVideoFileChange = (event) => {
+    const file = event.target.files[0];
+    setLessonVideoFile(file || null);
+
+    if (file && file.type.startsWith('video/')) {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        const durationSeconds = video.duration;
+        if (durationSeconds && !isNaN(durationSeconds)) {
+          const durationMinutes = Math.round(durationSeconds / 60);
+          setLessonForm((prev) => ({
+            ...prev,
+            duration_minutes: durationMinutes > 0 ? String(durationMinutes) : '1',
+          }));
+        }
+      };
+
+      video.onerror = () => {
+        window.URL.revokeObjectURL(video.src);
+      };
+
+      video.src = URL.createObjectURL(file);
+    }
+  };
+
   const createSection = async (event) => {
     event.preventDefault();
     if (!selectedCourseId) return;
@@ -244,19 +277,65 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
     setSubmitting(true);
 
     try {
-      const response = await fetch(`${apiScope}/lessons`, {
-        method: 'POST',
-        headers: apiHeaders(token, true),
-        body: JSON.stringify(lessonPayload(lessonForm, sectionId)),
+      setUploadProgress(lessonPdfFile ? 0 : null);
+      
+      const formData = new FormData();
+      const payload = lessonPayload(lessonForm, sectionId);
+      Object.keys(payload).forEach(key => {
+        if (payload[key] !== null) {
+          const value = typeof payload[key] === 'boolean' ? (payload[key] ? 1 : 0) : payload[key];
+          formData.append(key, value);
+        }
       });
-      await readJsonResponse(response);
+      if (lessonPdfFile) {
+        formData.append('pdf', lessonPdfFile);
+      }
+
+      const response = await axios.post(`${apiScope}/lessons`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent) => {
+          if (lessonPdfFile && !lessonVideoFile) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(percentCompleted);
+          }
+        }
+      });
+      const newLesson = response.data.data;
+
+      if (newLesson && lessonVideoFile) {
+        setUploadProgress(0);
+        const videoFormData = new FormData();
+        videoFormData.append('video', lessonVideoFile);
+
+        await axios.post(`${apiScope}/lessons/${newLesson.id}/upload-video`, videoFormData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(percentCompleted);
+          },
+        });
+      }
+
       setLessonForm({ ...EMPTY_LESSON_FORM, section_id: sectionId });
-      showMessage('success', 'تمت إضافة الدرس بنجاح.');
+      setLessonVideoFile(null);
+      setLessonPdfFile(null);
+      setUploadProgress(null);
+      setFileInputKey(Date.now()); // Reset file input element
+      showMessage('success', 'تمت إضافة الدرس والملفات بنجاح.');
       refreshCurriculum();
     } catch (error) {
-      showMessage('error', validationMessage(error, 'تعذر إضافة الدرس.'));
+      console.error(error);
+      const errorMsg = error.response ? validationMessage(error.response, 'تعذر إضافة الدرس.') : 'تعذر إضافة الدرس.';
+      showMessage('error', errorMsg);
     } finally {
       setSubmitting(false);
+      setUploadProgress(null);
     }
   };
 
@@ -478,7 +557,7 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
             />
           </div>
           <div className="col-12 col-lg-5">
-            <label className="form-label text-muted" style={{ fontSize: '12px' }}>رابط الفيديو</label>
+            <label className="form-label text-muted" style={{ fontSize: '12px' }}>رابط الفيديو (خارجي)</label>
             <input
               value={lessonForm.video_url}
               onChange={(event) => setLessonForm({ ...lessonForm, video_url: event.target.value })}
@@ -488,13 +567,23 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
             />
           </div>
           <div className="col-12 col-lg-5">
-            <label className="form-label text-muted" style={{ fontSize: '12px' }}>رابط PDF</label>
+            <label className="form-label text-muted" style={{ fontSize: '12px' }}>رفع ملف فيديو (اختياري - يدعم حتى 500MB)</label>
             <input
-              value={lessonForm.pdf_url}
-              onChange={(event) => setLessonForm({ ...lessonForm, pdf_url: event.target.value })}
+              key={fileInputKey}
+              type="file"
+              accept="video/*"
+              onChange={handleVideoFileChange}
               className="form-control custom-input"
-              placeholder="https://..."
-              style={{ direction: 'ltr', textAlign: 'left' }}
+            />
+          </div>
+          <div className="col-12 col-lg-5">
+            <label className="form-label text-muted" style={{ fontSize: '12px' }}>رفع ملف PDF (اختياري)</label>
+            <input
+              key={`pdf-${fileInputKey}`}
+              type="file"
+              accept=".pdf"
+              onChange={(event) => setLessonPdfFile(event.target.files[0])}
+              className="form-control custom-input"
             />
           </div>
           <div className="col-6 col-lg-1">
@@ -519,8 +608,24 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
               معاينة
             </label>
           </div>
+          {uploadProgress !== null && (
+            <div className="col-12">
+              <div className="progress bg-dark" style={{ height: '22px', borderRadius: '8px', overflow: 'hidden' }}>
+                <div
+                  className="progress-bar progress-bar-striped progress-bar-animated bg-success fw-bold"
+                  role="progressbar"
+                  style={{ width: `${uploadProgress}%`, transition: 'width 0.1s ease', fontSize: '12px', lineHeight: '22px' }}
+                  aria-valuenow={uploadProgress}
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                >
+                  جاري رفع الملفات: {uploadProgress}%
+                </div>
+              </div>
+            </div>
+          )}
           <div className="col-12">
-            <button type="submit" className="btn btn-primary-cta px-4 py-2 fw-bold" disabled={!firstSectionId || submitting}>
+            <button type="submit" className="btn btn-primary-cta px-4 py-2 fw-bold" disabled={!firstSectionId || submitting || (uploadProgress !== null && uploadProgress < 100)}>
               إضافة الدرس
             </button>
           </div>
@@ -634,7 +739,21 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
                             ) : (
                               <div className="d-flex flex-column">
                                 <span className="text-white fw-bold">{lesson.title}</span>
-                                <span className="text-muted" style={{ fontSize: '12px' }}>{lesson.description || 'لا يوجد وصف.'}</span>
+                                <span className="text-muted mb-2" style={{ fontSize: '12px' }}>{lesson.description || 'لا يوجد وصف.'}</span>
+                                <div className="d-flex gap-2 mt-1">
+                                  {lesson.video_url && (
+                                    <a href={lesson.video_url} target="_blank" rel="noopener noreferrer" className="btn btn-sm d-flex align-items-center gap-1 p-1 px-2 text-white" style={{ fontSize: '11px', backgroundColor: 'rgba(0, 230, 118, 0.1)', border: '1px solid rgba(0, 230, 118, 0.3)' }}>
+                                      <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#00e676' }}>play_circle</span>
+                                      معاينة الفيديو
+                                    </a>
+                                  )}
+                                  {lesson.pdf_url && (
+                                    <a href={lesson.pdf_url} target="_blank" rel="noopener noreferrer" className="btn btn-sm d-flex align-items-center gap-1 p-1 px-2 text-white" style={{ fontSize: '11px', backgroundColor: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                                      <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#38bdf8' }}>download</span>
+                                      تحميل PDF
+                                    </a>
+                                  )}
+                                </div>
                               </div>
                             )}
                           </td>

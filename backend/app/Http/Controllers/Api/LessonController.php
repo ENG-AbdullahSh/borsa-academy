@@ -11,6 +11,8 @@ use App\Models\Lesson;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+use Illuminate\Support\Facades\Storage;
+
 class LessonController extends Controller
 {
     use AuthorizesInstructorCourseOwnership;
@@ -20,6 +22,16 @@ class LessonController extends Controller
         $validated = $request->validated();
         $section = CourseSection::with('course')->findOrFail($validated['section_id']);
         $this->authorizeCourseOwnership($request, $section->course);
+
+        // Filter out 'pdf' from validated array because we just want the path, not the file object
+        if (array_key_exists('pdf', $validated)) {
+            unset($validated['pdf']);
+        }
+
+        if ($request->hasFile('pdf')) {
+            $path = $request->file('pdf')->store('lessons/pdfs', 'public');
+            $validated['pdf_path'] = $path;
+        }
 
         $lesson = Lesson::create($validated);
 
@@ -48,10 +60,52 @@ class LessonController extends Controller
         ]);
     }
 
+    public function uploadVideo(Request $request, int $id): JsonResponse
+    {
+        $lesson = Lesson::findOrFail($id);
+        $this->authorizeCourseOwnership($request, $lesson->section->course);
+
+        $request->validate([
+            'video' => ['required', 'file', 'mimetypes:video/mp4,video/mpeg,video/quicktime,video/webm', 'max:512000'],
+        ]);
+
+        if ($request->hasFile('video')) {
+            // Delete old video file if it exists in disk
+            if ($lesson->video_path) {
+                Storage::disk('public')->delete($lesson->video_path);
+            }
+
+            // Store new video file in the lessons/videos directory on the public disk
+            $path = $request->file('video')->store('lessons/videos', 'public');
+            
+            // Save the resulting file path to the video_path column
+            $lesson->video_path = $path;
+            $lesson->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Video uploaded successfully.',
+                'video_path' => $path,
+                'video_url' => $lesson->video_url, // uses the accessor we defined in the Lesson model!
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'No video file provided.',
+        ], 400);
+    }
+
     public function destroy(Request $request, int $id): JsonResponse
     {
         $lesson = Lesson::findOrFail($id);
         $this->authorizeCourseOwnership($request, $lesson->section->course);
+
+        // Delete the video from disk if it exists
+        if ($lesson->video_path) {
+            Storage::disk('public')->delete($lesson->video_path);
+        }
+
         $lesson->delete();
 
         return response()->json([

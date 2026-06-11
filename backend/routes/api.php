@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\QuizController;
 use App\Http\Controllers\Api\SettingController;
+use App\Http\Controllers\Api\VideoStreamController;
 use App\Http\Controllers\UploadController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +28,9 @@ Route::get('/courses', [CourseController::class, 'index']);
 Route::get('/courses/{id}', [CourseController::class, 'show'])->whereNumber('id');
 Route::get('/courses/{id}/curriculum', [CourseCurriculumController::class, 'show'])->whereNumber('id');
 Route::get('/settings', [SettingController::class, 'getSettings']);
+
+// ── Video Streaming (Range-request aware, auth handled inside controller) ──
+Route::get('/lessons/{lesson}/stream', [VideoStreamController::class, 'stream'])->whereNumber('lesson');
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -84,6 +88,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::delete('/instructor/sections/{id}', [CourseSectionController::class, 'destroy'])->whereNumber('id');
         Route::post('/instructor/lessons', [LessonController::class, 'store']);
         Route::put('/instructor/lessons/{id}', [LessonController::class, 'update'])->whereNumber('id');
+        Route::post('/instructor/lessons/{id}/upload-video', [LessonController::class, 'uploadVideo'])->whereNumber('id');
         Route::delete('/instructor/lessons/{id}', [LessonController::class, 'destroy'])->whereNumber('id');
 
         Route::get('/instructor/courses/{course}/quiz', [AdminQuizController::class, 'show'])->whereNumber('course');
@@ -134,6 +139,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::delete('/admin/sections/{id}', [CourseSectionController::class, 'destroy'])->whereNumber('id');
         Route::post('/admin/lessons', [LessonController::class, 'store']);
         Route::put('/admin/lessons/{id}', [LessonController::class, 'update'])->whereNumber('id');
+        Route::post('/admin/lessons/{id}/upload-video', [LessonController::class, 'uploadVideo'])->whereNumber('id');
         Route::delete('/admin/lessons/{id}', [LessonController::class, 'destroy'])->whereNumber('id');
 
         // ── Contact Messages ────────────────────────────────────────────
