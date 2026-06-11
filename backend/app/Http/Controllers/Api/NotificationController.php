@@ -15,24 +15,31 @@ class NotificationController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $notifications = $request->user()
+        $paginator = $request->user()
             ->notifications()   // ordered by created_at desc by default
-            ->get()
-            ->map(fn (DatabaseNotification $n): array => [
-                'id'         => $n->id,
-                'type'       => $n->data['type'] ?? 'system',
-                'title'      => $n->data['title'] ?? '',
-                'message'    => $n->data['message'] ?? '',
-                'action_url' => $n->data['action_url'] ?? null,
-                'certificate_url' => $n->data['certificate_url'] ?? null,
-                'is_read'    => $n->read_at !== null,
-                'read_at'    => $n->read_at?->toIso8601String(),
-                'created_at' => $n->created_at->toIso8601String(),
-            ]);
+            ->paginate(50);
+
+        $formatted = $paginator->getCollection()->map(fn (DatabaseNotification $n): array => [
+            'id'         => $n->id,
+            'type'       => $n->data['type'] ?? 'system',
+            'title'      => $n->data['title'] ?? '',
+            'message'    => $n->data['message'] ?? '',
+            'action_url' => $n->data['action_url'] ?? null,
+            'certificate_url' => $n->data['certificate_url'] ?? null,
+            'is_read'    => $n->read_at !== null,
+            'read_at'    => $n->read_at?->toIso8601String(),
+            'created_at' => $n->created_at->toIso8601String(),
+        ]);
+
+        $paginator->setCollection($formatted);
 
         return response()->json([
-            'data'         => $notifications,
-            'unread_count' => $request->user()->unreadNotifications->count(),
+            'data'         => $paginator->items(),
+            'current_page' => $paginator->currentPage(),
+            'last_page'    => $paginator->lastPage(),
+            'total'        => $paginator->total(),
+            'has_more'     => $paginator->hasMorePages(),
+            'unread_count' => $request->user()->unreadNotifications()->count(),
         ]);
     }
 

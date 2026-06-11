@@ -64,17 +64,19 @@ export const NotificationProvider = ({ children }) => {
   const [unreadCount, setUnreadCount]     = useState(0);
   const [loading, setLoading]             = useState(false);
   const [toast, setToast]                 = useState(null);
+  const [hasMore, setHasMore]             = useState(false);
+  const [page, setPage]                   = useState(1);
 
   // Keep a stable ref to the previous unread count so we can trigger toast for new arrivals
   const prevUnreadRef = useRef(0);
 
   // ── Fetch full notification list ─────────────────────────────────────────
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotifications = useCallback(async (pageNum = 1, append = false) => {
     if (!getToken()) return;   // Guest — do nothing
 
-    setLoading(true);
+    if (pageNum === 1) setLoading(true);
     try {
-      const res  = await authFetch('/notifications');
+      const res  = await authFetch(`/notifications?page=${pageNum}`);
       if (!res.ok) { setLoading(false); return; }
 
       const json = await res.json();
@@ -91,19 +93,26 @@ export const NotificationProvider = ({ children }) => {
         isUnread:   !n.is_read,
       }));
 
-      const count = typeof json.unread_count === 'number'
-        ? json.unread_count
-        : normalized.filter((n) => n.isUnread).length;
+      const count = json.unread_count ?? normalized.filter((n) => n.isUnread).length;
 
-      // If new unread notifications arrived, show a toast for the latest one
-      if (count > prevUnreadRef.current && normalized.length > 0) {
+      // If new unread notifications arrived, show a toast and play a sound
+      if (count > prevUnreadRef.current && normalized.length > 0 && pageNum === 1) {
         const newest = normalized.find((n) => n.isUnread);
-        if (newest) triggerToast(newest);
+        if (newest) {
+          triggerToast(newest);
+          try {
+            const audio = new Audio('/notification-sound.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(() => {});
+          } catch (e) {}
+        }
       }
       prevUnreadRef.current = count;
 
-      setNotifications(normalized);
+      setNotifications((prev) => append ? [...prev, ...normalized] : normalized);
       setUnreadCount(count);
+      setHasMore(json.has_more ?? false);
+      setPage(pageNum);
     } catch {
       // Silently fail — the UI degrades gracefully
     } finally {
@@ -113,7 +122,7 @@ export const NotificationProvider = ({ children }) => {
 
   // ── Poll the lightweight unread-count endpoint every 60 s ───────────────
   useEffect(() => {
-    fetchNotifications(); // initial load
+    fetchNotifications(1); // initial load
 
     const pollCount = async () => {
       if (!getToken()) return;
@@ -125,7 +134,7 @@ export const NotificationProvider = ({ children }) => {
 
         // If the count grew, reload the full list to surface new items
         if (next > prevUnreadRef.current) {
-          fetchNotifications();
+          fetchNotifications(1);
         } else {
           prevUnreadRef.current = next;
           setUnreadCount(next);
@@ -210,10 +219,12 @@ export const NotificationProvider = ({ children }) => {
         notifications,
         unreadCount,
         loading,
+        hasMore,
         markAsRead,
         markAllAsRead,
         deleteNotification,
-        reload: fetchNotifications,
+        reload: () => fetchNotifications(1),
+        loadMore: () => fetchNotifications(page + 1, true),
         addNotification,
       }}
     >

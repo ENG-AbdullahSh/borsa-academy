@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiBell, FiCheckCircle, FiMail, FiMessageSquare, FiInfo } from 'react-icons/fi';
@@ -52,9 +52,13 @@ export default function NotificationDropdown({ open, onToggle, onClose }) {
     notifications,
     unreadCount,
     loading: notifLoading,
+    hasMore,
     markAsRead,
     markAllAsRead,
+    loadMore,
   } = useNotifications();
+
+  const [activeTab, setActiveTab] = useState('all');
 
   // Close on outside click
   useEffect(() => {
@@ -66,6 +70,10 @@ export default function NotificationDropdown({ open, onToggle, onClose }) {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [onClose]);
+
+  const displayedNotifications = activeTab === 'all' 
+    ? notifications 
+    : notifications.filter(n => n.isUnread);
 
   const handleItemClick = (notif) => {
     markAsRead(notif.id);
@@ -205,6 +213,44 @@ export default function NotificationDropdown({ open, onToggle, onClose }) {
               )}
             </div>
 
+            {/* Tabs */}
+            <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <button
+                onClick={() => setActiveTab('all')}
+                style={{
+                  flex: 1,
+                  background: 'none',
+                  border: 'none',
+                  padding: '10px 0',
+                  color: activeTab === 'all' ? '#fff' : '#64748B',
+                  fontSize: '13px',
+                  fontWeight: activeTab === 'all' ? '700' : '500',
+                  cursor: 'pointer',
+                  borderBottom: activeTab === 'all' ? '2px solid #00E676' : '2px solid transparent',
+                  transition: 'all 0.2s',
+                }}
+              >
+                الكل
+              </button>
+              <button
+                onClick={() => setActiveTab('unread')}
+                style={{
+                  flex: 1,
+                  background: 'none',
+                  border: 'none',
+                  padding: '10px 0',
+                  color: activeTab === 'unread' ? '#fff' : '#64748B',
+                  fontSize: '13px',
+                  fontWeight: activeTab === 'unread' ? '700' : '500',
+                  cursor: 'pointer',
+                  borderBottom: activeTab === 'unread' ? '2px solid #00E676' : '2px solid transparent',
+                  transition: 'all 0.2s',
+                }}
+              >
+                غير مقروء
+              </button>
+            </div>
+
             {/* Body */}
             <div
               className="notif-scroll"
@@ -223,14 +269,14 @@ export default function NotificationDropdown({ open, onToggle, onClose }) {
                     جاري التحميل...
                   </p>
                 </div>
-              ) : notifications.length === 0 ? (
+              ) : displayedNotifications.length === 0 ? (
                 <div style={{ padding: '36px 16px', textAlign: 'center', color: '#475569' }}>
                   <FiBell size={28} style={{ opacity: 0.3, marginBottom: '10px' }} />
-                  <p style={{ margin: 0, fontSize: '13px' }}>لا توجد إشعارات حالياً</p>
+                  <p style={{ margin: 0, fontSize: '13px' }}>لا توجد إشعارات {activeTab === 'unread' && 'غير مقروءة'}</p>
                 </div>
               ) : (
                 <motion.div variants={listVariants} initial="hidden" animate="visible">
-                  {notifications.slice(0, 6).map((notif) => (
+                  {displayedNotifications.map((notif) => (
                     <motion.div
                       key={notif.id}
                       variants={itemVariants}
@@ -299,6 +345,26 @@ export default function NotificationDropdown({ open, onToggle, onClose }) {
                       {notif.isUnread && <div className="notif-unread-dot" style={{ marginTop: '4px' }} />}
                     </motion.div>
                   ))}
+                  
+                  {hasMore && (
+                    <div style={{ padding: '10px', textAlign: 'center' }}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); loadMore(); }}
+                        disabled={notifLoading}
+                        style={{
+                          background: 'rgba(255,255,255,0.05)',
+                          border: 'none',
+                          color: '#CBD5E1',
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {notifLoading ? 'جاري التحميل...' : 'عرض المزيد'}
+                      </button>
+                    </div>
+                  )}
                 </motion.div>
               )}
             </div>
