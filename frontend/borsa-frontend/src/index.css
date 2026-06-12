@@ -577,6 +577,34 @@ p {
 }
 
 /* --- COURSE CURRICULUM COMPONENT --- */
+.course-curriculum-panel {
+  position: sticky;
+  top: 88px;
+  max-height: calc(100dvh - 120px);
+  min-height: 0;
+}
+
+.course-curriculum-header,
+.course-curriculum-footer {
+  flex: 0 0 auto;
+}
+
+.course-curriculum-scroll {
+  min-height: 0;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 18px !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(117, 255, 158, 0.45) transparent;
+}
+
+.course-curriculum-scroll::after {
+  content: '';
+  flex: 0 0 6px;
+}
+
 .transition-transform {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -593,7 +621,7 @@ p {
 }
 
 .section-content.expanded {
-  max-height: 500px;
+  max-height: 1200px;
   opacity: 1;
 }
 
@@ -641,6 +669,14 @@ p {
 
 .lesson-duration {
   opacity: 0.7;
+}
+
+@media (max-width: 991.98px) {
+  .course-curriculum-panel {
+    position: relative;
+    top: auto;
+    max-height: calc(100dvh - 96px);
+  }
 }
 
 /* Pulse Animation for Current Lesson */

@@ -30,7 +30,7 @@ class InstructorPortalController extends Controller
 
         $latestAttempts = QuizAttempt::query()
             ->whereIn('course_id', $courseIds)
-            ->with(['user:id,name,email', 'course:id,title'])
+            ->with(['user:id,name,email', 'course:id,title', 'lesson:id,title'])
             ->latest('submitted_at')
             ->limit(5)
             ->get()
@@ -165,7 +165,7 @@ class InstructorPortalController extends Controller
         ])['per_page'] ?? 25;
 
         $attempts = $course->quizAttempts()
-            ->with(['user:id,name,email', 'course:id,title'])
+            ->with(['user:id,name,email', 'course:id,title', 'lesson:id,title'])
             ->latest('submitted_at')
             ->paginate($perPage)
             ->withQueryString()
@@ -255,6 +255,10 @@ class InstructorPortalController extends Controller
             'course' => [
                 'id' => $attempt->course?->id ?? $attempt->course_id,
                 'title' => $attempt->course?->title,
+            ],
+            'lesson' => [
+                'id' => $attempt->lesson?->id ?? $attempt->lesson_id,
+                'title' => $attempt->lesson?->title,
             ],
             'score' => $attempt->score,
             'total_points' => $attempt->total_points,

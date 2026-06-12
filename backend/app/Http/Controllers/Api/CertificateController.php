@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CertificateResource;
 use App\Models\Certificate;
+use App\Models\CourseSection;
 use App\Services\CertificateService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
@@ -22,18 +23,13 @@ class CertificateController extends Controller
     {
         $certificates = $request->user()
             ->certificates()
-            ->with(['user:id,name', 'course:id,title'])
+            ->with(['user:id,name', 'course:id,title', 'section:id,title,course_id'])
             ->latest('issued_at')
             ->get()
             ->filter(function (Certificate $certificate) use ($request): bool {
-                $enrollment = $request->user()
-                    ->enrollments()
-                    ->where('course_id', $certificate->course_id)
-                    ->first();
+                $eligibility = $this->eligibilityForCertificate($request, $certificate);
 
-                return $enrollment
-                    && $this->certificateService
-                        ->eligibilityForEnrollment($enrollment)['certificate_unlocked'];
+                return (bool) ($eligibility['certificate_unlocked'] ?? false);
             })
             ->values();
 
@@ -48,13 +44,7 @@ class CertificateController extends Controller
             ], 404);
         }
 
-        $enrollment = $request->user()
-            ->enrollments()
-            ->where('course_id', $certificate->course_id)
-            ->first();
-        $eligibility = $enrollment
-            ? $this->certificateService->eligibilityForEnrollment($enrollment)
-            : null;
+        $eligibility = $this->eligibilityForCertificate($request, $certificate);
 
         if (! $eligibility || ! $eligibility['certificate_unlocked']) {
             return response()->json([
@@ -65,7 +55,7 @@ class CertificateController extends Controller
         }
 
         return new CertificateResource(
-            $certificate->load(['user:id,name', 'course:id,title']),
+            $certificate->load(['user:id,name', 'course:id,title', 'section:id,title,course_id']),
         );
     }
 
@@ -95,7 +85,43 @@ class CertificateController extends Controller
         $certificate = $this->certificateService->issueForEnrollment($enrollment);
 
         return (new CertificateResource(
-            $certificate->load(['user:id,name', 'course:id,title']),
+            $certificate->load(['user:id,name', 'course:id,title', 'section:id,title,course_id']),
+        ))->response()->setStatusCode(200);
+    }
+
+    public function section(Request $request, int $courseId, CourseSection $section): JsonResponse
+    {
+        if ($section->course_id !== $courseId) {
+            return response()->json([
+                'message' => 'Section was not found in this course.',
+            ], 404);
+        }
+
+        $enrollment = $request->user()
+            ->enrollments()
+            ->where('course_id', $courseId)
+            ->first();
+
+        if (! $enrollment) {
+            return response()->json([
+                'message' => 'You are not enrolled in this course.',
+            ], 403);
+        }
+
+        $eligibility = $this->certificateService->eligibilityForSection($enrollment, $section);
+
+        if (! $eligibility['certificate_unlocked']) {
+            return response()->json([
+                'message' => $eligibility['locked_message'],
+                'locked_reason' => $eligibility['locked_reason'],
+                'certificate_status' => $eligibility,
+            ], 423);
+        }
+
+        $certificate = $this->certificateService->issueForSection($enrollment, $section);
+
+        return (new CertificateResource(
+            $certificate->load(['user:id,name', 'course:id,title', 'section:id,title,course_id']),
         ))->response()->setStatusCode(200);
     }
 
@@ -104,7 +130,7 @@ class CertificateController extends Controller
      */
     public function downloadPdf(Request $request, int $id): Response|JsonResponse
     {
-        $certificate = Certificate::with(['user:id,name', 'course:id,title'])
+        $certificate = Certificate::with(['user:id,name', 'course:id,title', 'section:id,title,course_id'])
             ->find($id);
 
         // 404 — certificate does not exist
@@ -118,14 +144,7 @@ class CertificateController extends Controller
         }
 
         // Verify the student actually earned this (course + quiz complete)
-        $enrollment = $request->user()
-            ->enrollments()
-            ->where('course_id', $certificate->course_id)
-            ->first();
-
-        $eligibility = $enrollment
-            ? $this->certificateService->eligibilityForEnrollment($enrollment)
-            : null;
+        $eligibility = $this->eligibilityForCertificate($request, $certificate);
 
         if (! $eligibility || ! $eligibility['certificate_unlocked']) {
             return response()->json(['message' => 'Certificate is not yet unlocked.'], 423);
@@ -134,7 +153,9 @@ class CertificateController extends Controller
         $pdf = Pdf::loadView('certificates.pdf', [
             'certificate' => $certificate,
             'studentName' => $certificate->user?->name  ?? 'Student',
-            'courseName'  => $certificate->course?->title ?? 'Course',
+            'courseName'  => $certificate->section
+                ? (($certificate->course?->title ?? 'Course') . ' - ' . $certificate->section->title)
+                : ($certificate->course?->title ?? 'Course'),
             'issuedAt'    => $certificate->issued_at
                 ? $certificate->issued_at->format('d F Y')
                 : now()->format('d F Y'),
@@ -145,5 +166,30 @@ class CertificateController extends Controller
         event(new \App\Events\UserGeneratedCertificateEvent($request->user(), $certificate->course));
 
         return $pdf->download('certificate-' . $id . '.pdf');
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function eligibilityForCertificate(Request $request, Certificate $certificate): ?array
+    {
+        $enrollment = $request->user()
+            ->enrollments()
+            ->where('course_id', $certificate->course_id)
+            ->first();
+
+        if (! $enrollment) {
+            return null;
+        }
+
+        if ($certificate->scope_type === 'section') {
+            $section = $certificate->section;
+
+            return $section
+                ? $this->certificateService->eligibilityForSection($enrollment, $section)
+                : null;
+        }
+
+        return $this->certificateService->eligibilityForEnrollment($enrollment);
     }
 }

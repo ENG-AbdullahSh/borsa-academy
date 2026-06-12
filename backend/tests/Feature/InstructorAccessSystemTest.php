@@ -69,22 +69,17 @@ test('admin can create an instructor profile with a login account', function () 
         ->assertJsonPath('user.role', 'instructor');
 });
 
-test('admin can create profile only and link an existing instructor user later', function () {
+test('admin can create an instructor profile linked to an existing instructor user', function () {
     $admin = User::factory()->create(['role' => 'admin', 'status' => 'active']);
     $instructorUser = User::factory()->create(['role' => 'instructor', 'status' => 'active']);
 
     Sanctum::actingAs($admin);
 
-    $instructorId = $this->postJson('/api/admin/instructors', [
+    $this->postJson('/api/admin/instructors', [
         'name' => 'Profile Only',
         'specialization' => 'Forex',
-    ])->assertCreated()
-        ->assertJsonPath('data.user_id', null)
-        ->json('data.id');
-
-    $this->putJson("/api/admin/instructors/{$instructorId}", [
         'user_id' => $instructorUser->id,
-    ])->assertOk()
+    ])->assertCreated()
         ->assertJsonPath('data.user.id', $instructorUser->id)
         ->assertJsonPath('data.user.role', 'instructor');
 
@@ -94,6 +89,18 @@ test('admin can create profile only and link an existing instructor user later',
         'user_id' => $instructorUser->id,
     ])->assertUnprocessable()
         ->assertJsonValidationErrors('user_id');
+});
+
+test('admin cannot create a new instructor without a linked or new login account', function () {
+    $admin = User::factory()->create(['role' => 'admin', 'status' => 'active']);
+
+    Sanctum::actingAs($admin);
+
+    $this->postJson('/api/admin/instructors', [
+        'name' => 'Profile Only',
+        'specialization' => 'Forex',
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('login_email');
 });
 
 test('instructor sees own course data and cannot access another instructors course', function () {
@@ -253,4 +260,21 @@ test('a linked instructor user cannot be changed to another role until unlinked'
         ->assertJsonPath('message', 'افصل حساب المستخدم عن ملف المدرب قبل تغيير دوره.');
 
     expect($instructorUser->refresh()->role)->toBe('instructor');
+});
+
+test('deleting an instructor demotes the linked user back to student', function () {
+    $admin = User::factory()->create(['role' => 'admin', 'status' => 'active']);
+    $instructorUser = User::factory()->create(['role' => 'instructor', 'status' => 'active']);
+    $instructor = Instructor::create(['user_id' => $instructorUser->id, 'name' => 'Delete Me']);
+
+    Sanctum::actingAs($admin);
+
+    $this->deleteJson("/api/admin/instructors/{$instructor->id}")
+        ->assertOk()
+        ->assertJsonPath('message', 'تم حذف ملف المدرب وتم تحويل الحساب المرتبط إلى طالب.');
+
+    expect($instructorUser->refresh()->role)->toBe('student');
+    $this->assertDatabaseMissing('instructors', [
+        'id' => $instructor->id,
+    ]);
 });

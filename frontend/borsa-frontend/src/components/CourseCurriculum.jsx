@@ -43,6 +43,7 @@ export default function CourseCurriculum({
   const { token } = useAuth();
   const [expandedSections, setExpandedSections] = useState({});
   const [isCertificateOpen, setIsCertificateOpen] = useState(false);
+  const [certificateSectionId, setCertificateSectionId] = useState(null);
   const [updatingLessonId, setUpdatingLessonId] = useState(null);
   const [progressError, setProgressError] = useState('');
 
@@ -104,8 +105,8 @@ export default function CourseCurriculum({
   };
 
   return (
-    <div className="glass-card rounded-3 overflow-hidden d-flex flex-column h-100" style={{ position: 'sticky', top: '88px', maxHeight: 'calc(100vh - 120px)' }}>
-      <div className="p-4 border-bottom" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+    <div className="glass-card rounded-3 overflow-hidden d-flex flex-column h-100 course-curriculum-panel">
+      <div className="p-4 border-bottom course-curriculum-header" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
         <div className="d-flex align-items-center justify-content-between gap-2 mb-3">
           <h3 className="h6 text-white fw-bold m-0" style={{ fontFamily: 'var(--font-sans)' }}>منهج الدورة</h3>
           {stats.progress === 100 ? (
@@ -138,7 +139,7 @@ export default function CourseCurriculum({
         </div>
       </div>
 
-      <div className="flex-grow-1 overflow-auto p-3 d-flex flex-column gap-3 custom-scrollbar">
+      <div className="flex-grow-1 overflow-auto p-3 d-flex flex-column gap-3 custom-scrollbar course-curriculum-scroll">
         {progressError && (
           <div className="rounded px-3 py-2" role="alert" style={{ color: '#fecaca', backgroundColor: 'rgba(255,82,82,0.08)', border: '1px solid rgba(255,82,82,0.2)', fontSize: '12px' }}>
             {progressError}
@@ -209,12 +210,23 @@ export default function CourseCurriculum({
                       // Icon + colour decisions
                       let iconName;
                       let iconColor;
+                      const lessonQuizStatus = lesson.quiz_status || {};
+                      const canTakeLessonQuiz = Boolean(lessonQuizStatus.can_take_quiz);
+                      const quizRequired = Boolean(
+                        lesson.video_completed
+                        && !lesson.completed
+                        && !lessonQuizStatus.quiz_passed,
+                      );
+
                       if (isHardLocked) {
                         iconName = 'lock';
                         iconColor = '#64748b';
                       } else if (isSequentiallyLocked) {
                         iconName = 'lock_clock';
                         iconColor = '#94a3b8';
+                      } else if (canTakeLessonQuiz || quizRequired) {
+                        iconName = 'quiz';
+                        iconColor = canTakeLessonQuiz ? '#ffd54f' : '#94a3b8';
                       } else if (isActive) {
                         iconName = 'play_circle';
                         iconColor = '#75ff9e';
@@ -271,6 +283,19 @@ export default function CourseCurriculum({
                               </div>
                             </div>
                             <div className="d-flex align-items-center gap-2 flex-shrink-0">
+                              {canTakeLessonQuiz && !isHardLocked && !isSequentiallyLocked && (
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary-cta btn-sm py-1 px-2"
+                                  style={{ fontSize: '11px' }}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    onStartQuiz?.(lesson);
+                                  }}
+                                >
+                                  اختبار
+                                </button>
+                              )}
                               {isEnrolled && !isHardLocked && !isSequentiallyLocked && (
                                 isUpdating ? (
                                   <span className="spinner-border spinner-border-sm" aria-hidden="true" style={{ width: '14px', height: '14px', color: '#75ff9e' }} />
@@ -284,6 +309,19 @@ export default function CourseCurriculum({
                         </div>
                       );
                     })}
+                    {section.certificate_status?.certificate_unlocked && (
+                      <button
+                        type="button"
+                        className="btn btn-primary-cta w-100 py-2 mt-2 fw-semibold"
+                        style={{ fontSize: '12px' }}
+                        onClick={() => {
+                          setCertificateSectionId(section.id);
+                          setIsCertificateOpen(true);
+                        }}
+                      >
+                        شهادة القسم
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -292,7 +330,7 @@ export default function CourseCurriculum({
         })()}
       </div>
 
-      <div className="p-3 border-top" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+      <div className="p-3 border-top course-curriculum-footer" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
         {certificateLockedByQuiz && (
           <div
             className="rounded-3 px-3 py-2 mb-2 text-center"
@@ -312,7 +350,10 @@ export default function CourseCurriculum({
         )}
         <button
           type="button"
-          onClick={() => setIsCertificateOpen(true)}
+          onClick={() => {
+            setCertificateSectionId(null);
+            setIsCertificateOpen(true);
+          }}
           disabled={!certificateUnlocked}
           className="btn w-100 py-2 d-flex align-items-center justify-content-center gap-2 fw-semibold btn-primary-cta interactive"
           style={{ fontSize: '13px', fontFamily: 'var(--font-sans)', borderRadius: '8px', opacity: certificateUnlocked ? 1 : 0.55 }}
@@ -326,6 +367,7 @@ export default function CourseCurriculum({
         isOpen={isCertificateOpen}
         onClose={() => setIsCertificateOpen(false)}
         courseId={courseId}
+        sectionId={certificateSectionId}
       />
     </div>
   );

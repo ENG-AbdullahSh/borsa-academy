@@ -13,6 +13,8 @@ export default function CourseQuiz({
   isOpen,
   onClose,
   courseId,
+  lessonId = null,
+  lessonTitle = '',
   onPassed,
 }) {
   const { token } = useAuth();
@@ -24,7 +26,7 @@ export default function CourseQuiz({
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!isOpen || !courseId || !token) return undefined;
+    if (!isOpen || !token || (!courseId && !lessonId)) return undefined;
 
     const controller = new AbortController();
 
@@ -35,10 +37,15 @@ export default function CourseQuiz({
       setAnswers({});
 
       try {
-        const response = await fetch(`${API_BASE_URL}/courses/${courseId}/quiz`, {
-          headers: apiHeaders(token),
-          signal: controller.signal,
-        });
+        const response = await fetch(
+          lessonId
+            ? `${API_BASE_URL}/lessons/${lessonId}/quiz`
+            : `${API_BASE_URL}/courses/${courseId}/quiz`,
+          {
+            headers: apiHeaders(token),
+            signal: controller.signal,
+          },
+        );
         const payload = await readJsonResponse(response);
         setQuiz(payload.data || null);
 
@@ -57,7 +64,7 @@ export default function CourseQuiz({
 
     fetchQuiz();
     return () => controller.abort();
-  }, [courseId, isOpen, token]);
+  }, [courseId, isOpen, lessonId, token]);
 
   const questions = useMemo(() => quiz?.questions || [], [quiz]);
   const allAnswered = questions.length > 0
@@ -70,7 +77,9 @@ export default function CourseQuiz({
     setError('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/courses/${courseId}/quiz/submit`, {
+      const response = await fetch(lessonId
+        ? `${API_BASE_URL}/lessons/${lessonId}/quiz/submit`
+        : `${API_BASE_URL}/courses/${courseId}/quiz/submit`, {
         method: 'POST',
         headers: apiHeaders(token, true),
         body: JSON.stringify({
@@ -116,8 +125,11 @@ export default function CourseQuiz({
       >
         <div className="d-flex justify-content-between align-items-start gap-3 mb-4">
           <div>
-            <p className="font-mono-data mb-2" style={{ color: '#75ff9e', fontSize: '11px' }}>COURSE QUIZ</p>
+            <p className="font-mono-data mb-2" style={{ color: '#75ff9e', fontSize: '11px' }}>{lessonId ? 'LESSON QUIZ' : 'COURSE QUIZ'}</p>
             <h2 className="h4 text-white fw-bold mb-1">{quiz?.title || 'اختبار الدورة'}</h2>
+            {lessonTitle && (
+              <p className="text-muted mb-1" style={{ fontSize: '12px' }}>{lessonTitle}</p>
+            )}
             {quiz && (
               <p className="text-muted mb-0" style={{ fontSize: '13px' }}>
                 درجة النجاح: {quiz.passing_score}%
@@ -159,7 +171,7 @@ export default function CourseQuiz({
                 </button>
               )}
               <button type="button" onClick={onClose} className="btn btn-primary-cta px-4 py-2 fw-bold">
-                {result.passed ? 'متابعة إلى الشهادة' : 'إغلاق'}
+                {result.passed ? (lessonId ? 'متابعة للدرس التالي' : 'متابعة إلى الشهادة') : 'إغلاق'}
               </button>
             </div>
           </div>

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Instructor;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -181,4 +182,39 @@ test('an admin can safely update another users role and no delete route exists',
         'id' => $student->id,
         'role' => 'instructor',
     ]);
+
+    $this->assertDatabaseHas('instructors', [
+        'user_id' => $student->id,
+        'name' => $student->name,
+    ]);
+
+    expect(Instructor::whereBelongsTo($student, 'user')->exists())->toBeTrue();
+});
+
+test('promoting a user to instructor links a matching unassigned instructor profile', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+        'status' => 'active',
+    ]);
+
+    $student = User::factory()->create([
+        'name' => 'Matching Instructor',
+        'role' => 'student',
+        'status' => 'active',
+    ]);
+
+    $profile = Instructor::create([
+        'name' => 'Matching Instructor',
+        'specialization' => 'Markets',
+    ]);
+
+    Sanctum::actingAs($admin);
+
+    $this->putJson("/api/admin/users/{$student->id}/role", [
+        'role' => 'instructor',
+    ])->assertOk()
+        ->assertJsonPath('data.role', 'instructor');
+
+    expect($profile->refresh()->user_id)->toBe($student->id)
+        ->and(Instructor::count())->toBe(1);
 });

@@ -85,7 +85,12 @@ class Course extends Model
 
     public function quiz(): HasOne
     {
-        return $this->hasOne(Quiz::class);
+        return $this->hasOne(Quiz::class)->whereNull('lesson_id');
+    }
+
+    public function quizzes(): HasMany
+    {
+        return $this->hasMany(Quiz::class);
     }
 
     public function quizAttempts(): HasMany

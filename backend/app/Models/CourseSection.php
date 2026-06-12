@@ -31,4 +31,9 @@ class CourseSection extends Model
             ->orderBy('order')
             ->orderBy('id');
     }
+
+    public function certificates(): HasMany
+    {
+        return $this->hasMany(Certificate::class, 'section_id');
+    }
 }

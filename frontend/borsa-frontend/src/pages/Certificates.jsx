@@ -52,7 +52,7 @@ export default function Certificates() {
 
   // ── PDF download helper ──────────────────────────────────────────────────
   const downloadPdf = async (certificate) => {
-    const { id, course_title } = certificate;
+    const { id, course_title, certificate_title } = certificate;
     setDownloadStates((prev) => ({ ...prev, [id]: { loading: true, error: '' } }));
 
     try {
@@ -69,7 +69,7 @@ export default function Certificates() {
       const url  = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href     = url;
-      link.download = `Certificate-${course_title?.replace(/\s+/g, '-') ?? id}.pdf`;
+      link.download = `Certificate-${(certificate_title || course_title)?.replace(/\s+/g, '-') ?? id}.pdf`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -110,7 +110,7 @@ export default function Certificates() {
                     <span className="font-mono-data d-block mb-2" dir="ltr" style={{ color: '#d4af37', fontSize: '12px' }}>
                       {certificate.certificate_number}
                     </span>
-                    <h2 className="h5 text-white fw-bold mb-2">{certificate.course_title}</h2>
+                    <h2 className="h5 text-white fw-bold mb-2">{certificate.certificate_title || certificate.course_title}</h2>
                     <p className="text-muted mb-0" style={{ fontSize: '13px' }}>تاريخ الإصدار: {formatCertificateDate(certificate.issued_at)}</p>
                     {dlState.error && (
                       <p className="mb-0 mt-1" style={{ color: '#ff6b6b', fontSize: '12px' }}>{dlState.error}</p>

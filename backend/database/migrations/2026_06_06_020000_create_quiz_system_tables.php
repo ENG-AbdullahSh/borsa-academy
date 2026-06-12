@@ -10,12 +10,16 @@ return new class extends Migration
     {
         Schema::create('quizzes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('course_id')->unique()->constrained()->cascadeOnDelete();
+            $table->foreignId('course_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('lesson_id')->nullable()->constrained()->cascadeOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
             $table->unsignedTinyInteger('passing_score')->default(70);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+
+            $table->unique('lesson_id');
+            $table->index(['course_id', 'lesson_id']);
         });
 
         Schema::create('quiz_questions', function (Blueprint $table) {
@@ -46,6 +50,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('quiz_id')->constrained()->cascadeOnDelete();
             $table->foreignId('course_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('lesson_id')->nullable()->constrained()->nullOnDelete();
             $table->unsignedInteger('score')->default(0);
             $table->unsignedInteger('total_points')->default(0);
             $table->decimal('percentage', 5, 2)->default(0);
@@ -55,6 +60,7 @@ return new class extends Migration
 
             $table->index(['user_id', 'quiz_id', 'passed']);
             $table->index(['user_id', 'course_id']);
+            $table->index(['user_id', 'lesson_id', 'passed']);
         });
 
         Schema::create('quiz_answers', function (Blueprint $table) {

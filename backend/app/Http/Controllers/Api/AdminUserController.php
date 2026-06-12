@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Instructor;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class AdminUserController extends Controller
@@ -124,7 +126,13 @@ class AdminUserController extends Controller
 
         $roleChanged = $user->role !== $validated['role'];
 
-        $user->update(['role' => $validated['role']]);
+        DB::transaction(function () use ($user, $validated): void {
+            $user->update(['role' => $validated['role']]);
+
+            if ($user->role === 'instructor') {
+                $this->ensureInstructorProfile($user);
+            }
+        });
 
         if ($roleChanged) {
             $user->tokens()->delete();
@@ -155,5 +163,30 @@ class AdminUserController extends Controller
             'enrollments_count'   => $user->enrollments_count,
             'certificates_count'  => $user->certificates_count,
         ];
+    }
+
+    private function ensureInstructorProfile(User $user): void
+    {
+        if ($user->instructorProfile()->exists()) {
+            return;
+        }
+
+        $existingProfile = Instructor::query()
+            ->whereNull('user_id')
+            ->where('name', $user->name)
+            ->oldest()
+            ->first();
+
+        if ($existingProfile) {
+            $existingProfile->update(['user_id' => $user->id]);
+
+            return;
+        }
+
+        Instructor::create([
+            'user_id' => $user->id,
+            'name' => $user->name,
+            'profile_image_path' => $user->avatar,
+        ]);
     }
 }

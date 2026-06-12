@@ -70,7 +70,7 @@ export default function CertificateDetails() {
       const link = document.createElement('a');
       link.href     = url;
       link.download = certificate
-        ? `Certificate-${certificate.course_title?.replace(/\s+/g, '-') ?? id}.pdf`
+        ? `Certificate-${(certificate.certificate_title || certificate.course_title)?.replace(/\s+/g, '-') ?? id}.pdf`
         : `certificate-${id}.pdf`;
       document.body.appendChild(link);
       link.click();
