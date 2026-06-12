@@ -116,7 +116,7 @@ export default function SignIn() {
         <div className="auth-identity-inner">
 
           {/* Brand */}
-          <div className="auth-logo-img-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexDirection: 'row-reverse' }}>
+          <div className="auth-logo-img-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '36px', flexDirection: 'row-reverse' }}>
             <img src={settings.logo_path ? `http://127.0.0.1:8000/storage/${settings.logo_path}` : borsaLogo} alt={settings.academy_name || "بورصة أكاديمي"} className="auth-logo-img brand-logo-animated" style={{ borderRadius: '8px' }} />
             <span className="brand-text-glowing" style={{ fontSize: '28px', fontFamily: 'var(--font-sans)' }}>
               {settings.academy_name || 'بورصة أكاديمي'}

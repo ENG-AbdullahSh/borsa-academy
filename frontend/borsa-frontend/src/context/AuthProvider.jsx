@@ -151,6 +151,29 @@ export function AuthProvider({ children }) {
     }
   }, [fetchCurrentUser, saveAuth]);
 
+  const googleLogin = useCallback(async ({ credential }) => {
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/google`, {
+        method: 'POST',
+        headers: apiHeaders(null, true),
+        body: JSON.stringify({ credential }),
+      });
+      const data = await readJsonResponse(response);
+
+      if (!data.token || !data.user) {
+        throw new Error('Google login did not return an authenticated user.');
+      }
+
+      saveAuth(data.token, data.user);
+
+      return { token: data.token, user: data.user };
+    } finally {
+      setLoading(false);
+    }
+  }, [saveAuth]);
+
   const logout = useCallback(async () => {
     const activeToken = token || getStoredToken();
 
@@ -175,9 +198,10 @@ export function AuthProvider({ children }) {
     isAuthenticated: Boolean(token && user),
     register,
     login,
+    googleLogin,
     logout,
     fetchCurrentUser,
-  }), [fetchCurrentUser, loading, login, logout, register, token, user]);
+  }), [fetchCurrentUser, googleLogin, loading, login, logout, register, token, user]);
 
   return (
     <AuthContext.Provider value={value}>

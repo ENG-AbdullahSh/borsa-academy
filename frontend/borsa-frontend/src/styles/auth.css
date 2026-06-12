@@ -113,6 +113,13 @@
 /* ── Brand Logo Image ── */
 .auth-logo-img-wrapper {
   margin-bottom: 8px;
+  width: fit-content;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: 0;
+  direction: ltr;
+  justify-content: flex-start;
+  text-align: left;
 }
 
 .auth-logo-img {
@@ -125,6 +132,12 @@
   filter: drop-shadow(0 0 18px rgba(0, 230, 118, 0.22));
 }
 
+.brand-text-glowing {
+  text-align: left;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 /* ── Green accent underline below logo ── */
 .auth-logo-underline {
   width: 52px;
@@ -133,6 +146,8 @@
   border-radius: 2px;
   margin-bottom: 20px;
   margin-top: 8px;
+  margin-left: auto;
+  margin-right: 0;
 }
 
 /* ── Platform tagline ── */
@@ -416,6 +431,191 @@
   color: #00E676;
 }
 
+.auth-google-wrap {
+  margin-bottom: 18px;
+  position: relative;
+}
+
+/* حاوية الطبقتين: الزر المخصص + overlay Google الشفاف */
+.auth-google-outer {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* ── زر Google المخصص (بصري فقط — pointer-events: none) ── */
+.auth-google-custom-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: #E2E8F0;
+  font-size: 14.5px;
+  font-weight: 700;
+  font-family: var(--font-sans, 'Cairo', sans-serif);
+  transition:
+    background 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
+  position: relative;
+  overflow: hidden;
+  min-height: 48px;
+  letter-spacing: 0.01em;
+  box-sizing: border-box;
+  pointer-events: none;  /* النقرات تمر للـ overlay الشفاف */
+  user-select: none;
+}
+
+/* hover يُفعَّل عبر الـ wrapper */
+.auth-google-outer:hover .auth-google-custom-btn:not(.auth-google-custom-btn--disabled) {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.30);
+}
+
+.auth-google-outer:active .auth-google-custom-btn:not(.auth-google-custom-btn--disabled) {
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: none;
+}
+
+/* حالة disabled / loading */
+.auth-google-custom-btn--disabled {
+  opacity: 0.5;
+}
+
+/* أيقونة Google */
+.auth-google-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  background: #fff;
+  border-radius: 6px;
+  padding: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.20);
+}
+
+.auth-google-label {
+  flex: 1;
+  text-align: center;
+}
+
+/* Spinner داخل زر Google */
+.auth-google-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #E2E8F0;
+  border-radius: 50%;
+  animation: authSpinner 0.65s linear infinite;
+  flex-shrink: 0;
+}
+
+/* الزر المعطل (بدون VITE_GOOGLE_CLIENT_ID) */
+.auth-google-disabled,
+.auth-info-banner {
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.65;
+  text-align: right;
+}
+
+.auth-google-disabled {
+  color: #CBD5E1;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #475569;
+  font-size: 12px;
+  margin: 0 0 18px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.auth-stepper {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0 0 18px;
+}
+
+.auth-stepper span {
+  min-height: 34px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748B;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.auth-stepper span.active {
+  color: #0B0F19;
+  background: #00E676;
+  border-color: #00E676;
+}
+
+.auth-code-input {
+  text-align: center;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+}
+
+.auth-info-banner {
+  color: #BBF7D0;
+  background: rgba(0, 230, 118, 0.07);
+  border: 1px solid rgba(0, 230, 118, 0.20);
+  margin-bottom: 20px;
+}
+
+.auth-secondary-btn {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 230, 118, 0.25);
+  background: rgba(0, 230, 118, 0.06);
+  color: #00E676;
+  font-family: var(--font-sans, 'Cairo', sans-serif);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.auth-secondary-btn:hover:not(:disabled),
+.auth-secondary-btn:focus-visible {
+  border-color: rgba(0, 230, 118, 0.55);
+  background: rgba(0, 230, 118, 0.10);
+}
+
+.auth-secondary-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 /* ══════════════════════════════
    Terms checkbox
 ══════════════════════════════ */
@@ -602,19 +802,19 @@
   /* Identity panel becomes compact header on mobile */
   .auth-identity {
     padding: 2.5rem 1.5rem;
-    align-items: center;
-    text-align: center;
+    align-items: flex-end;
+    text-align: right;
   }
 
   .auth-identity-inner {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-end;
   }
 
   .auth-logo-underline {
     margin-left: auto;
-    margin-right: auto;
+    margin-right: 0;
   }
 
   .auth-identity::after {

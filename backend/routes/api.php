@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\QuizController;
 use App\Http\Controllers\Api\SettingController;
+use App\Http\Controllers\Api\SocialLoginController;
 use App\Http\Controllers\Api\VideoStreamController;
 use App\Http\Controllers\UploadController;
 use Illuminate\Support\Facades\Route;
@@ -34,7 +35,11 @@ Route::get('/lessons/{lesson}/stream', [VideoStreamController::class, 'stream'])
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle']);
+Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
+Route::post('/auth/google', [SocialLoginController::class, 'google']);
 Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail']);
+Route::post('/verify-reset-code', [PasswordResetController::class, 'verifyCode']);
 Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 Route::post('/upload', [UploadController::class, 'uploadFile']);
 

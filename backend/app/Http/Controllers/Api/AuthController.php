@@ -9,6 +9,9 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -89,5 +92,122 @@ class AuthController extends Controller
                 'avatar_url' => $user->avatar_url,
             ]),
         ]);
+    }
+
+    public function redirectToGoogle()
+    {
+        $clientId = config('services.google.client_id');
+        $redirectUri = config('services.google.redirect');
+
+        if (! $clientId || ! $redirectUri) {
+            return redirect($this->frontendAuthUrl([
+                'google_error' => 'GOOGLE_NOT_CONFIGURED',
+            ]));
+        }
+
+        $query = http_build_query([
+            'client_id' => $clientId,
+            'redirect_uri' => $redirectUri,
+            'response_type' => 'code',
+            'scope' => 'openid email profile',
+            'access_type' => 'offline',
+            'prompt' => 'select_account',
+        ]);
+
+        return redirect('https://accounts.google.com/o/oauth2/v2/auth?' . $query);
+    }
+
+    public function handleGoogleCallback(Request $request)
+    {
+        if ($request->filled('error')) {
+            return redirect($this->frontendAuthUrl([
+                'google_error' => $request->query('error'),
+            ]));
+        }
+
+        $clientId = config('services.google.client_id');
+        $clientSecret = config('services.google.client_secret');
+        $redirectUri = config('services.google.redirect');
+
+        if (! $request->filled('code') || ! $clientId || ! $clientSecret || ! $redirectUri) {
+            return redirect($this->frontendAuthUrl([
+                'google_error' => 'GOOGLE_NOT_CONFIGURED',
+            ]));
+        }
+
+        $tokenResponse = Http::asForm()->post('https://oauth2.googleapis.com/token', [
+            'client_id' => $clientId,
+            'client_secret' => $clientSecret,
+            'code' => $request->query('code'),
+            'grant_type' => 'authorization_code',
+            'redirect_uri' => $redirectUri,
+        ]);
+
+        if (! $tokenResponse->ok() || ! $tokenResponse->json('access_token')) {
+            return redirect($this->frontendAuthUrl([
+                'google_error' => 'GOOGLE_TOKEN_EXCHANGE_FAILED',
+            ]));
+        }
+
+        $googleUserResponse = Http::withToken($tokenResponse->json('access_token'))
+            ->get('https://www.googleapis.com/oauth2/v3/userinfo');
+
+        if (! $googleUserResponse->ok() || ! $googleUserResponse->json('email')) {
+            return redirect($this->frontendAuthUrl([
+                'google_error' => 'GOOGLE_PROFILE_FAILED',
+            ]));
+        }
+
+        $profile = $googleUserResponse->json();
+
+        $user = User::query()
+            ->when($profile['sub'] ?? null, fn ($query, $googleId) => $query->where('google_id', $googleId))
+            ->orWhere('email', $profile['email'])
+            ->first();
+
+        $isNewUser = false;
+
+        if (! $user) {
+            $isNewUser = true;
+            $user = User::create([
+                'name' => $profile['name'] ?? Str::before($profile['email'], '@'),
+                'email' => $profile['email'],
+                'google_id' => $profile['sub'] ?? null,
+                'avatar' => $profile['picture'] ?? null,
+                'email_verified_at' => now(),
+                'password' => Hash::make(Str::random(48)),
+                'role' => 'student',
+                'status' => 'active',
+            ]);
+        } else {
+            $user->forceFill([
+                'google_id' => $user->google_id ?: ($profile['sub'] ?? null),
+                'avatar' => $user->avatar ?: ($profile['picture'] ?? null),
+                'email_verified_at' => $user->email_verified_at ?: now(),
+            ])->save();
+        }
+
+        if ($user->status !== 'active') {
+            return redirect($this->frontendAuthUrl([
+                'google_error' => $user->status === 'suspended' ? 'ACCOUNT_SUSPENDED' : 'ACCOUNT_INACTIVE',
+            ]));
+        }
+
+        if ($isNewUser) {
+            $admins = User::where('role', 'admin')->get();
+            Notification::send($admins, new \App\Notifications\NewUserRegisteredAdminNotification($user));
+        }
+
+        return redirect($this->frontendAuthUrl([
+            'token' => $user->createToken('api-token')->plainTextToken,
+            'token_type' => 'Bearer',
+        ]));
+    }
+
+    private function frontendAuthUrl(array $query = []): string
+    {
+        $frontendUrl = rtrim((string) config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:5173')), '/');
+
+        return $frontendUrl . '/signin' . (empty($query) ? '' : '?' . http_build_query($query));
     }
 }
