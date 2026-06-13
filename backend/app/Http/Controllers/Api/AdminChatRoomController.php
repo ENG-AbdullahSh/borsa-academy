@@ -35,30 +35,15 @@ class AdminChatRoomController extends Controller
 
         $room = \App\Models\ChatRoom::create($validated);
 
-        // Based on audience_type, add participants
-        if ($validated['audience_type'] === 'all') {
-            // Add all active students and the admin (for now, we might not want to literally add all rows to the pivot if it's thousands, 
-            // but for a small platform it's fine. Alternatively, handle "global" conceptually without pivot rows.
-            // But since getRooms relies on the pivot table, we'll sync them.
-            $userIds = \App\Models\User::pluck('id')->toArray();
-            $room->participants()->createMany(
-                array_map(function($id) { return ['user_id' => $id]; }, $userIds)
-            );
-        } elseif ($validated['audience_type'] === 'course_id') {
-            $courseId   = $validated['course_id'];
-            $studentIds = \App\Models\Enrollment::where('course_id', $courseId)->pluck('user_id')->toArray();
-            $course     = \App\Models\Course::find($courseId);
-            $instructorUserId = $course && $course->instructor ? $course->instructor->user_id : null;
-            $adminIds   = \App\Models\User::where('role', 'admin')->pluck('id')->toArray();
+        $this->syncParticipants($room, $validated['audience_type'], $validated['course_id'] ?? null);
 
-            $userIds = array_unique(array_merge(
-                $studentIds,
-                $adminIds,
-                $instructorUserId ? [$instructorUserId] : []
-            ));
-            $room->participants()->createMany(
-                array_map(fn($id) => ['user_id' => $id], $userIds)
-            );
+        if ($room->is_live) {
+            $participants = $room->participants()->with('user')->get();
+            foreach ($participants as $participant) {
+                if ($participant->user) {
+                    $participant->user->notify(new \App\Notifications\ChatRoomActivatedNotification($room));
+                }
+            }
         }
 
         return response()->json([
@@ -86,6 +71,7 @@ class AdminChatRoomController extends Controller
     public function update(Request $request, string $id)
     {
         $room = \App\Models\ChatRoom::findOrFail($id);
+        $wasLive = $room->is_live;
 
         $validated = $request->validate([
             'name'          => 'required|string|max:255',
@@ -98,11 +84,51 @@ class AdminChatRoomController extends Controller
 
         $room->update($validated);
 
+        $this->syncParticipants($room, $validated['audience_type'], $validated['course_id'] ?? null);
+
+        if ($room->is_live && !$wasLive) {
+            $participants = $room->participants()->with('user')->get();
+            foreach ($participants as $participant) {
+                if ($participant->user) {
+                    $participant->user->notify(new \App\Notifications\ChatRoomActivatedNotification($room));
+                }
+            }
+        }
+
         return response()->json([
             'status' => 'success',
             'message' => 'تم تحديث غرفة الدردشة بنجاح.',
             'data' => $room
         ]);
+    }
+
+    /**
+     * Helper to sync chat room participants.
+     */
+    protected function syncParticipants($room, $audienceType, $courseId = null)
+    {
+        $room->participants()->delete();
+
+        if ($audienceType === 'all') {
+            $userIds = \App\Models\User::pluck('id')->toArray();
+            $room->participants()->createMany(
+                array_map(fn($id) => ['user_id' => $id], $userIds)
+            );
+        } elseif ($audienceType === 'course_id' && $courseId) {
+            $studentIds = \App\Models\Enrollment::where('course_id', $courseId)->pluck('user_id')->toArray();
+            $course = \App\Models\Course::find($courseId);
+            $instructorUserId = $course && $course->instructor ? $course->instructor->user_id : null;
+            $adminIds = \App\Models\User::where('role', 'admin')->pluck('id')->toArray();
+
+            $userIds = array_unique(array_merge(
+                $studentIds,
+                $adminIds,
+                $instructorUserId ? [$instructorUserId] : []
+            ));
+            $room->participants()->createMany(
+                array_map(fn($id) => ['user_id' => $id], $userIds)
+            );
+        }
     }
 
     /**

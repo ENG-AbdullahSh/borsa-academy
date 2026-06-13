@@ -20,6 +20,7 @@ class ChatController extends Controller
         $validated = $request->validate([
             'message' => ['required', 'string', 'max:2000'],
             'chat_room_id' => ['required', 'exists:chat_rooms,id'],
+            'parent_id' => ['nullable', 'exists:messages,id'],
         ]);
 
         // 2. Verify user authorization
@@ -40,17 +41,47 @@ class ChatController extends Controller
         }
 
         // 3. Save message to database
-        $message = Message::create([
+        $messageData = [
             'chat_room_id' => $validated['chat_room_id'],
             'sender_id' => $user->id,
             'message' => $validated['message'],
-        ]);
+        ];
+
+        if (isset($validated['parent_id']) && !is_null($validated['parent_id'])) {
+            $messageData['parent_id'] = $validated['parent_id'];
+        }
+
+        $message = Message::create($messageData);
 
         // Load relations
-        $message->load(['sender', 'room']);
+        $message->load(['sender', 'room', 'parent.sender']);
 
         // 4. Broadcast the event
         broadcast(new MessageSent($message))->toOthers();
+
+        // 5. Notify other users/participants
+        if ($room->audience_type === 'all') {
+            $users = \App\Models\User::where('id', '!=', $user->id)->get();
+        } else {
+            $userIds = \App\Models\ChatParticipant::where('chat_room_id', $room->id)
+                ->where('user_id', '!=', $user->id)
+                ->pluck('user_id')
+                ->toArray();
+            
+            if ($room->audience_type === 'course_id') {
+                $enrolledUserIds = \App\Models\Enrollment::where('course_id', $room->course_id)
+                    ->where('user_id', '!=', $user->id)
+                    ->pluck('user_id')
+                    ->toArray();
+                $userIds = array_unique(array_merge($userIds, $enrolledUserIds));
+            }
+            
+            $users = \App\Models\User::whereIn('id', $userIds)->get();
+        }
+
+        foreach ($users as $recipient) {
+            $recipient->notify(new \App\Notifications\NewMessageNotification($message));
+        }
 
         return response()->json([
             'status' => 'success',
@@ -82,7 +113,7 @@ class ChatController extends Controller
             return response()->json(['message' => 'أنت لست عضواً في هذه الغرفة.'], 403);
         }
 
-        $messages = Message::with('sender')
+        $messages = Message::with(['sender', 'parent.sender'])
             ->where('chat_room_id', $chatRoomId)
             ->latest()
             ->paginate(50);

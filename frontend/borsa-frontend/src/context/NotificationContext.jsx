@@ -142,7 +142,7 @@ export const NotificationProvider = ({ children }) => {
       } catch { /* silent */ }
     };
 
-    const interval = setInterval(pollCount, 60_000);
+    const interval = setInterval(pollCount, 10_000);
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 

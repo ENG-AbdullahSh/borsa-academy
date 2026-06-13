@@ -349,6 +349,22 @@ export default function AdminChatRooms() {
                     </label>
                   </div>
 
+                  {/* Active/Live toggle - only if NOT start_now */}
+                  {!formData.start_now && (
+                    <div className="form-check form-switch mb-3">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="isLive"
+                        checked={formData.is_live}
+                        onChange={(e) => setFormData({ ...formData, is_live: e.target.checked })}
+                      />
+                      <label className="form-check-label text-white ms-2" htmlFor="isLive">
+                        🟢 <strong>تفعيل الغرفة للبث والمحادثة (نشطة الآن)</strong>
+                      </label>
+                    </div>
+                  )}
+
                   {/* Scheduled time - only if not start_now */}
                   {!formData.start_now && (
                     <div className="mb-3">

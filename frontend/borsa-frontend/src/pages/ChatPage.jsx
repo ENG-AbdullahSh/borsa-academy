@@ -118,9 +118,9 @@ export default function ChatPage() {
         </div>
 
         {/* مساحة الدردشة الأساسية */}
-        <div className="col-12 col-md-8 col-lg-9 d-flex justify-content-center">
+        <div className="col-12 col-md-8 col-lg-9">
           {selectedRoom ? (
-            <div className="d-flex flex-column w-100" style={{ height: '75vh', maxWidth: '900px' }}>
+            <div className="d-flex flex-column w-100" style={{ height: '75vh' }}>
               
               {/* البانر الأحمر (Flex Shrink 0 ليظل ثابتاً في الأعلى) */}
               {selectedRoom.is_live && (

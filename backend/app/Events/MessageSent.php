@@ -56,6 +56,16 @@ class MessageSent implements ShouldBroadcastNow
             'message' => $this->message->message,
             'sender_id' => $this->message->sender_id,
             'chat_room_id' => $this->message->chat_room_id,
+            'parent_id' => $this->message->parent_id,
+            'parent' => $this->message->parent ? [
+                'id' => $this->message->parent->id,
+                'message' => $this->message->parent->message,
+                'sender_id' => $this->message->parent->sender_id,
+                'sender' => $this->message->parent->sender ? [
+                    'name' => $this->message->parent->sender->name,
+                    'email' => $this->message->parent->sender->email,
+                ] : null,
+            ] : null,
             'sender' => [
                 'name' => $this->message->sender->name,
                 'email' => $this->message->sender->email,

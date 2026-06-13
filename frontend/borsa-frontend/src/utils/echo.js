@@ -20,7 +20,7 @@ if (pusherKey && pusherKey !== 'dummy-key') {
         authEndpoint: `${import.meta.env.VITE_API_BASE_URL}/broadcasting/auth`,
         auth: {
             headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
+                Authorization: `Bearer ${localStorage.getItem('borsa_auth_token')}`,
             },
         },
     });
@@ -28,6 +28,7 @@ if (pusherKey && pusherKey !== 'dummy-key') {
     // Mock Echo to prevent crashes when Pusher is not configured
     console.warn("Pusher App Key is missing. Real-time features are disabled.");
     echo = {
+        isMock: true,
         private: () => ({
             listen: () => ({}),
         }),
