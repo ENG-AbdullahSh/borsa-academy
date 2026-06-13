@@ -24,7 +24,6 @@ const CursorGlow = () => {
         interactiveElements.includes(target.tagName) ||
         target.closest('a') || 
         target.closest('button') ||
-        (target.classList && target.classList.contains('masari-card')) ||
         (target.classList && target.classList.contains('interactive'));
         
       setIsHovering(!!isInteractive);

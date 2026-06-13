@@ -54,7 +54,7 @@ const getRedirectPath = (role, fromPath) => {
   }
 
   if (role === 'student') {
-    const isStudentPath = ['/student-dashboard', '/my-courses', '/masari']
+    const isStudentPath = ['/student-dashboard', '/my-courses']
       .some((path) => fromPath?.startsWith(path));
 
     return isStudentPath ? fromPath : '/student-dashboard';

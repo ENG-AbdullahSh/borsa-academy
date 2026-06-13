@@ -16,7 +16,6 @@ import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
-import Masari from './pages/Masari';
 import NotificationsPage from './pages/NotificationsPage';
 import MyCourses from './pages/MyCourses';
 import StudentDashboard from './pages/StudentDashboard';
@@ -85,14 +84,6 @@ function AppShell() {
               <ProtectedAdminRoute>
                 <AdminChatRooms />
               </ProtectedAdminRoute>
-            )}
-          />
-          <Route
-            path="/masari"
-            element={(
-              <ProtectedStudentRoute>
-                <Masari />
-              </ProtectedStudentRoute>
             )}
           />
           <Route

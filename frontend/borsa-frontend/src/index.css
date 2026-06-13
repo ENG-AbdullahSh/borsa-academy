@@ -727,31 +727,7 @@ p {
   transform: scale(1.1);
 }
 
-/* --- MASARI PAGE --- */
-.masari-card {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(12px);
-}
 
-.masari-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(0, 230, 118, 0.4);
-  box-shadow: 0 10px 30px rgba(0, 230, 118, 0.15), inset 0 0 20px rgba(0, 230, 118, 0.05);
-}
-
-.masari-card:hover .masari-icon-wrapper {
-  background-color: rgba(0, 230, 118, 0.15) !important;
-  color: #00e676 !important;
-  box-shadow: 0 0 15px rgba(0, 230, 118, 0.4);
-  transform: scale(1.05);
-  transition: all 0.3s ease;
-}
-
-.masari-icon-wrapper {
-  transition: all 0.3s ease;
-}
 
 /* ============================================================
    MOBILE NAVBAR — Hamburger & Slide Panel
@@ -923,31 +899,7 @@ body.mobile-menu-open {
   transform: scale(1.1);
 }
 
-/* --- MASARI PAGE --- */
-.masari-card {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(12px);
-}
 
-.masari-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(0, 230, 118, 0.4);
-  box-shadow: 0 10px 30px rgba(0, 230, 118, 0.15), inset 0 0 20px rgba(0, 230, 118, 0.05);
-}
-
-.masari-card:hover .masari-icon-wrapper {
-  background-color: rgba(0, 230, 118, 0.15) !important;
-  color: #00e676 !important;
-  box-shadow: 0 0 15px rgba(0, 230, 118, 0.4);
-  transform: scale(1.05);
-  transition: all 0.3s ease;
-}
-
-.masari-icon-wrapper {
-  transition: all 0.3s ease;
-}
 
 /* ============================================================
    MOBILE NAVBAR — Hamburger & Slide Panel
