@@ -1626,3 +1626,66 @@ body.mobile-menu-open {
 /* Gamification Gold Pulse Animation */
 @keyframes goldPulse { 0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); } }
 .achievement-pulse { animation: goldPulse 2s infinite cubic-bezier(0.66, 0, 0, 1); background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 165, 0, 0.1)) !important; border: 1px solid rgba(255, 215, 0, 0.5) !important; border-left: 4px solid #FFD700 !important; }
+
+/* ============================================================
+   COURSE CURRICULUM — Double Scrollbar System
+   ============================================================ */
+
+/* 1. Main outer panel scrollbar (scroll between units and sections) */
+@media (min-width: 992px) {
+  .course-curriculum-panel {
+    height: calc(100vh - 160px) !important;
+    max-height: 580px !important;
+    position: sticky;
+    top: 88px;
+  }
+}
+
+.course-curriculum-scroll {
+  overflow-y: scroll !important;
+  flex-grow: 1;
+}
+
+/* 2. Inner section scrollbar (scroll between lessons and videos inside an expanded unit) */
+.section-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease-in-out;
+}
+
+.section-content.expanded {
+  max-height: 180px !important;
+  overflow-y: scroll !important;
+}
+
+/* 3. Hide scrollbar buttons (arrows) to remove the ugly triangles */
+.course-curriculum-scroll::-webkit-scrollbar-button,
+.section-content::-webkit-scrollbar-button {
+  display: none !important;
+}
+
+.course-curriculum-scroll::-webkit-scrollbar,
+.section-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.course-curriculum-scroll::-webkit-scrollbar-track,
+.section-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+}
+
+.course-curriculum-scroll::-webkit-scrollbar-thumb,
+.section-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+
+.course-curriculum-scroll::-webkit-scrollbar-thumb:hover,
+.section-content::-webkit-scrollbar-thumb:hover {
+  background: #00e676;
+}
