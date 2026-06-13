@@ -441,6 +441,7 @@
   width: 100%;
   border-radius: 12px;
   overflow: hidden;
+  margin-bottom: 24px;
 }
 
 /* ── زر Google المخصص (بصري فقط — pointer-events: none) ── */
@@ -450,7 +451,7 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: 12px 20px;
+  padding: 14px 20px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
@@ -464,11 +465,12 @@
     box-shadow 0.22s ease;
   position: relative;
   overflow: hidden;
-  min-height: 48px;
+  min-height: 52px;
   letter-spacing: 0.01em;
   box-sizing: border-box;
   pointer-events: none;  /* النقرات تمر للـ overlay الشفاف */
   user-select: none;
+  flex-direction: row; /* Force icon and text direction */
 }
 
 /* hover يُفعَّل عبر الـ wrapper */
@@ -503,7 +505,7 @@
 }
 
 .auth-google-label {
-  flex: 1;
+  /* removed flex: 1 to allow centered alignment with icon */
   text-align: center;
 }
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth';
+import GoogleLoginButton from '../components/GoogleLoginButton';
 import { useSettings } from '../context/SettingsContext';
 import '../styles/auth.css';
 import borsaLogo from '../assets/Borsa Academy.jpeg';
@@ -48,7 +49,7 @@ const getRegisterErrorMessage = (requestError) => {
 ═══════════════════════════════════════════════════════════════════ */
 export default function SignUp() {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, googleLogin } = useAuth();
   const { settings } = useSettings();
 
   const [fullName, setFullName]         = useState('');
@@ -303,6 +304,25 @@ export default function SignUp() {
                 </button>
 
               </form>
+
+              <div className="auth-divider">أو</div>
+              <GoogleLoginButton 
+                text="signup_with" 
+                onSuccess={async (credential) => {
+                  setError('');
+                  setLoading(true);
+                  try {
+                    await googleLogin({ credential });
+                    setLoading(false);
+                    setSuccess(true);
+                    setTimeout(() => navigate('/student-dashboard', { replace: true }), 700);
+                  } catch (err) {
+                    setLoading(false);
+                    setError(getRegisterErrorMessage(err));
+                  }
+                }}
+                onError={(err) => setError(err.message || 'تعذر إنشاء حساب باستخدام جوجل.')}
+              />
 
               {/* Switch to Sign In */}
               <p className="auth-switch">

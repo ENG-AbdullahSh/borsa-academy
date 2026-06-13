@@ -161,8 +161,17 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::patch('/admin/contact-messages/{contactMessage}', [ContactMessageController::class, 'update']);
         Route::delete('/admin/contact-messages/{contactMessage}', [ContactMessageController::class, 'destroy']);
 
+        // ── Admin Chat Rooms ────────────────────────────────────────────
+        Route::apiResource('/admin/chat-rooms', \App\Http\Controllers\Api\AdminChatRoomController::class);
+
         // ── Admin Monitoring ────────────────────────────────────────────
         Route::get('/admin/activity', [\App\Http\Controllers\Api\AdminActivityController::class, 'index'])->middleware('admin');
     });
 
+    // ── Chat Routes ────────────────────────────────────────────
+    Route::middleware('subscribed')->group(function () {
+        Route::get('/chat/rooms', [\App\Http\Controllers\Api\ChatController::class, 'getRooms']);
+        Route::post('/chat/send', [\App\Http\Controllers\Api\ChatController::class, 'sendMessage']);
+        Route::get('/chat/messages', [\App\Http\Controllers\Api\ChatController::class, 'getMessages']);
+    });
 });

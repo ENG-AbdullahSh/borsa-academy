@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth';
+import GoogleLoginButton from '../components/GoogleLoginButton';
 import { useSettings } from '../context/SettingsContext';
 import '../styles/auth.css';
 import borsaLogo from '../assets/Borsa Academy.jpeg';
@@ -75,7 +76,7 @@ const getRedirectPath = (role, fromPath) => {
 export default function SignIn() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const { settings } = useSettings();
 
   const [email, setEmail]       = useState('');
@@ -263,6 +264,26 @@ export default function SignIn() {
                 </button>
 
               </form>
+
+              <div className="auth-divider">أو</div>
+              <GoogleLoginButton 
+                text="signin_with" 
+                onSuccess={async (credential) => {
+                  setError('');
+                  setLoading(true);
+                  try {
+                    const result = await googleLogin({ credential });
+                    const redirectPath = getRedirectPath(result.user?.role, location.state?.from?.pathname);
+                    setLoading(false);
+                    setSuccess(true);
+                    setTimeout(() => navigate(redirectPath, { replace: true }), 700);
+                  } catch (err) {
+                    setLoading(false);
+                    setError(getLoginErrorMessage(err));
+                  }
+                }}
+                onError={(err) => setError(err.message || 'تعذر تسجيل الدخول باستخدام جوجل.')}
+              />
 
               {/* Switch to Sign Up */}
               <p className="auth-switch">

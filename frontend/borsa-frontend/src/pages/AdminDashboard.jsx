@@ -6,6 +6,7 @@ import AdminMessages from './AdminMessages';
 import AdminQuizManager from './AdminQuizManager';
 import AdminUsers from './AdminUsers';
 import AdminSettings from './AdminSettings';
+import AdminChatRooms from './AdminChatRooms';
 import ProfileSettings from './ProfileSettings';
 import AdminActivityWidget from '../components/AdminActivityWidget';
 import UserAvatar from '../components/UserAvatar';
@@ -20,6 +21,7 @@ const TABS = [
   { id: 'instructors', label: 'المدربون', icon: 'group' },
   { id: 'users', label: 'المستخدمون', icon: 'people' },
   { id: 'messages', label: 'الرسائل', icon: 'forum' },
+  { id: 'chat-rooms', label: 'غرف الدردشة', icon: 'video_camera_front' },
   { id: 'profile', label: 'الملف الشخصي', icon: 'account_circle' },
   { id: 'settings', label: 'الإعدادات', icon: 'settings' },
 ];
@@ -289,6 +291,7 @@ export default function AdminDashboard() {
     if (activeTab === 'messages') {
       return <AdminMessages onUnreadCountChange={setUnreadMsgCount} />;
     }
+    if (activeTab === 'chat-rooms') return <AdminChatRooms />;
     if (activeTab === 'profile') return <ProfileSettings />;
     if (activeTab === 'settings') return <AdminSettings />;
     return renderOverview();

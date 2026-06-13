@@ -29,6 +29,7 @@ export default function Navbar() {
     ? [
         { label: 'لوحة المدرب', path: '/instructor-dashboard' },
         { label: 'دوراتي', path: '/instructor/courses' },
+        { label: 'الرسائل', path: '/chat' },
         { label: 'الملف الشخصي', path: '/profile' },
       ]
     : [
@@ -40,6 +41,7 @@ export default function Navbar() {
           { label: 'دوراتي', path: '/my-courses' },
           { label: 'شهاداتي', path: '/certificates' },
         ] : []),
+        ...(isAuthenticated ? [{ label: 'الرسائل', path: '/chat' }] : []),
         { label: 'من نحن واتصل بنا', path: '/about' },
         ...(user?.role === 'admin' ? [{ label: 'لوحة التحكم', path: '/admin' }] : []),
       ];
