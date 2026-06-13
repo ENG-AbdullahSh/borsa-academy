@@ -1,273 +1,313 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-  <title>Certificate of Completion</title>
+  <title>شهادة إتمام دورة</title>
   <style>
-    /* ── Reset & page ──────────────────────────────────────────────── */
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    /* ══════════════════════════════════════════════════════════════
+       FONT EMBEDDING
+       DomPDF resolves @font-face src relative to the Blade render
+       context, so we pass an absolute OS path.
+       ══════════════════════════════════════════════════════════════ */
+    @font-face {
+      font-family: 'CairoNew';
+      font-style: normal;
+      font-weight: 400;
+      src: url("{{ $fontRegular }}") format('truetype');
+    }
+    @font-face {
+      font-family: 'CairoNew';
+      font-style: normal;
+      font-weight: 700;
+      src: url("{{ $fontBold }}") format('truetype');
+    }
 
+    /* ══════════════════════════════════════════════════════════════
+       PAGE SETUP
+       ══════════════════════════════════════════════════════════════ */
     @page {
       size: A4 landscape;
       margin: 0;
     }
 
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body, table, tr, td {
+      font-family: 'CairoNew', sans-serif;
+    }
+
     body {
       width: 297mm;
       height: 210mm;
-      font-family: Georgia, 'Times New Roman', serif;
-      background: #0a0e1a;
+      background-color: #111417;
       color: #ffffff;
+      overflow: hidden;
+      direction: rtl;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       OUTER PAGE WRAPPER
+       DomPDF supports position:absolute, so we use it for
+       decorative layers instead of Flexbox/Grid.
+       ══════════════════════════════════════════════════════════════ */
+    .page {
+      position: relative;
+      width: 297mm;
+      height: 210mm;
+      background-color: #111417;
       overflow: hidden;
     }
 
-    /* ── Outer frame ───────────────────────────────────────────────── */
-    .page {
-      width: 297mm;
-      height: 210mm;
-      position: relative;
-      background: linear-gradient(135deg, #0a0e1a 0%, #111827 50%, #0d1220 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* Decorative corner borders */
-    .corner {
+    /* ── Background radial glow (gold top-center) ───────────────── */
+    .bg-glow {
       position: absolute;
-      width: 60px;
-      height: 60px;
-      border-color: #22c55e;
-      border-style: solid;
-      opacity: 0.7;
+      top: -40mm;
+      left: 50%;
+      margin-left: -80mm;
+      width: 160mm;
+      height: 100mm;
+      background: radial-gradient(ellipse at center, rgba(212,175,55,0.12) 0%, transparent 70%);
     }
-    .corner-tl { top: 24px; left: 24px;  border-width: 3px 0 0 3px; }
-    .corner-tr { top: 24px; right: 24px; border-width: 3px 3px 0 0; }
-    .corner-bl { bottom: 24px; left: 24px;  border-width: 0 0 3px 3px; }
-    .corner-br { bottom: 24px; right: 24px; border-width: 0 3px 3px 0; }
 
-    /* Outer glow ring */
+    /* ── Outer border frame (exact match to React card border) ──── */
     .outer-border {
       position: absolute;
-      inset: 14px;
-      border: 1px solid rgba(34, 197, 94, 0.15);
-      border-radius: 4px;
+      top: 5mm;
+      left: 5mm;
+      right: 5mm;
+      bottom: 5mm;
+      border: 1px solid rgba(212,175,55,0.55);
+      border-radius: 16px;
     }
 
-    /* ── Content card ──────────────────────────────────────────────── */
-    .card {
-      position: relative;
-      z-index: 10;
+    /* ── Inner border frame (exact match to React card inset border) ─ */
+    .inner-border {
+      position: absolute;
+      top: 9mm;
+      left: 9mm;
+      right: 9mm;
+      bottom: 9mm;
+      border: 1px solid rgba(212,175,55,0.18);
+      border-radius: 12px;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       CONTENT — centre column (table-based layout for DomPDF)
+       ══════════════════════════════════════════════════════════════ */
+    .content-wrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 297mm;
+      height: 210mm;
+    }
+
+    /* Vertical centering via top padding */
+    .content-inner {
       width: 240mm;
+      margin: 0 auto;
+      padding-top: 15mm;
       text-align: center;
-      padding: 12mm 18mm;
     }
 
-    /* ── Header ────────────────────────────────────────────────────── */
+    /* ── Premium star / badge icon (SVG inline) ─────────────────── */
+    .badge-icon {
+      width: 15mm;
+      height: 15mm;
+      margin-bottom: 2mm;
+    }
+
+    /* ── Academy name ────────────────────────────────────────────── */
     .academy-name {
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 11pt;
+      font-size: 9pt;
       font-weight: 700;
-      letter-spacing: 4px;
+      letter-spacing: 0.18em;
+      color: #d4af37;
       text-transform: uppercase;
-      color: #22c55e;
-      margin-bottom: 6px;
+      margin-bottom: 1mm;
     }
 
-    .header-rule {
-      width: 80px;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, #22c55e, transparent);
-      margin: 0 auto 14px;
+    /* ── Thin gold rule ─────────────────────────────────────────── */
+    .rule {
+      width: 40mm;
+      height: 0.3mm;
+      background: #d4af37;
+      margin: 0 auto 4mm;
+      opacity: 0.5;
     }
 
-    /* ── "Certificate of Completion" title ─────────────────────────── */
-    .cert-label {
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 8pt;
-      letter-spacing: 6px;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.45);
-      margin-bottom: 10px;
-    }
-
-    .cert-title {
-      font-size: 28pt;
-      font-weight: 400;
-      font-style: italic;
+    /* ── "شهادة إتمام دورة" ──────────────────────────────────────── */
+    .cert-main-title {
+      font-size: 30pt;
+      font-weight: 700;
       color: #ffffff;
-      margin-bottom: 14px;
+      margin-bottom: 3mm;
       line-height: 1.1;
     }
 
-    /* ── Body text ─────────────────────────────────────────────────── */
+    /* ── Sub-label "تشهد أكاديمية بورصة بأن الطالب/ة" ──────────── */
     .presented-to {
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 9pt;
-      color: rgba(255,255,255,0.5);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-bottom: 8px;
+      font-size: 10pt;
+      font-weight: 400;
+      color: rgba(255,255,255,0.55);
+      margin-bottom: 3mm;
     }
 
+    /* ── Student name ────────────────────────────────────────────── */
     .student-name {
-      font-size: 22pt;
+      font-size: 26pt;
       font-weight: 700;
-      font-style: italic;
-      color: #22c55e;
-      margin-bottom: 10px;
+      color: #75ff9e;
+      margin-bottom: 3mm;
       line-height: 1.2;
     }
 
-    .completion-text {
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 9pt;
+    /* ── "قد أتم/ت بنجاح دورة" ──────────────────────────────────── */
+    .completion-label {
+      font-size: 10pt;
+      font-weight: 400;
       color: rgba(255,255,255,0.55);
-      margin-bottom: 8px;
+      margin-bottom: 2mm;
     }
 
+    /* ── Course name ─────────────────────────────────────────────── */
     .course-name {
-      font-size: 14pt;
-      font-weight: 600;
+      font-size: 20pt;
+      font-weight: 700;
       color: #ffffff;
-      margin-bottom: 18px;
+      margin-bottom: 8mm;
       line-height: 1.3;
     }
 
-    /* ── Decorative separator ──────────────────────────────────────── */
-    .separator {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 18px;
-    }
-    .sep-line {
-      width: 60px;
-      height: 1px;
-      background: rgba(34,197,94,0.3);
-    }
-    .sep-diamond {
-      width: 6px;
-      height: 6px;
-      background: #22c55e;
-      transform: rotate(45deg);
-      opacity: 0.7;
+    /* ══════════════════════════════════════════════════════════════
+       FOOTER ROW — 3 rounded cards matching React card exactly
+       ══════════════════════════════════════════════════════════════ */
+    .footer-table {
+      width: 220mm;
+      margin: 0 auto;
+      border-collapse: separate;
+      border-spacing: 5mm 0;
     }
 
-    /* ── Footer row ────────────────────────────────────────────────── */
-    .footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      padding-top: 10px;
-      border-top: 1px solid rgba(255,255,255,0.06);
-    }
-
-    .footer-block {
-      text-align: center;
-      flex: 1;
+    .footer-card {
+      background: rgba(255, 255, 255, 0.035);
+      border-radius: 8px;
+      padding: 10px 14px;
+      text-align: right;
+      border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     .footer-label {
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 7pt;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.35);
-      margin-bottom: 4px;
+      font-size: 8pt;
+      font-weight: 400;
+      color: rgba(255,255,255,0.40);
+      margin-bottom: 2px;
+      display: block;
     }
 
     .footer-value {
-      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10pt;
+      font-weight: 700;
+      color: #ffffff;
+      display: block;
+    }
+
+    .footer-value-gold {
       font-size: 9pt;
-      font-weight: 600;
-      color: rgba(255,255,255,0.75);
+      font-weight: 700;
+      color: #d4af37;
+      display: block;
     }
 
-    .footer-divider {
-      width: 1px;
-      height: 30px;
-      background: rgba(255,255,255,0.08);
+    .footer-value-green {
+      font-size: 11pt;
+      font-weight: 700;
+      color: #75ff9e;
+      display: block;
     }
-
-    /* ── Background glow circles ───────────────────────────────────── */
-    .glow-circle {
-      position: absolute;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(34,197,94,0.06) 0%, transparent 70%);
-      pointer-events: none;
-    }
-    .glow-1 { width: 300px; height: 300px; top: -80px; left: -60px; }
-    .glow-2 { width: 280px; height: 280px; bottom: -60px; right: -40px; }
   </style>
 </head>
 <body>
-  <div class="page">
+<div class="page">
 
-    <!-- Background glows -->
-    <div class="glow-circle glow-1"></div>
-    <div class="glow-circle glow-2"></div>
+  {{-- Background glow --}}
+  <div class="bg-glow"></div>
 
-    <!-- Decorative frame -->
-    <div class="outer-border"></div>
-    <div class="corner corner-tl"></div>
-    <div class="corner corner-tr"></div>
-    <div class="corner corner-bl"></div>
-    <div class="corner corner-br"></div>
+  {{-- Outer gold border --}}
+  <div class="outer-border"></div>
 
-    <!-- Main content -->
-    <div class="card">
+  {{-- Inner gold border --}}
+  <div class="inner-border"></div>
 
-      <div class="academy-name">Borsa Academy</div>
-      <div class="header-rule"></div>
+  {{-- Main content --}}
+  <div class="content-wrapper">
+    <div class="content-inner">
 
-      <div class="cert-label">Certificate of Completion</div>
-      <div class="cert-title">Achievement Recognized</div>
+      {{-- Premium badge SVG (star / workspace_premium equivalent) --}}
+      <div style="margin-bottom:2mm; text-align:center;">
+        <svg class="badge-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="58" height="58">
+          <circle cx="24" cy="24" r="23" fill="none" stroke="#d4af37" stroke-width="1.5" opacity="0.4"/>
+          <polygon points="24,8 27.5,19 39,19 29.5,26 33,37 24,30 15,37 18.5,26 9,19 20.5,19"
+                   fill="#d4af37" opacity="0.9"/>
+        </svg>
+      </div>
 
-      <div class="presented-to">This certificate is proudly presented to</div>
+      {{-- Academy name --}}
+      <div class="academy-name">BORSA ACADEMY</div>
+      <div class="rule"></div>
 
+      {{-- Certificate main title (Arabic, pre-shaped) --}}
+      <div class="cert-main-title">{{ $labels['certTitle'] }}</div>
+
+      {{-- Presented to --}}
+      <div class="presented-to">{{ $labels['presentedTo'] }}</div>
+
+      {{-- Student name --}}
       <div class="student-name">{{ $studentName }}</div>
 
-      <div class="completion-text">
-        for the successful completion of
-      </div>
+      {{-- Completion label --}}
+      <div class="completion-label">{{ $labels['completionText'] }}</div>
 
-      <div class="course-name">&ldquo;{{ $courseName }}&rdquo;</div>
+      {{-- Course name --}}
+      <div class="course-name">{{ $courseName }}</div>
 
-      <div class="separator">
-        <div class="sep-line"></div>
-        <div class="sep-diamond"></div>
-        <div class="sep-line"></div>
-      </div>
+      {{-- Footer info row --}}
+      <table class="footer-table">
+        <tr>
+          {{-- Date --}}
+          <td style="width: 33.33%; padding: 0;">
+            <div class="footer-card">
+              <span class="footer-label">{{ $labels['labelDate'] }}</span>
+              <span class="footer-value">{{ $issuedAt }}</span>
+            </div>
+          </td>
 
-      <!-- Footer row -->
-      <div class="footer">
-        <div class="footer-block">
-          <div class="footer-label">Date Issued</div>
-          <div class="footer-value">{{ $issuedAt }}</div>
-        </div>
+          {{-- Certificate number --}}
+          <td style="width: 33.33%; padding: 0;">
+            <div class="footer-card">
+              <span class="footer-label">{{ $labels['labelCertNumber'] }}</span>
+              <span class="footer-value-gold" dir="ltr">{{ $certNumber }}</span>
+            </div>
+          </td>
 
-        <div class="footer-divider"></div>
+          {{-- Progress --}}
+          <td style="width: 33.33%; padding: 0;">
+            <div class="footer-card">
+              <span class="footer-label">{{ $labels['labelProgress'] }}</span>
+              <span class="footer-value-green">{{ $progress }}%</span>
+            </div>
+          </td>
+        </tr>
+      </table>
 
-        <div class="footer-block">
-          <div class="footer-label">Certificate ID</div>
-          <div class="footer-value" style="font-family: 'Courier New', monospace; font-size: 8pt; letter-spacing: 1px;">
-            {{ $certNumber }}
-          </div>
-        </div>
+    </div>
+  </div>
 
-        <div class="footer-divider"></div>
-
-        <div class="footer-block">
-          <div class="footer-label">Issued By</div>
-          <div class="footer-value">Borsa Academy</div>
-        </div>
-      </div>
-
-    </div><!-- /.card -->
-
-  </div><!-- /.page -->
+</div>
 </body>
 </html>
