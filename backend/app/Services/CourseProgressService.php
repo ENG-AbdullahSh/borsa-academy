@@ -19,7 +19,12 @@ class CourseProgressService
     {
         $sections = CourseSection::query()
             ->where('course_id', $enrollment->course_id)
-            ->with('lessons.quiz.questions.options')
+            ->with([
+                'lessons' => function ($query) {
+                    $query->where('is_published', true);
+                },
+                'lessons.quiz.questions.options'
+            ])
             ->orderBy('order')
             ->orderBy('id')
             ->get();

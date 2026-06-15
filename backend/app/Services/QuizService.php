@@ -133,6 +133,7 @@ class QuizService
     public function sectionStatus(Enrollment $enrollment, CourseSection $section): array
     {
         $lessons = $section->lessons()
+            ->where('is_published', true)
             ->with('quiz.questions.options')
             ->get();
 
@@ -171,7 +172,12 @@ class QuizService
     {
         return CourseSection::query()
             ->where('course_id', $enrollment->course_id)
-            ->with('lessons.quiz.questions.options')
+            ->with([
+                'lessons' => function ($query) {
+                    $query->where('is_published', true);
+                },
+                'lessons.quiz.questions.options'
+            ])
             ->orderBy('order')
             ->orderBy('id')
             ->get()

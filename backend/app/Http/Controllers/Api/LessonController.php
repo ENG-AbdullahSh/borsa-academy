@@ -2,15 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\Api\Concerns\AuthorizesInstructorCourseOwnership;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Lessons\StoreLessonRequest;
 use App\Http\Requests\Lessons\UpdateLessonRequest;
 use App\Models\CourseSection;
 use App\Models\Lesson;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-
 use Illuminate\Support\Facades\Storage;
 
 class LessonController extends Controller
@@ -23,9 +22,20 @@ class LessonController extends Controller
         $section = CourseSection::with('course')->findOrFail($validated['section_id']);
         $this->authorizeCourseOwnership($request, $section->course);
 
-        // Filter out 'pdf' from validated array because we just want the path, not the file object
-        if (array_key_exists('pdf', $validated)) {
-            unset($validated['pdf']);
+        // Filter out uploaded file objects because we only persist their stored paths.
+        foreach (['pdf', 'video'] as $fileField) {
+            if (array_key_exists($fileField, $validated)) {
+                unset($validated[$fileField]);
+            }
+        }
+
+        if (($validated['duration_minutes'] ?? null) === null) {
+            unset($validated['duration_minutes']);
+        }
+
+        if ($request->hasFile('video')) {
+            $path = $request->file('video')->store('lessons/videos', 'public');
+            $validated['video_path'] = $path;
         }
 
         if ($request->hasFile('pdf')) {
@@ -77,7 +87,7 @@ class LessonController extends Controller
 
             // Store new video file in the lessons/videos directory on the public disk
             $path = $request->file('video')->store('lessons/videos', 'public');
-            
+
             // Save the resulting file path to the video_path column
             $lesson->video_path = $path;
             $lesson->save();

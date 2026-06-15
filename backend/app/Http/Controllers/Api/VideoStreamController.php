@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Instructor;
 use App\Models\Lesson;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -20,13 +22,31 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class VideoStreamController extends Controller
 {
-    public function stream(Request $request, Lesson $lesson): StreamedResponse
+    public function stream(Request $request, Lesson $lesson): Response
     {
+        $user = Auth::user();
+        if (! $lesson->is_published) {
+            $isAuthorized = false;
+            if ($user) {
+                if ($user->role === 'admin') {
+                    $isAuthorized = true;
+                } elseif ($user->role === 'instructor') {
+                    $instructor = Instructor::where('user_id', $user->id)->first();
+                    $course = $lesson->section?->course;
+                    if ($instructor && $course && $course->instructor_id === $instructor->id) {
+                        $isAuthorized = true;
+                    }
+                }
+            }
+            if (! $isAuthorized) {
+                abort(403, 'الدرس غير منشور بعد.');
+            }
+        }
+
         // ── 1. Authorization ─────────────────────────────────────────────
         // Allow public preview lessons; otherwise require enrollment.
-        $user = Auth::user();
-        if (!$lesson->is_preview) {
-            if (!$user) {
+        if (! $lesson->is_preview) {
+            if (! $user) {
                 abort(401, 'Unauthenticated');
             }
             // Check enrollment via the lesson's section → course
@@ -35,7 +55,7 @@ class VideoStreamController extends Controller
                 $enrolled = $course->enrollments()
                     ->where('user_id', $user->id)
                     ->exists();
-                if (!$enrolled) {
+                if (! $enrolled) {
                     abort(403, 'Not enrolled in this course');
                 }
             }
@@ -47,10 +67,10 @@ class VideoStreamController extends Controller
         }
 
         // video_path is relative to the "public" Storage disk
-        $disk     = Storage::disk('public');
+        $disk = Storage::disk('public');
         $filePath = $lesson->video_path;
 
-        if (!$disk->exists($filePath)) {
+        if (! $disk->exists($filePath)) {
             abort(404, 'Video file not found on disk');
         }
 
@@ -65,34 +85,41 @@ class VideoStreamController extends Controller
         $length = $end - $start + 1;
 
         // ── 4. Build response headers ────────────────────────────────────
-        $lastModified = gmdate('D, d M Y H:i:s', filemtime($fullPath)) . ' GMT';
-        $etag         = '"' . md5($fullPath . $fileSize . filemtime($fullPath)) . '"';
+        $lastModified = gmdate('D, d M Y H:i:s', filemtime($fullPath)).' GMT';
+        $etag = '"'.md5($fullPath.$fileSize.filemtime($fullPath)).'"';
 
         // 304 Not Modified shortcut — saves re-streaming the whole range
-        $ifNoneMatch  = $request->header('If-None-Match');
-        $ifModified   = $request->header('If-Modified-Since');
+        $ifNoneMatch = $request->header('If-None-Match');
+        $ifModified = $request->header('If-Modified-Since');
         if (
             ($ifNoneMatch && $ifNoneMatch === $etag) ||
-            ($ifModified  && $ifModified  === $lastModified)
+            ($ifModified && $ifModified === $lastModified)
         ) {
-            return response('', 304);
+            return new Response('', 304, [
+                'Cache-Control' => 'private, max-age=3600',
+                'ETag' => $etag,
+                'Last-Modified' => $lastModified,
+                'Access-Control-Allow-Origin' => $request->header('Origin', '*'),
+                'Access-Control-Allow-Credentials' => 'true',
+                'Access-Control-Expose-Headers' => 'ETag, Last-Modified',
+            ]);
         }
 
         $headers = [
-            'Content-Type'                     => $mimeType,
-            'Content-Length'                   => $length,
-            'Content-Range'                    => "bytes {$start}-{$end}/{$fileSize}",
-            'Accept-Ranges'                    => 'bytes',
+            'Content-Type' => $mimeType,
+            'Content-Length' => $length,
+            'Content-Range' => "bytes {$start}-{$end}/{$fileSize}",
+            'Accept-Ranges' => 'bytes',
             // private: only user's browser caches (not shared CDN/proxies since video is auth-protected)
             // max-age=3600: browser may reuse cached chunks for 1 hour without re-asking
-            'Cache-Control'                    => 'private, max-age=3600',
-            'ETag'                             => $etag,
-            'Last-Modified'                    => $lastModified,
-            'X-Content-Type-Options'           => 'nosniff',
+            'Cache-Control' => 'private, max-age=3600',
+            'ETag' => $etag,
+            'Last-Modified' => $lastModified,
+            'X-Content-Type-Options' => 'nosniff',
             // Allow the React frontend to read these headers cross-origin
-            'Access-Control-Allow-Origin'      => $request->header('Origin', '*'),
+            'Access-Control-Allow-Origin' => $request->header('Origin', '*'),
             'Access-Control-Allow-Credentials' => 'true',
-            'Access-Control-Expose-Headers'    => 'Content-Length, Content-Range, Accept-Ranges, ETag',
+            'Access-Control-Expose-Headers' => 'Content-Length, Content-Range, Accept-Ranges, ETag',
         ];
 
         // ── 5. Stream the requested byte range ───────────────────────────
@@ -104,11 +131,11 @@ class VideoStreamController extends Controller
 
             fseek($handle, $start);
 
-            $remaining  = $length;
+            $remaining = $length;
             $bufferSize = 1024 * 64; // 64 KB chunks
 
-            while (!feof($handle) && $remaining > 0) {
-                $read  = min($bufferSize, $remaining);
+            while (! feof($handle) && $remaining > 0) {
+                $read = min($bufferSize, $remaining);
                 $chunk = fread($handle, $read);
                 if ($chunk === false) {
                     break;
@@ -138,7 +165,7 @@ class VideoStreamController extends Controller
      */
     private function parseRange(?string $header, int $fileSize): array
     {
-        if (empty($header) || !str_starts_with($header, 'bytes=')) {
+        if (empty($header) || ! str_starts_with($header, 'bytes=')) {
             // No range requested — serve the whole file
             return [0, $fileSize - 1, 200];
         }
@@ -148,11 +175,11 @@ class VideoStreamController extends Controller
         [$startStr, $endStr] = explode('-', $range, 2) + ['0', ''];
 
         $start = (int) $startStr;
-        $end   = $endStr !== '' ? (int) $endStr : $fileSize - 1;
+        $end = $endStr !== '' ? (int) $endStr : $fileSize - 1;
 
         // Clamp to valid bounds
         $start = max(0, $start);
-        $end   = min($end, $fileSize - 1);
+        $end = min($end, $fileSize - 1);
 
         if ($start > $end) {
             abort(416, 'Requested range not satisfiable');
@@ -169,12 +196,12 @@ class VideoStreamController extends Controller
         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
 
         return match ($ext) {
-            'mp4'  => 'video/mp4',
+            'mp4' => 'video/mp4',
             'webm' => 'video/webm',
-            'ogg'  => 'video/ogg',
-            'mov'  => 'video/quicktime',
-            'avi'  => 'video/x-msvideo',
-            'mkv'  => 'video/x-matroska',
+            'ogg' => 'video/ogg',
+            'mov' => 'video/quicktime',
+            'avi' => 'video/x-msvideo',
+            'mkv' => 'video/x-matroska',
             default => 'application/octet-stream',
         };
     }

@@ -36,16 +36,22 @@ function sectionPayload(form, courseId) {
 }
 
 function lessonPayload(form, fallbackSectionId) {
-  return {
+  const duration = String(form.duration_minutes ?? '').trim();
+  const payload = {
     section_id: Number(form.section_id || fallbackSectionId),
     title: form.title.trim(),
     description: form.description.trim() || null,
     video_url: form.video_url.trim() || null,
     pdf_url: form.pdf_url.trim() || null,
-    duration_minutes: Number(form.duration_minutes),
     order: form.order === '' ? 0 : Number(form.order),
     is_preview: Boolean(form.is_preview),
   };
+
+  if (duration !== '') {
+    payload.duration_minutes = Number(duration);
+  }
+
+  return payload;
 }
 
 function lessonToForm(lesson) {
@@ -80,7 +86,7 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
   const [lessonVideoFile, setLessonVideoFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(null);
   const [lessonPdfFile, setLessonPdfFile] = useState(null);
-  const [fileInputKey, setFileInputKey] = useState(Date.now());
+  const [fileInputKey, setFileInputKey] = useState(() => Date.now());
 
   const headers = useMemo(() => apiHeaders(token), [token]);
   const apiScope = `${API_BASE_URL}/${scope}`;
@@ -274,53 +280,42 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
       return;
     }
 
+    if (!lessonVideoFile) {
+      showMessage('error', 'يرجى رفع ملف فيديو قبل إضافة الدرس.');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      setUploadProgress(lessonPdfFile ? 0 : null);
-      
+      setUploadProgress(0);
+
       const formData = new FormData();
       const payload = lessonPayload(lessonForm, sectionId);
       Object.keys(payload).forEach(key => {
-        if (payload[key] !== null) {
+        if (payload[key] !== null && payload[key] !== undefined) {
           const value = typeof payload[key] === 'boolean' ? (payload[key] ? 1 : 0) : payload[key];
           formData.append(key, value);
         }
       });
+      formData.append('video', lessonVideoFile);
       if (lessonPdfFile) {
         formData.append('pdf', lessonPdfFile);
       }
 
-      const response = await axios.post(`${apiScope}/lessons`, formData, {
+      await axios.post(`${apiScope}/lessons`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
         },
         onUploadProgress: (progressEvent) => {
-          if (lessonPdfFile && !lessonVideoFile) {
-            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          const total = progressEvent.total || progressEvent.loaded;
+          if (total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / total);
             setUploadProgress(percentCompleted);
           }
         }
       });
-      const newLesson = response.data.data;
-
-      if (newLesson && lessonVideoFile) {
-        setUploadProgress(0);
-        const videoFormData = new FormData();
-        videoFormData.append('video', lessonVideoFile);
-
-        await axios.post(`${apiScope}/lessons/${newLesson.id}/upload-video`, videoFormData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-          onUploadProgress: (progressEvent) => {
-            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setUploadProgress(percentCompleted);
-          },
-        });
-      }
 
       setLessonForm({ ...EMPTY_LESSON_FORM, section_id: sectionId });
       setLessonVideoFile(null);
@@ -543,7 +538,6 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
               type="number"
               min="1"
               className="form-control custom-input"
-              required
               style={{ direction: 'ltr', textAlign: 'left' }}
             />
           </div>
@@ -571,10 +565,11 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
           <div className="col-12 col-lg-5">
             <label className="form-label text-muted" style={{ fontSize: '12px' }}>
               رفع ملف فيديو
-              <span style={{ color: '#64748b', marginRight: '4px' }}>(اختياري · حتى 500MB)</span>
+              <span style={{ color: '#ffb4b4', marginRight: '4px' }}>(إجباري · حتى 500MB)</span>
             </label>
             <label
               htmlFor={`video-file-${fileInputKey}`}
+              aria-required="true"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -842,7 +837,37 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
                               </div>
                             ) : (
                               <div className="d-flex flex-column">
-                                <span className="text-white fw-bold">{lesson.title}</span>
+                                <div className="d-flex align-items-center gap-2 mb-1">
+                                  <span className="text-white fw-bold">{lesson.title}</span>
+                                  {lesson.is_published ? (
+                                    <span
+                                      className="px-2 py-0.5 rounded-pill"
+                                      style={{
+                                        color: '#75ff9e',
+                                        background: 'rgba(117,255,158,0.08)',
+                                        border: '1px solid rgba(117,255,158,0.2)',
+                                        fontSize: '10px',
+                                        fontWeight: '600'
+                                      }}
+                                    >
+                                      منشور
+                                    </span>
+                                  ) : (
+                                    <span
+                                      className="px-2 py-0.5 rounded-pill"
+                                      style={{
+                                        color: '#ffd54f',
+                                        background: 'rgba(255,213,79,0.08)',
+                                        border: '1px solid rgba(255,213,79,0.2)',
+                                        fontSize: '10px',
+                                        fontWeight: '600'
+                                      }}
+                                      title="يحتاج إضافة اختبار وتفعيله ليتم نشره للطلاب"
+                                    >
+                                      مسودة
+                                    </span>
+                                  )}
+                                </div>
                                 <span className="text-muted mb-2" style={{ fontSize: '12px' }}>{lesson.description || 'لا يوجد وصف.'}</span>
                                 <div className="d-flex gap-2 mt-1">
                                   {lesson.video_url && (

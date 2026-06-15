@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Storage;
     'duration_minutes',
     'order',
     'is_preview',
+    'is_published',
 ])]
 class Lesson extends Model
 {
@@ -66,6 +67,7 @@ class Lesson extends Model
             'duration_minutes' => 'integer',
             'order' => 'integer',
             'is_preview' => 'boolean',
+            'is_published' => 'boolean',
         ];
     }
 

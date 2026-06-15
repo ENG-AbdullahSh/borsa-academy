@@ -31,6 +31,28 @@ class LessonProgressController extends Controller
             ], 404);
         }
 
+        if (! $lessonModel->is_published) {
+            $user = $request->user();
+            $isAuthorized = false;
+            if ($user) {
+                if ($user->role === 'admin') {
+                    $isAuthorized = true;
+                } elseif ($user->role === 'instructor') {
+                    $instructor = \App\Models\Instructor::where('user_id', $user->id)->first();
+                    $course = $lessonModel->section?->course;
+                    if ($instructor && $course && $course->instructor_id === $instructor->id) {
+                        $isAuthorized = true;
+                    }
+                }
+            }
+            if (!$isAuthorized) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'الدرس غير منشور بعد.',
+                ], 403);
+            }
+        }
+
         $enrollment = $this->findEnrollment(
             $request,
             $lessonModel->section->course_id,
@@ -96,6 +118,28 @@ class LessonProgressController extends Controller
                 'success' => false,
                 'message' => 'الدرس غير موجود.',
             ], 404);
+        }
+
+        if (! $lessonModel->is_published) {
+            $user = $request->user();
+            $isAuthorized = false;
+            if ($user) {
+                if ($user->role === 'admin') {
+                    $isAuthorized = true;
+                } elseif ($user->role === 'instructor') {
+                    $instructor = \App\Models\Instructor::where('user_id', $user->id)->first();
+                    $course = $lessonModel->section?->course;
+                    if ($instructor && $course && $course->instructor_id === $instructor->id) {
+                        $isAuthorized = true;
+                    }
+                }
+            }
+            if (!$isAuthorized) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'الدرس غير منشور بعد.',
+                ], 403);
+            }
         }
 
         $enrollment = $this->findEnrollment(

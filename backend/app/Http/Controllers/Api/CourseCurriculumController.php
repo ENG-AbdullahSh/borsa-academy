@@ -21,7 +21,12 @@ class CourseCurriculumController extends Controller
     {
         $course = Course::query()
             ->published()
-            ->with(['sections.lessons.quiz.questions.options'])
+            ->with([
+                'sections.lessons' => function ($query) {
+                    $query->where('is_published', true);
+                },
+                'sections.lessons.quiz.questions.options'
+            ])
             ->findOrFail($id);
 
         return response()->json([
