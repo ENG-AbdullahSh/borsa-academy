@@ -23,6 +23,7 @@ class MessageSent implements ShouldBroadcastNow
     public function __construct(Message $message)
     {
         $this->message = $message;
+        $this->message->loadMissing(['sender', 'parent.sender', 'reactions.user:id,name']);
     }
 
     /**
@@ -70,6 +71,16 @@ class MessageSent implements ShouldBroadcastNow
                 'name' => $this->message->sender->name,
                 'email' => $this->message->sender->email,
             ],
+            'reactions' => $this->message->reactions->map(fn ($reaction) => [
+                'id' => $reaction->id,
+                'message_id' => $reaction->message_id,
+                'user_id' => $reaction->user_id,
+                'emoji' => $reaction->emoji,
+                'user' => $reaction->user ? [
+                    'id' => $reaction->user->id,
+                    'name' => $reaction->user->name,
+                ] : null,
+            ])->values()->all(),
             'created_at' => $this->message->created_at->toDateTimeString(),
         ];
     }

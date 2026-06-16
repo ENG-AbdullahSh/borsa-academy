@@ -173,5 +173,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/chat/rooms', [\App\Http\Controllers\Api\ChatController::class, 'getRooms']);
         Route::post('/chat/send', [\App\Http\Controllers\Api\ChatController::class, 'sendMessage']);
         Route::get('/chat/messages', [\App\Http\Controllers\Api\ChatController::class, 'getMessages']);
+        Route::post('/chat/messages/{message}/reaction', [\App\Http\Controllers\Api\ChatController::class, 'toggleReaction'])->whereNumber('message');
     });
 });

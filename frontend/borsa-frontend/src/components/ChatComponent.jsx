@@ -2,11 +2,41 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import echo from '../utils/echo';
 
+const REACTION_OPTIONS = ['👍', '❤️', '😂', '🔥', '👏', '🎉', '🤔', '😮'];
+
+function summarizeReactions(reactions = [], currentUserId) {
+  const groups = new Map();
+
+  reactions.forEach((reaction) => {
+    if (!reaction?.emoji) return;
+
+    const group = groups.get(reaction.emoji) || {
+      emoji: reaction.emoji,
+      count: 0,
+      reactedByMe: false,
+      users: [],
+    };
+
+    group.count += 1;
+    group.reactedByMe = group.reactedByMe || (currentUserId != null && String(reaction.user_id) === String(currentUserId));
+
+    if (reaction.user?.name) {
+      group.users.push(reaction.user.name);
+    }
+
+    groups.set(reaction.emoji, group);
+  });
+
+  return Array.from(groups.values());
+}
+
 export default function ChatComponent({ chatRoomId, roomName = "غرفة الدردشة", isLive = false }) {
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [reactionPickerMessageId, setReactionPickerMessageId] = useState(null);
+  const [reactingMessageIds, setReactingMessageIds] = useState({});
   const chatContainerRef = useRef(null);
   const wasNearBottomRef = useRef(true);
   const isFirstLoad = useRef(true);
@@ -55,7 +85,18 @@ export default function ChatComponent({ chatRoomId, roomName = "غرفة الد�
     wasNearBottomRef.current = true;
     prevMessagesCountRef.current = 0;
     prevLastMessageIdRef.current = null;
+    setReactionPickerMessageId(null);
   }, [chatRoomId]);
+
+  useEffect(() => {
+    const handleDocumentClick = (event) => {
+      if (event.target?.closest?.('.reaction-picker') || event.target?.closest?.('.reaction-btn')) return;
+      setReactionPickerMessageId(null);
+    };
+
+    document.addEventListener('click', handleDocumentClick);
+    return () => document.removeEventListener('click', handleDocumentClick);
+  }, []);
 
   // التمرير التلقائي الفوري لأسفل عند تحميل الرسائل لأول مرة واكتمال التحميل
   useEffect(() => {
@@ -152,14 +193,24 @@ export default function ChatComponent({ chatRoomId, roomName = "غرفة الد�
     } else {
       // الاشتراك في القناة الخاصة بهذه الغرفة (WebSockets)
       const channelName = `chat-room.${chatRoomId}`;
-      echo.private(channelName)
-        .listen('MessageSent', (e) => {
-          setMessages((prevMessages) => {
-            // منع تكرار الرسائل إذا استلمناها عبر الـ Echo
-            if (prevMessages.find(m => m.id === e.id)) return prevMessages;
-            return [...prevMessages, e];
-          });
+      const handleIncomingMessage = (e) => {
+        setMessages((prevMessages) => {
+          // منع تكرار الرسائل إذا استلمناها عبر الـ Echo
+          if (prevMessages.find(m => m.id === e.id)) return prevMessages;
+          return [...prevMessages, e];
         });
+      };
+      const handleReactionUpdate = (e) => {
+        setMessages((prevMessages) => prevMessages.map((message) => (
+          message.id === e.message_id ? { ...message, reactions: e.reactions || [] } : message
+        )));
+      };
+
+      echo.private(channelName)
+        .listen('MessageSent', handleIncomingMessage)
+        .listen('.MessageSent', handleIncomingMessage)
+        .listen('MessageReactionUpdated', handleReactionUpdate)
+        .listen('.MessageReactionUpdated', handleReactionUpdate);
     }
 
     return () => {
@@ -236,6 +287,47 @@ export default function ChatComponent({ chatRoomId, roomName = "غرفة الد�
     }
   };
 
+  const updateMessageReactions = (messageId, reactions) => {
+    setMessages(prevMessages => prevMessages.map((message) => (
+      message.id === messageId ? { ...message, reactions: reactions || [] } : message
+    )));
+  };
+
+  const handleReaction = async (message, emoji) => {
+    if (!message?.id || message.isOptimistic) return;
+
+    setReactionPickerMessageId(null);
+    setReactingMessageIds(prev => ({ ...prev, [message.id]: true }));
+
+    try {
+      const token = localStorage.getItem('borsa_auth_token');
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+
+      const response = await fetch(`${apiUrl}/chat/messages/${message.id}/reaction`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ emoji })
+      });
+
+      const data = await response.json();
+      if (data.status === 'success') {
+        updateMessageReactions(data.data.message_id, data.data.reactions);
+      }
+    } catch (error) {
+      console.error('Error reacting to message:', error);
+    } finally {
+      setReactingMessageIds(prev => {
+        const next = { ...prev };
+        delete next[message.id];
+        return next;
+      });
+    }
+  };
+
   return (
     <div className="d-flex flex-column w-100 h-100 overflow-hidden shadow rounded-4" style={{ backgroundColor: '#111417', border: '1px solid rgba(255, 255, 255, 0.08)', fontFamily: 'var(--font-sans)' }} dir="rtl">
       
@@ -275,9 +367,103 @@ export default function ChatComponent({ chatRoomId, roomName = "غرفة الد�
           transform: scale(1.2) rotate(-15deg);
           color: #00E676 !important;
         }
+        .reaction-btn {
+          opacity: 0;
+          transition: opacity 0.2s ease, transform 0.2s ease;
+          cursor: pointer;
+          color: #94A3B8 !important;
+        }
+        .message-row:hover .reaction-btn {
+          opacity: 1;
+        }
+        .reaction-btn:hover,
+        .reaction-btn.active {
+          transform: scale(1.12);
+          color: #00E676 !important;
+        }
+        .reaction-btn.active {
+          opacity: 1;
+        }
+        .message-actions {
+          width: 56px;
+        }
+        .reaction-picker {
+          position: absolute;
+          top: -46px;
+          right: 0;
+          z-index: 6;
+          display: flex;
+          gap: 4px;
+          padding: 6px;
+          border-radius: 999px;
+          background: rgba(17, 20, 23, 0.96);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+          backdrop-filter: blur(10px);
+        }
+        .reaction-picker-me {
+          right: auto;
+          left: 0;
+        }
+        .reaction-option {
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          border: 0;
+          background: transparent;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 17px;
+          transition: background-color 0.18s ease, transform 0.18s ease;
+        }
+        .reaction-option:hover {
+          background: rgba(117, 255, 158, 0.12);
+          transform: translateY(-2px) scale(1.08);
+        }
+        .message-reactions-bar {
+          position: absolute;
+          bottom: -16px;
+          right: 10px;
+          z-index: 2;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 4px;
+          max-width: calc(100% - 20px);
+        }
+        .message-reactions-bar-me {
+          right: auto;
+          left: 10px;
+          justify-content: flex-end;
+        }
+        .reaction-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          height: 24px;
+          padding: 0 8px;
+          border-radius: 999px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: rgba(9, 12, 15, 0.92);
+          color: #E2E8F0;
+          font-size: 12px;
+          line-height: 1;
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+        }
+        .reaction-chip.active {
+          border-color: rgba(117, 255, 158, 0.55);
+          background: rgba(0, 230, 118, 0.13);
+          color: #75ff9e;
+        }
         .reply-quote:hover {
           background-color: rgba(0, 0, 0, 0.4) !important;
           opacity: 0.9;
+        }
+        @media (hover: none) {
+          .reply-btn,
+          .reaction-btn {
+            opacity: 1;
+          }
         }
       `}</style>
 
@@ -300,6 +486,9 @@ export default function ChatComponent({ chatRoomId, roomName = "غرفة الد�
         ) : (
           messages.map((msg, idx) => {
             const isMe = msg.sender_id === user?.id;
+            const reactionGroups = summarizeReactions(msg.reactions || [], user?.id);
+            const hasMyReaction = reactionGroups.some(group => group.reactedByMe);
+            const isReacting = Boolean(reactingMessageIds[msg.id]);
             
             return (
               <div 
@@ -309,13 +498,28 @@ export default function ChatComponent({ chatRoomId, roomName = "غرفة الد�
               >
                 {/* زر الرد في حال كانت الرسالة لـ Me (يظهر على اليسار) */}
                 {isMe && !msg.isOptimistic && (
-                  <button 
-                    onClick={() => setReplyToMessage(msg)}
-                    className="btn reply-btn p-1 border-0 bg-transparent"
-                    title="رد على الرسالة"
-                  >
-                    ↩
-                  </button>
+                  <div className="message-actions d-flex align-items-center justify-content-end gap-1">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setReactionPickerMessageId(prev => prev === msg.id ? null : msg.id);
+                      }}
+                      className={`btn reaction-btn p-1 border-0 bg-transparent ${hasMyReaction ? 'active' : ''}`}
+                      title="تفاعل مع الرسالة"
+                      disabled={isReacting}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add_reaction</span>
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setReplyToMessage(msg)}
+                      className="btn reply-btn p-1 border-0 bg-transparent"
+                      title="رد على الرسالة"
+                    >
+                      ↩
+                    </button>
+                  </div>
                 )}
 
                 <div 
@@ -326,10 +530,46 @@ export default function ChatComponent({ chatRoomId, roomName = "غرفة الد�
                     color: isMe ? '#75ff9e' : '#F8FAFC',
                     border: isMe ? '1px solid rgba(0, 230, 118, 0.2)' : '1px solid rgba(255, 255, 255, 0.05)',
                     borderRadius: isMe ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
+                    marginBottom: reactionGroups.length > 0 ? '14px' : 0,
                     opacity: msg.isOptimistic ? 0.6 : 1,
                     transition: 'background-color 0.3s ease, border-color 0.3s ease'
                   }}
                 >
+                  {reactionGroups.length > 0 && (
+                    <div className={`message-reactions-bar ${isMe ? 'message-reactions-bar-me' : ''}`}>
+                      {reactionGroups.map((reaction) => (
+                        <button
+                          key={reaction.emoji}
+                          type="button"
+                          className={`reaction-chip ${reaction.reactedByMe ? 'active' : ''}`}
+                          onClick={() => handleReaction(msg, reaction.emoji)}
+                          disabled={isReacting}
+                          title={reaction.users.length ? reaction.users.join('، ') : 'تفاعل'}
+                        >
+                          <span>{reaction.emoji}</span>
+                          <span>{reaction.count}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {reactionPickerMessageId === msg.id && (
+                    <div className={`reaction-picker ${isMe ? 'reaction-picker-me' : ''}`}>
+                      {REACTION_OPTIONS.map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          className="reaction-option"
+                          onClick={() => handleReaction(msg, emoji)}
+                          disabled={isReacting}
+                          aria-label={`تفاعل ${emoji}`}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   {!isMe && (
                     <div className="fw-bold mb-1" style={{ fontSize: '11px', color: '#00E676' }}>
                       {msg.sender?.name || 'مستخدم'}
@@ -368,13 +608,28 @@ export default function ChatComponent({ chatRoomId, roomName = "غرفة الد�
 
                 {/* زر الرد في حال كانت الرسالة للآخرين (يظهر على اليمين) */}
                 {!isMe && !msg.isOptimistic && (
-                  <button 
-                    onClick={() => setReplyToMessage(msg)}
-                    className="btn reply-btn p-1 border-0 bg-transparent"
-                    title="رد على الرسالة"
-                  >
-                    ↩
-                  </button>
+                  <div className="message-actions d-flex align-items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setReactionPickerMessageId(prev => prev === msg.id ? null : msg.id);
+                      }}
+                      className={`btn reaction-btn p-1 border-0 bg-transparent ${hasMyReaction ? 'active' : ''}`}
+                      title="تفاعل مع الرسالة"
+                      disabled={isReacting}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add_reaction</span>
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setReplyToMessage(msg)}
+                      className="btn reply-btn p-1 border-0 bg-transparent"
+                      title="رد على الرسالة"
+                    >
+                      ↩
+                    </button>
+                  </div>
                 )}
               </div>
             );
