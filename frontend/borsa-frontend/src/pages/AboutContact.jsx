@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
+import { FaInstagram, FaTelegram, FaWhatsapp } from 'react-icons/fa6';
 import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
 
 /* ─── Static data ────────────────────────────────────────────── */
 const MENTORS = [
-  { name: 'د. إلياس ثورن',   role: 'مدير الاقتصاد الكلي الكمي',  bio: 'متخصص سابق في بورصة شيكاغو التجارية. ٢٢ عامًا في رسم خريطة لعدم كفاءة الأسواق.',        color: '#75ff9e' },
-  { name: 'سارة شن، CFA',    role: 'مهندسة تدفق الأوامر',         bio: 'مكتب الخوارزميات السابق في مورغان ستانلي. متخصصة في تحليل التدفق والبنية الجزئية.',      color: '#81cfff' },
-  { name: 'ماركوس فولت',     role: 'بنية العملات الرقمية الجزئية', bio: 'استراتيجي كمي في HFT متخصص في استخلاص السيولة والتنفيذ منخفض الكمون.',               color: '#75ff9e' },
-  { name: 'جوليان فانس',     role: 'مدرب أداء التداول',           bio: 'معالج نفسي سلوكي معرفي ومحلل كمي سابق. متخصص في الانضباط المنهجي.',                     color: '#81cfff' },
+  { name: 'احمد ديب',       role: 'المهندس',             bio: 'مسؤول عن الجوانب التقنية وتطوير تجربة المنصة.',              color: '#75ff9e' },
+  { name: 'علي ابو عصر',    role: 'ماركتنج',             bio: 'مسؤول عن التسويق والتواصل مع الجمهور وبناء حضور الأكاديمية.', color: '#81cfff' },
+  { name: 'احمد العزامي',    role: 'دعم',                 bio: 'مسؤول عن دعم المستخدمين ومتابعة احتياجاتهم اليومية.',         color: '#75ff9e' },
+  { name: 'كريم ابو رمضات', role: 'مدير الاعمال والتطوير', bio: 'يقود أعمال الأكاديمية وخطط التطوير والنمو.',                  color: '#81cfff' },
 ];
 
 const SUBJECTS = [
@@ -202,8 +203,8 @@ export default function AboutContact() {
       {/* ── Mentors ── */}
       <section className="py-5 px-4" style={{ maxWidth: '1440px', margin: '0 auto' }}>
         <div className="text-center mb-5">
-          <h2 className="fw-bold text-white mb-2" style={{ fontSize: '32px', fontFamily: 'var(--font-sans)' }}>تعرف على أساطير القاعة</h2>
-          <p style={{ fontSize: '15px', color: '#94A3B8' }}>تعليم من متداولين نجوا من دورات سوقية متعددة.</p>
+          <h2 className="fw-bold text-white mb-2" style={{ fontSize: '32px', fontFamily: 'var(--font-sans)' }}>اكتسب معرفة المتداولين المخضرمين</h2>
+          <p style={{ fontSize: '15px', color: '#94A3B8' }}>لا تكتفِ بالنظرية. تعلّم من تجارب وخبرات المتداولين الذين نجحوا في تحويل المعرفة إلى أرباح حقيقية في الأسواق.</p>
         </div>
         <div className="row g-4 justify-content-center">
           {MENTORS.map((m, i) => (
@@ -240,15 +241,20 @@ export default function AboutContact() {
               <div className="d-flex flex-column gap-4">
                 {[
                   { icon: 'mail',  label: 'نقطة دعم الكم',    value: 'terminal@borsa.academy' },
-                  { icon: 'share', label: 'مركز الإحداثيات',   value: 'الطابق ٤٨، برج العالم التجاري، نيويورك' },
-                  { icon: 'forum', label: 'مجتمع ديسكورد',     value: 'discord.gg/borsa-inner-circle' },
+                  { Icon: FaWhatsapp, label: 'قناة الواتس اب', value: 'قناة بورصة أكاديمي على واتساب' },
+                  { Icon: FaTelegram, label: 'قناة التلي غرام', value: 'قناة بورصة أكاديمي على تليغرام' },
+                  { Icon: FaInstagram, label: 'الانستغرام',     value: 'حساب بورصة أكاديمي على إنستغرام' },
                 ].map((item, i) => (
                   <div key={i} className="d-flex align-items-center gap-3">
                     <div
                       className="d-flex align-items-center justify-content-center border rounded"
                       style={{ width: '40px', height: '40px', minWidth: '40px', backgroundColor: 'rgba(117,255,158,0.05)', borderColor: 'rgba(117,255,158,0.18)' }}
                     >
-                      <span className="material-symbols-outlined" style={{ color: '#75ff9e', fontSize: '20px' }}>{item.icon}</span>
+                      {item.Icon ? (
+                        <item.Icon aria-hidden="true" style={{ color: '#75ff9e', fontSize: '20px' }} />
+                      ) : (
+                        <span className="material-symbols-outlined" style={{ color: '#75ff9e', fontSize: '20px' }}>{item.icon}</span>
+                      )}
                     </div>
                     <div>
                       <p className="m-0 text-muted font-mono-data text-uppercase" style={{ fontSize: '9px', letterSpacing: '0.08em' }}>{item.label}</p>
