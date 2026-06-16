@@ -4,7 +4,7 @@ import { FiTrash2, FiBell, FiCheckCircle, FiMessageSquare, FiAward, FiBookOpen, 
 import { useNavigate } from 'react-router-dom';
 
 export default function NotificationsPage() {
-  const { notifications, markAllAsRead, markAsRead, deleteNotification } = useNotifications();
+  const { notifications, markAllAsRead, markAsRead, deleteNotification, deleteAllNotifications } = useNotifications();
   const [filter, setFilter] = useState('all');
   const navigate = useNavigate();
 
@@ -39,27 +39,58 @@ export default function NotificationsPage() {
             <h1 style={{ margin: 0, fontSize: '28px', fontWeight: '800', color: '#fff' }}>كل الإشعارات</h1>
           </div>
           
-          <button 
-            onClick={markAllAsRead}
-            style={{
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.1)',
-              color: '#94A3B8',
-              padding: '8px 16px',
-              borderRadius: '8px',
-              fontSize: '14px',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-            onMouseOver={(e) => e.currentTarget.style.color = '#00E676'}
-            onMouseOut={(e) => e.currentTarget.style.color = '#94A3B8'}
-          >
-            <FiCheckCircle />
-            تحديد الكل كمقروء
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <button 
+              onClick={markAllAsRead}
+              style={{
+                background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: '#94A3B8',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.color = '#00E676'}
+              onMouseOut={(e) => e.currentTarget.style.color = '#94A3B8'}
+            >
+              <FiCheckCircle />
+              تحديد الكل كمقروء
+            </button>
+            {notifications.length > 0 && (
+              <button
+                onClick={deleteAllNotifications}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(239,68,68,0.22)',
+                  color: '#FCA5A5',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.color = '#EF4444';
+                  e.currentTarget.style.background = 'rgba(239,68,68,0.1)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.color = '#FCA5A5';
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                <FiTrash2 />
+                حذف كل الإشعارات
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Filters */}

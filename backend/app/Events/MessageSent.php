@@ -65,11 +65,13 @@ class MessageSent implements ShouldBroadcastNow
                 'sender' => $this->message->parent->sender ? [
                     'name' => $this->message->parent->sender->name,
                     'email' => $this->message->parent->sender->email,
+                    'role' => $this->message->parent->sender->role,
                 ] : null,
             ] : null,
             'sender' => [
                 'name' => $this->message->sender->name,
                 'email' => $this->message->sender->email,
+                'role' => $this->message->sender->role,
             ],
             'reactions' => $this->message->reactions->map(fn ($reaction) => [
                 'id' => $reaction->id,

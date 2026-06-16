@@ -50,6 +50,7 @@ const NotificationContext = createContext({
   markAsRead: () => {},
   markAllAsRead: () => {},
   deleteNotification: () => {},
+  deleteAllNotifications: () => {},
   reload: () => {},
   addNotification: () => {},
 });
@@ -213,6 +214,35 @@ export const NotificationProvider = ({ children }) => {
     } catch { /* optimistic — ignore */ }
   }, [addNotification]);
 
+  // ── Delete ALL notifications ────────────────────────────────────────────
+  const deleteAllNotifications = useCallback(async () => {
+    const previousNotifications = notifications;
+    const previousUnreadCount = unreadCount;
+    const previousUnreadRef = prevUnreadRef.current;
+
+    setNotifications([]);
+    setUnreadCount(0);
+    prevUnreadRef.current = 0;
+    setHasMore(false);
+
+    try {
+      const res = await authFetch('/notifications', {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to delete notifications.');
+      }
+
+      addNotification({ title: 'نجاح', message: 'تم حذف كل الإشعارات بنجاح', type: 'success' });
+    } catch {
+      setNotifications(previousNotifications);
+      setUnreadCount(previousUnreadCount);
+      prevUnreadRef.current = previousUnreadRef;
+      addNotification({ title: 'خطأ', message: 'تعذر حذف الإشعارات حالياً', type: 'error' });
+    }
+  }, [addNotification, notifications, unreadCount]);
+
   return (
     <NotificationContext.Provider
       value={{
@@ -223,6 +253,7 @@ export const NotificationProvider = ({ children }) => {
         markAsRead,
         markAllAsRead,
         deleteNotification,
+        deleteAllNotifications,
         reload: () => fetchNotifications(1),
         loadMore: () => fetchNotifications(page + 1, true),
         addNotification,

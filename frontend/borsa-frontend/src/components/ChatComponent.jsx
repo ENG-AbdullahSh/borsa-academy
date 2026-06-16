@@ -241,14 +241,14 @@ export default function ChatComponent({ chatRoomId, roomName = "غرفة الد�
       message: messageText,
       sender_id: user?.id,
       chat_room_id: chatRoomId,
-      sender: { name: user?.name, email: user?.email },
+      sender: { name: user?.name, email: user?.email, role: user?.role },
       created_at: new Date().toISOString(),
       isOptimistic: true, // لمعرفة أنها قيد الإرسال
       parent_id: parentMsg ? parentMsg.id : null,
       parent: parentMsg ? {
         id: parentMsg.id,
         message: parentMsg.message,
-        sender: parentMsg.sender ? { name: parentMsg.sender.name } : null
+        sender: parentMsg.sender ? { name: parentMsg.sender.name, role: parentMsg.sender.role } : null
       } : null
     };
     
@@ -459,6 +459,22 @@ export default function ChatComponent({ chatRoomId, roomName = "غرفة الد�
           background-color: rgba(0, 0, 0, 0.4) !important;
           opacity: 0.9;
         }
+        .admin-role-label {
+          display: inline-flex;
+          align-items: center;
+          width: fit-content;
+          margin-top: 2px;
+          padding: 1px 7px;
+          border-radius: 999px;
+          background: rgba(117, 255, 158, 0.12);
+          border: 1px solid rgba(117, 255, 158, 0.25);
+          color: #75ff9e;
+          font-size: 9px;
+          line-height: 1.4;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          font-family: var(--font-sans);
+        }
         @media (hover: none) {
           .reply-btn,
           .reaction-btn {
@@ -486,6 +502,8 @@ export default function ChatComponent({ chatRoomId, roomName = "غرفة الد�
         ) : (
           messages.map((msg, idx) => {
             const isMe = msg.sender_id === user?.id;
+            const senderRole = msg.sender?.role || (isMe ? user?.role : null);
+            const isAdminMessage = senderRole === 'admin';
             const reactionGroups = summarizeReactions(msg.reactions || [], user?.id);
             const hasMyReaction = reactionGroups.some(group => group.reactedByMe);
             const isReacting = Boolean(reactingMessageIds[msg.id]);
@@ -570,9 +588,14 @@ export default function ChatComponent({ chatRoomId, roomName = "غرفة الد�
                     </div>
                   )}
 
-                  {!isMe && (
-                    <div className="fw-bold mb-1" style={{ fontSize: '11px', color: '#00E676' }}>
-                      {msg.sender?.name || 'مستخدم'}
+                  {(!isMe || isAdminMessage) && (
+                    <div className="mb-1 d-flex flex-column align-items-start">
+                      <div className="fw-bold" style={{ fontSize: '11px', color: '#00E676' }}>
+                        {msg.sender?.name || 'مستخدم'}
+                      </div>
+                      {isAdminMessage && (
+                        <span className="admin-role-label">admin</span>
+                      )}
                     </div>
                   )}
 
