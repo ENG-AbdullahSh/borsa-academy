@@ -272,14 +272,6 @@ export default function Courses() {
                 </div>
               </div>
 
-              {/* Pro Teaser */}
-              <div className="p-4 rounded-3 border position-relative overflow-hidden" style={{ backgroundColor: 'rgba(117,255,158,0.03)', borderColor: 'rgba(117,255,158,0.15)' }}>
-                <h4 className="fw-semibold mb-2" style={{ color: '#75ff9e', fontSize: '20px', fontFamily: 'var(--font-sans)' }}>انضم للنخبة</h4>
-                <p className="text-muted mb-4" style={{ fontSize: '13px', lineHeight: 1.7 }}>احصل على وصول إلى جلسات تداول مباشرة وتدرب على دفاتر الأوامر في ظروف سوق واقعية.</p>
-                <button className="btn w-100 py-2 fw-semibold border" style={{ borderColor: '#75ff9e', color: '#75ff9e', borderRadius: '4px', fontSize: '13px', fontFamily: 'var(--font-sans)' }}>
-                  ترقية العضوية
-                </button>
-              </div>
             </div>
           </aside>
 

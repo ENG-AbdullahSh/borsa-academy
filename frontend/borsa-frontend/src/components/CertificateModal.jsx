@@ -9,6 +9,8 @@ export default function CertificateModal({ isOpen, onClose, courseId, sectionId 
   const [certificate, setCertificate] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState('');
 
   useEffect(() => {
     if (!isOpen || !courseId || !token) return undefined;
@@ -47,6 +49,40 @@ export default function CertificateModal({ isOpen, onClose, courseId, sectionId 
     return () => controller.abort();
   }, [courseId, isOpen, sectionId, token]);
 
+  const downloadPdf = async () => {
+    if (!certificate?.id) return;
+
+    setPdfError('');
+    setPdfLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/certificates/${certificate.id}/download`, {
+        headers: apiHeaders(token),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.message || 'تعذر تحميل الشهادة.');
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const certificateName = certificate.certificate_title || certificate.course_title || certificate.id;
+
+      link.href = url;
+      link.download = `Certificate-${String(certificateName).replace(/\s+/g, '-')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setPdfError(err.message || 'حدث خطأ غير متوقع. حاول مرة أخرى.');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -71,13 +107,33 @@ export default function CertificateModal({ isOpen, onClose, courseId, sectionId 
         <>
           <CertificateCard certificate={certificate} />
           <div className="d-flex flex-wrap gap-3 justify-content-center mt-4">
-            <button type="button" className="btn btn-secondary-cta px-4 py-2 fw-bold" disabled>
-              تحميل PDF قريباً
+            <button
+              type="button"
+              onClick={downloadPdf}
+              disabled={pdfLoading}
+              className="btn btn-secondary-cta px-4 py-2 fw-bold d-flex align-items-center gap-2"
+            >
+              {pdfLoading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                  جاري التوليد...
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>download</span>
+                  تحميل PDF
+                </>
+              )}
             </button>
             <Link to={`/certificates/${certificate.id}`} onClick={onClose} className="btn btn-primary-cta px-4 py-2 fw-bold">
               فتح صفحة الشهادة
             </Link>
           </div>
+          {pdfError && (
+            <p className="text-center mt-2 mb-0" style={{ color: '#ff6b6b', fontSize: '12px', fontFamily: 'var(--font-sans)' }}>
+              {pdfError}
+            </p>
+          )}
         </>
       ) : null}
     </div>
