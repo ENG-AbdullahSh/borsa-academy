@@ -134,7 +134,7 @@ export default function Home() {
             </Link>
             <div className="d-flex align-items-center gap-2">
               <span className="material-symbols-outlined" style={{ color: '#75ff9e', fontSize: '20px', fontVariationSettings: "'FILL' 1" }}>verified</span>
-              <span className="font-mono-data text-uppercase" style={{ color: '#F8FAFC', fontSize: '11px' }}>ضمان استرداد المبلغ خلال ٣٠ يومًا</span>
+              <span className="font-mono-data text-uppercase" style={{ color: '#F8FAFC', fontSize: '11px' }}> ضمان الاحترافية و الانقان</span>
             </div>
           </div>
         </div>
