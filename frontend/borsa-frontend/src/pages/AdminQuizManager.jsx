@@ -600,10 +600,15 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
                   rows={2}
                 />
               </div>
-              <div className="col-12">
-                <button type="submit" className="btn btn-primary-cta px-4 py-2 fw-bold" disabled={saving || !selectedLessonId}>
+              <div className="col-12 d-flex gap-2">
+                <button type="submit" className={`btn ${quiz ? 'btn-secondary-cta' : 'btn-primary-cta'} px-4 py-2 fw-bold`} disabled={saving || !selectedLessonId}>
                   {quiz ? 'حفظ الإعدادات' : 'إنشاء الاختبار'}
                 </button>
+                {quiz && quiz.is_ready && selectedLesson && !selectedLesson.is_published && (
+                  <button type="button" onClick={publishLesson} className="btn btn-primary-cta px-4 py-2 fw-bold" disabled={saving}>
+                    نشر الدرس والاختبار
+                  </button>
+                )}
               </div>
             </div>
           </form>

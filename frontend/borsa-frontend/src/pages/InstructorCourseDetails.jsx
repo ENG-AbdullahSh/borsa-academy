@@ -10,6 +10,7 @@ export default function InstructorCourseDetails() {
   const { token } = useAuth();
   const [course, setCourse] = useState(null);
   const [activeTab, setActiveTab] = useState('content');
+  const [initialLessonId, setInitialLessonId] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -57,15 +58,26 @@ export default function InstructorCourseDetails() {
           <button type="button" className={`btn ${activeTab === 'content' ? 'btn-primary-cta' : 'btn-secondary-cta'} fw-bold`} onClick={() => setActiveTab('content')}>
             إدارة المحتوى
           </button>
-          <button type="button" className={`btn ${activeTab === 'quiz' ? 'btn-primary-cta' : 'btn-secondary-cta'} fw-bold`} onClick={() => setActiveTab('quiz')}>
+          <button type="button" className={`btn ${activeTab === 'quiz' ? 'btn-primary-cta' : 'btn-secondary-cta'} fw-bold`} onClick={() => { setInitialLessonId(''); setActiveTab('quiz'); }}>
             إدارة الاختبار
           </button>
         </div>
 
         {activeTab === 'content' ? (
-          <AdminCurriculum courseId={id} scope="instructor" />
+          <AdminCurriculum
+            courseId={id}
+            scope="instructor"
+            onLessonCreated={(lesson) => {
+              setInitialLessonId(lesson ? String(lesson.id) : '');
+              setActiveTab('quiz');
+            }}
+          />
         ) : (
-          <AdminQuizManager courseId={id} scope="instructor" />
+          <AdminQuizManager
+            courseId={id}
+            scope="instructor"
+            initialLessonId={initialLessonId}
+          />
         )}
       </div>
     </main>

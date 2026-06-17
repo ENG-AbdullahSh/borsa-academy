@@ -64,6 +64,7 @@ function formatDate(value) {
 export default function AdminDashboard() {
   const { token, user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
+  const [initialLessonId, setInitialLessonId] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [dashboard, setDashboard] = useState(EMPTY_DASHBOARD);
   const [loading, setLoading] = useState(true);
@@ -282,10 +283,28 @@ export default function AdminDashboard() {
     </>
   );
 
+  const handleTabChange = (tabId) => {
+    if (tabId !== 'quizzes') {
+      setInitialLessonId('');
+    }
+    setActiveTab(tabId);
+  };
+
   const renderContent = () => {
     if (activeTab === 'courses') return <AdminCourses />;
-    if (activeTab === 'curriculum') return <AdminCurriculum />;
-    if (activeTab === 'quizzes') return <AdminQuizManager />;
+    if (activeTab === 'curriculum') {
+      return (
+        <AdminCurriculum
+          onLessonCreated={(lesson) => {
+            setInitialLessonId(lesson ? String(lesson.id) : '');
+            setActiveTab('quizzes');
+          }}
+        />
+      );
+    }
+    if (activeTab === 'quizzes') {
+      return <AdminQuizManager initialLessonId={initialLessonId} />;
+    }
     if (activeTab === 'instructors') return <AdminInstructors />;
     if (activeTab === 'users') return <AdminUsers />;
     if (activeTab === 'messages') {
@@ -336,7 +355,7 @@ export default function AdminDashboard() {
                   <button
                     key={tab.id}
                     type="button"
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={() => handleTabChange(tab.id)}
                     className="btn border-0 d-flex align-items-center gap-3 py-3 rounded-0 w-100"
                     style={{
                       backgroundColor: selected ? 'rgba(0,230,118,0.08)' : 'transparent',
@@ -411,7 +430,7 @@ export default function AdminDashboard() {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className="btn border-0 flex-fill d-flex flex-column align-items-center justify-content-center gap-1 py-2 position-relative"
               style={{
                 backgroundColor: 'transparent',

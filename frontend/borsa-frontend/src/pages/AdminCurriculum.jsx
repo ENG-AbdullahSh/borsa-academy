@@ -325,7 +325,7 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
       setLessonPdfFile(null);
       setUploadProgress(null);
       setFileInputKey(Date.now()); // Reset file input element
-      showMessage('success', 'تمت إضافة الدرس كمسودة. أنشئ الاختبار ثم انشر الدرس.');
+      showMessage('success', 'تمت إضافة الدرس كمسودة. يرجى إعداد الاختبار لنشر الدرس.');
       refreshCurriculum();
       onLessonCreated?.(response.data?.data);
     } catch (error) {
@@ -748,7 +748,7 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
           )}
           <div className="col-12">
             <button type="submit" className="btn btn-primary-cta px-4 py-2 fw-bold" disabled={!firstSectionId || submitting || (uploadProgress !== null && uploadProgress < 100)}>
-              إضافة الدرس وإعداد الاختبار
+              إضافة الدرس والانتقال للاختبار
             </button>
           </div>
         </form>
