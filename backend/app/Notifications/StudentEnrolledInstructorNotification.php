@@ -3,16 +3,20 @@
 namespace App\Notifications;
 
 use App\Models\Course;
+use App\Models\User;
 use App\Support\NotificationPayload;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
-class CourseEnrollmentNotification extends Notification implements ShouldQueue
+class StudentEnrolledInstructorNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public Course $course) {}
+    public function __construct(
+        private readonly User $student,
+        private readonly Course $course,
+    ) {}
 
     /**
      * @return array<int, string>
@@ -28,16 +32,17 @@ class CourseEnrollmentNotification extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return NotificationPayload::make(
-            type: 'course.enrolled',
-            title: 'تم تسجيلك في الدورة بنجاح',
-            message: "لقد انضممت إلى دورة {$this->course->title}. ابدأ التعلم الآن وحقق أهدافك.",
-            actionUrl: '/my-courses',
+            type: 'course.student_enrolled',
+            title: 'طالب جديد في دورتك',
+            message: "انضم الطالب {$this->student->name} إلى دورتك {$this->course->title} اليوم.",
+            actionUrl: "/instructor/courses/{$this->course->id}/students",
             entities: [
+                'student_id' => $this->student->id,
                 'course_id' => $this->course->id,
             ],
-            audience: 'student',
+            audience: 'instructor',
             priority: 'normal',
-            icon: 'school',
+            icon: 'person_add',
         );
     }
 }

@@ -26,6 +26,7 @@ class UpdateLessonRequest extends FormRequest
             'duration_minutes' => ['sometimes', 'integer', 'min:1', 'max:10000'],
             'order' => ['sometimes', 'required', 'integer', 'min:0', 'max:10000'],
             'is_preview' => ['sometimes', 'boolean'],
+            'is_published' => ['sometimes', 'boolean'],
         ];
     }
 }

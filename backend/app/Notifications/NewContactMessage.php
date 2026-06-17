@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\ContactMessage;
+use App\Support\NotificationPayload;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
@@ -30,13 +31,29 @@ class NewContactMessage extends Notification
         $preview = mb_strimwidth($this->contactMessage->message, 0, 80, '...');
 
         return [
-            'title'              => 'رسالة جديدة من ' . $this->contactMessage->name,
-            'message'            => "[{$this->contactMessage->subject}] {$preview}",
-            'action_url'         => '/admin/messages',
+            ...NotificationPayload::make(
+            type: 'contact.received',
+            title: 'رسالة تواصل جديدة من ' . $this->contactMessage->name,
+            message: "[{$this->contactMessage->subject}] {$preview}",
+            actionUrl: '/admin',
+            entities: [
+                'contact_message_id' => $this->contactMessage->id,
+                'sender_user_id' => $this->contactMessage->user_id,
+            ],
+            audience: 'admin',
+            priority: 'high',
+            icon: 'mark_email_unread',
+            channels: ['database', 'mail'],
+            metadata: [
+                'sender_name' => $this->contactMessage->name,
+                'sender_email' => $this->contactMessage->email,
+                'subject' => $this->contactMessage->subject,
+            ],
+            ),
             'contact_message_id' => $this->contactMessage->id,
-            'sender_name'        => $this->contactMessage->name,
-            'sender_email'       => $this->contactMessage->email,
-            'subject'            => $this->contactMessage->subject,
+            'sender_name' => $this->contactMessage->name,
+            'sender_email' => $this->contactMessage->email,
+            'subject' => $this->contactMessage->subject,
         ];
     }
 }

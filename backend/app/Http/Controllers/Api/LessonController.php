@@ -8,13 +8,23 @@ use App\Http\Requests\Lessons\StoreLessonRequest;
 use App\Http\Requests\Lessons\UpdateLessonRequest;
 use App\Models\CourseSection;
 use App\Models\Lesson;
+use App\Notifications\NewLessonPublishedNotification;
+use App\Services\NotificationRecipientService;
+use App\Services\QuizService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class LessonController extends Controller
 {
     use AuthorizesInstructorCourseOwnership;
+
+    public function __construct(
+        private readonly NotificationRecipientService $notificationRecipients,
+        private readonly QuizService $quizService,
+    ) {}
 
     public function store(StoreLessonRequest $request): JsonResponse
     {
@@ -33,6 +43,10 @@ class LessonController extends Controller
             unset($validated['duration_minutes']);
         }
 
+        // New lessons always start as drafts. Publishing is allowed only after
+        // a ready lesson quiz exists, so students never receive video access first.
+        $validated['is_published'] = false;
+
         if ($request->hasFile('video')) {
             $path = $request->file('video')->store('lessons/videos', 'public');
             $validated['video_path'] = $path;
@@ -44,6 +58,11 @@ class LessonController extends Controller
         }
 
         $lesson = Lesson::create($validated);
+        $lesson->load('section.course');
+
+        if ($lesson->is_published) {
+            $this->notifyStudentsAboutPublishedLesson($lesson, $request);
+        }
 
         return response()->json([
             'message' => 'Lesson created successfully.',
@@ -54,6 +73,7 @@ class LessonController extends Controller
     public function update(UpdateLessonRequest $request, int $id): JsonResponse
     {
         $lesson = Lesson::findOrFail($id);
+        $wasPublished = (bool) $lesson->is_published;
         $validated = $request->validated();
         $this->authorizeCourseOwnership($request, $lesson->section->course);
 
@@ -62,11 +82,28 @@ class LessonController extends Controller
             $this->authorizeCourseOwnership($request, $targetSection->course);
         }
 
+        $wantsToPublish = ! $wasPublished
+            && array_key_exists('is_published', $validated)
+            && filter_var($validated['is_published'], FILTER_VALIDATE_BOOL);
+
+        if ($wantsToPublish) {
+            if (! $this->lessonHasReadyQuiz($lesson)) {
+                return response()->json([
+                    'message' => 'Create and complete a ready quiz before publishing this lesson.',
+                ], 422);
+            }
+        }
+
         $lesson->update($validated);
+        $lesson->refresh()->load('section.course');
+
+        if ($wantsToPublish) {
+            $this->notifyStudentsAboutPublishedLesson($lesson, $request);
+        }
 
         return response()->json([
             'message' => 'Lesson updated successfully.',
-            'data' => $lesson->refresh(),
+            'data' => $lesson,
         ]);
     }
 
@@ -121,5 +158,29 @@ class LessonController extends Controller
         return response()->json([
             'message' => 'Lesson deleted successfully.',
         ]);
+    }
+
+    private function notifyStudentsAboutPublishedLesson(Lesson $lesson, Request $request): void
+    {
+        try {
+            $this->notificationRecipients->notifyCourseStudents(
+                $lesson->section->course,
+                new NewLessonPublishedNotification($lesson, $request->user()),
+            );
+        } catch (Throwable $exception) {
+            Log::warning('New lesson notification failed', [
+                'lesson_id' => $lesson->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    private function lessonHasReadyQuiz(Lesson $lesson): bool
+    {
+        $lesson->loadMissing('quiz.questions.options');
+
+        return $lesson->quiz !== null
+            && $lesson->quiz->is_active
+            && $this->quizService->isReady($lesson->quiz);
     }
 }

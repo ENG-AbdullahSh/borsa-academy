@@ -7,13 +7,21 @@ use App\Http\Requests\Courses\StoreCourseRequest;
 use App\Http\Requests\Courses\UpdateCourseRequest;
 use App\Models\Course;
 use App\Models\Instructor;
+use App\Notifications\InstructorAssignedToCourseNotification;
+use App\Services\NotificationRecipientService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Throwable;
 
 class CourseController extends Controller
 {
+    public function __construct(
+        private readonly NotificationRecipientService $notificationRecipients,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $filters = $request->validate([
@@ -111,16 +119,19 @@ class CourseController extends Controller
         $validated['instructor_name'] = Instructor::findOrFail($validated['instructor_id'])->name;
 
         $course = Course::create($validated);
+        $course->load('instructor.user');
+        $this->notifyAssignedInstructor($course);
 
         return response()->json([
             'message' => 'تمت إضافة الكورس بنجاح.',
-            'data'    => $course->load('instructor'),
+            'data'    => $course,
         ], 201);
     }
 
     public function update(UpdateCourseRequest $request, int $id): JsonResponse
     {
         $course = Course::findOrFail($id);
+        $previousInstructorId = $course->instructor_id;
         $validated = $request->validated();
 
         if (array_key_exists('slug', $validated)) {
@@ -133,10 +144,18 @@ class CourseController extends Controller
         }
 
         $course->update($validated);
+        $course->refresh()->load('instructor.user');
+
+        if (
+            array_key_exists('instructor_id', $validated)
+            && (int) $validated['instructor_id'] !== (int) $previousInstructorId
+        ) {
+            $this->notifyAssignedInstructor($course);
+        }
 
         return response()->json([
             'message' => 'تم تحديث الكورس بنجاح.',
-            'data'    => $course->refresh()->load('instructor'),
+            'data'    => $course,
         ]);
     }
 
@@ -170,5 +189,21 @@ class CourseController extends Controller
         }
 
         return $slug;
+    }
+
+    private function notifyAssignedInstructor(Course $course): void
+    {
+        try {
+            $this->notificationRecipients->notifyInstructor(
+                $course,
+                new InstructorAssignedToCourseNotification($course),
+            );
+        } catch (Throwable $exception) {
+            Log::warning('Instructor course assignment notification failed', [
+                'course_id' => $course->id,
+                'instructor_id' => $course->instructor_id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 }

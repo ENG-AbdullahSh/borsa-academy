@@ -5,8 +5,11 @@ namespace App\Services;
 use App\Models\Certificate;
 use App\Models\CourseSection;
 use App\Models\Enrollment;
+use App\Notifications\CertificateIssuedNotification;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Throwable;
 
 class CertificateService
 {
@@ -51,7 +54,7 @@ class CertificateService
         }
 
         try {
-            return Certificate::create([
+            $certificate = Certificate::create([
                 'user_id' => $enrollment->user_id,
                 'course_id' => $enrollment->course_id,
                 'section_id' => null,
@@ -60,6 +63,10 @@ class CertificateService
                 'certificate_number' => $this->generateCertificateNumber(),
                 'issued_at' => now(),
             ]);
+
+            $this->notifyCertificateIssued($certificate);
+
+            return $certificate;
         } catch (QueryException $exception) {
             $certificate = Certificate::query()
                 ->where('user_id', $enrollment->user_id)
@@ -98,7 +105,7 @@ class CertificateService
         }
 
         try {
-            return Certificate::create([
+            $certificate = Certificate::create([
                 'user_id' => $enrollment->user_id,
                 'course_id' => $enrollment->course_id,
                 'section_id' => $section->id,
@@ -107,6 +114,10 @@ class CertificateService
                 'certificate_number' => $this->generateCertificateNumber(),
                 'issued_at' => now(),
             ]);
+
+            $this->notifyCertificateIssued($certificate);
+
+            return $certificate;
         } catch (QueryException $exception) {
             $certificate = Certificate::query()
                 ->where('user_id', $enrollment->user_id)
@@ -133,5 +144,18 @@ class CertificateService
         } while (Certificate::query()->where('certificate_number', $certificateNumber)->exists());
 
         return $certificateNumber;
+    }
+
+    private function notifyCertificateIssued(Certificate $certificate): void
+    {
+        try {
+            $certificate->loadMissing(['user', 'course']);
+            $certificate->user?->notify(new CertificateIssuedNotification($certificate));
+        } catch (Throwable $exception) {
+            Log::warning('Certificate issued notification failed', [
+                'certificate_id' => $certificate->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 }

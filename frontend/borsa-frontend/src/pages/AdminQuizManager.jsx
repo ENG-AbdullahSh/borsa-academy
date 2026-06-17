@@ -27,7 +27,7 @@ function requestMessage(error, fallback) {
   return error?.message || fallback;
 }
 
-export default function AdminQuizManager({ courseId: fixedCourseId = '', scope = 'admin' }) {
+export default function AdminQuizManager({ courseId: fixedCourseId = '', scope = 'admin', initialLessonId = '' }) {
   const { token } = useAuth();
   const headers = useMemo(() => apiHeaders(token), [token]);
   const apiScope = `${API_BASE_URL}/${scope}`;
@@ -52,6 +52,7 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
       }))
     ))
   ), [curriculum]);
+  const selectedLesson = lessons.find((lesson) => String(lesson.id) === String(selectedLessonId));
 
   const showMessage = useCallback((type, text) => {
     setMessage({ type, text });
@@ -140,9 +141,13 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
 
       setCurriculum(nextCurriculum);
       setSelectedLessonId((current) => (
+        nextLessons.some((lesson) => String(lesson.id) === String(initialLessonId))
+          ? String(initialLessonId)
+          : (
         nextLessons.some((lesson) => String(lesson.id) === String(current))
           ? current
           : String(nextLessons[0]?.id || '')
+          )
       ));
 
       if (nextLessons.length === 0) {
@@ -158,7 +163,15 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
-  }, [apiScope, headers, hydrateQuiz, showMessage, token]);
+  }, [apiScope, headers, hydrateQuiz, initialLessonId, showMessage, token]);
+
+  useEffect(() => {
+    if (!initialLessonId || lessons.length === 0) return;
+
+    if (lessons.some((lesson) => String(lesson.id) === String(initialLessonId))) {
+      setSelectedLessonId(String(initialLessonId));
+    }
+  }, [initialLessonId, lessons]);
 
   useEffect(() => {
     if (!token) return undefined;
@@ -262,6 +275,28 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
       showMessage('success', 'تم حذف الاختبار.');
     } catch (error) {
       showMessage('error', requestMessage(error, 'تعذر حذف الاختبار.'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const publishLesson = async () => {
+    if (!selectedLessonId || !quiz?.is_ready) return;
+
+    setSaving(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch(`${apiScope}/lessons/${selectedLessonId}`, {
+        method: 'PUT',
+        headers: apiHeaders(token, true),
+        body: JSON.stringify({ is_published: true }),
+      });
+      await readJsonResponse(response);
+      showMessage('success', 'تم نشر الدرس وإرسال الإشعار للطلاب.');
+      await loadCurriculum(selectedCourseId);
+    } catch (error) {
+      showMessage('error', requestMessage(error, 'تعذر نشر الدرس. تأكد من جاهزية الاختبار.'));
     } finally {
       setSaving(false);
     }

@@ -86,11 +86,18 @@ export const NotificationProvider = ({ children }) => {
       const normalized = raw.map((n) => ({
         id:         n.id,
         type:       n.type        || 'system',
+        category:   n.category    || 'system',
+        audience:   n.audience    || 'user',
+        priority:   n.priority    || 'normal',
+        icon:       n.icon        || 'notifications',
         title:      n.title       || 'إشعار',
         description: n.message    || '',
         time:       formatRelativeTime(n.created_at),
         action_url: n.action_url  || null,
         certificate_url: n.certificate_url || null,
+        entities:   n.entities    || {},
+        metadata:   n.metadata    || {},
+        channels:   n.channels    || ['database'],
         isUnread:   !n.is_read,
       }));
 

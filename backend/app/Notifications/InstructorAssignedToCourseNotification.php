@@ -8,11 +8,11 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
-class CourseEnrollmentNotification extends Notification implements ShouldQueue
+class InstructorAssignedToCourseNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public Course $course) {}
+    public function __construct(private readonly Course $course) {}
 
     /**
      * @return array<int, string>
@@ -28,15 +28,15 @@ class CourseEnrollmentNotification extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return NotificationPayload::make(
-            type: 'course.enrolled',
-            title: 'تم تسجيلك في الدورة بنجاح',
-            message: "لقد انضممت إلى دورة {$this->course->title}. ابدأ التعلم الآن وحقق أهدافك.",
-            actionUrl: '/my-courses',
+            type: 'course.instructor_assigned',
+            title: 'تم تعيينك كمدرب لدورة',
+            message: "قام الأدمن بتعيينك كمدرب رسمي لدورة {$this->course->title}.",
+            actionUrl: "/instructor/courses/{$this->course->id}",
             entities: [
                 'course_id' => $this->course->id,
             ],
-            audience: 'student',
-            priority: 'normal',
+            audience: 'instructor',
+            priority: 'high',
             icon: 'school',
         );
     }

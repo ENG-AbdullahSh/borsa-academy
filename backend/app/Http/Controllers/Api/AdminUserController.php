@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Instructor;
 use App\Models\User;
+use App\Notifications\AccountStatusChangedNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Throwable;
 
 class AdminUserController extends Controller
 {
@@ -72,6 +75,16 @@ class AdminUserController extends Controller
         }
 
         $user->update(['status' => $validated['status']]);
+
+        try {
+            $user->notify(new AccountStatusChangedNotification($validated['status']));
+        } catch (Throwable $exception) {
+            Log::warning('Account status notification failed', [
+                'user_id' => $user->id,
+                'status' => $validated['status'],
+                'error' => $exception->getMessage(),
+            ]);
+        }
 
         if ($user->status !== 'active') {
             $user->tokens()->delete();

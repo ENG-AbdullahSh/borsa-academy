@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\ChatRoom;
+use App\Notifications\LiveSessionStartingSoonNotification;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -17,7 +19,7 @@ class NotifyUpcomingChats extends Command
     {
         $targetTime = now()->addMinutes(30)->startOfMinute();
 
-        $chatRooms = \App\Models\ChatRoom::whereNotNull('scheduled_at')
+        $chatRooms = ChatRoom::whereNotNull('scheduled_at')
             ->whereBetween('scheduled_at', [
                 $targetTime->copy(),
                 $targetTime->copy()->endOfMinute()
@@ -28,7 +30,7 @@ class NotifyUpcomingChats extends Command
             $participants = $room->participants()->with('user')->get();
             foreach ($participants as $participant) {
                 if ($participant->user) {
-                    $participant->user->notify(new \App\Notifications\UpcomingChatNotification($room));
+                    $participant->user->notify(new LiveSessionStartingSoonNotification($room));
                 }
             }
         }

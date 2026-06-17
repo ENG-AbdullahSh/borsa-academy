@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Support\NotificationPayload;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
@@ -16,9 +17,7 @@ class AcademyNotification extends Notification
     ) {}
 
     /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<string>
+     * @return array<int, string>
      */
     public function via(object $notifiable): array
     {
@@ -26,16 +25,18 @@ class AcademyNotification extends Notification
     }
 
     /**
-     * Get the array representation for database storage.
-     *
      * @return array<string, mixed>
      */
     public function toArray(object $notifiable): array
     {
-        return [
-            'title'      => $this->title,
-            'message'    => $this->message,
-            'action_url' => $this->actionUrl,
-        ];
+        return NotificationPayload::make(
+            type: 'academy.announcement',
+            title: $this->title,
+            message: $this->message,
+            actionUrl: $this->actionUrl,
+            audience: $notifiable->role ?? 'user',
+            priority: 'normal',
+            icon: 'campaign',
+        );
     }
 }

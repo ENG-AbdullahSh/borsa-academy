@@ -11,12 +11,16 @@ use App\Models\LessonProgress;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\QuizQuestion;
+use App\Notifications\QuizSubmittedInstructorNotification;
 use App\Services\CertificateService;
 use App\Services\CourseProgressService;
+use App\Services\NotificationRecipientService;
 use App\Services\QuizService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class QuizController extends Controller
 {
@@ -24,6 +28,7 @@ class QuizController extends Controller
         private readonly QuizService $quizService,
         private readonly CertificateService $certificateService,
         private readonly CourseProgressService $courseProgressService,
+        private readonly NotificationRecipientService $notificationRecipients,
     ) {}
 
     public function show(Request $request, Course $course): JsonResponse
@@ -308,6 +313,19 @@ class QuizController extends Controller
 
             return $attempt;
         });
+
+        try {
+            $this->notificationRecipients->notifyInstructor(
+                $course,
+                new QuizSubmittedInstructorNotification($attempt),
+            );
+        } catch (Throwable $exception) {
+            Log::warning('Instructor quiz submission notification failed', [
+                'attempt_id' => $attempt->id,
+                'course_id' => $course->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
 
         $progress = $passed
             ? $this->courseProgressService->syncEnrollment($enrollment)

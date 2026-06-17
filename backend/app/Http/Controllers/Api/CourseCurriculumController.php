@@ -138,6 +138,7 @@ class CourseCurriculumController extends Controller
             'duration_minutes' => $lesson->duration_minutes,
             'order' => $lesson->order,
             'is_preview' => $lesson->is_preview,
+            'is_published' => $lesson->is_published,
             'is_locked' => ! $canAccessLesson,
             'video_completed' => $videoCompleted,
             'completed' => $lessonCompleted,

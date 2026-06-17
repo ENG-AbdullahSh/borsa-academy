@@ -28,6 +28,7 @@ class StoreLessonRequest extends FormRequest
             'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:10000'],
             'order' => ['nullable', 'integer', 'min:0', 'max:10000'],
             'is_preview' => ['nullable', 'boolean'],
+            'is_published' => ['nullable', 'boolean'],
         ];
     }
 }

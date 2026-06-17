@@ -60,6 +60,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::post('/notifications/mark-read', [NotificationController::class, 'markAsRead']);
+    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markOneAsRead']);
     Route::delete('/notifications', [NotificationController::class, 'destroyAll']);
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
     Route::get('/my-contact-messages', [ContactMessageController::class, 'myMessages']);

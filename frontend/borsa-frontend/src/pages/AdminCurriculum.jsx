@@ -17,6 +17,7 @@ const EMPTY_LESSON_FORM = {
   duration_minutes: '',
   order: '',
   is_preview: false,
+  is_published: false,
 };
 
 function validationMessage(error, fallback) {
@@ -45,6 +46,7 @@ function lessonPayload(form, fallbackSectionId) {
     pdf_url: form.pdf_url.trim() || null,
     order: form.order === '' ? 0 : Number(form.order),
     is_preview: Boolean(form.is_preview),
+    is_published: Boolean(form.is_published),
   };
 
   if (duration !== '') {
@@ -64,10 +66,11 @@ function lessonToForm(lesson) {
     duration_minutes: lesson.duration_minutes ?? '',
     order: lesson.order ?? '',
     is_preview: Boolean(lesson.is_preview),
+    is_published: Boolean(lesson.is_published),
   };
 }
 
-export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 'admin' }) {
+export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 'admin', onLessonCreated = null }) {
   const { token } = useAuth();
   const [courses, setCourses] = useState([]);
   const [selectedCourseId, setSelectedCourseId] = useState(String(fixedCourseId || ''));
@@ -303,7 +306,7 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
         formData.append('pdf', lessonPdfFile);
       }
 
-      await axios.post(`${apiScope}/lessons`, formData, {
+      const response = await axios.post(`${apiScope}/lessons`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
@@ -322,8 +325,9 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
       setLessonPdfFile(null);
       setUploadProgress(null);
       setFileInputKey(Date.now()); // Reset file input element
-      showMessage('success', 'تمت إضافة الدرس والملفات بنجاح.');
+      showMessage('success', 'تمت إضافة الدرس كمسودة. أنشئ الاختبار ثم انشر الدرس.');
       refreshCurriculum();
+      onLessonCreated?.(response.data?.data);
     } catch (error) {
       console.error(error);
       const errorMsg = error.response ? validationMessage(error.response, 'تعذر إضافة الدرس.') : 'تعذر إضافة الدرس.';
@@ -349,6 +353,25 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
       refreshCurriculum();
     } catch (error) {
       showMessage('error', validationMessage(error, 'تعذر تحديث الدرس.'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const publishLesson = async (lessonId) => {
+    setSubmitting(true);
+
+    try {
+      const response = await fetch(`${apiScope}/lessons/${lessonId}`, {
+        method: 'PUT',
+        headers: apiHeaders(token, true),
+        body: JSON.stringify({ is_published: true }),
+      });
+      await readJsonResponse(response);
+      showMessage('success', 'تم نشر الدرس وإرسال الإشعار للطلاب.');
+      refreshCurriculum();
+    } catch (error) {
+      showMessage('error', validationMessage(error, 'تعذر نشر الدرس.'));
     } finally {
       setSubmitting(false);
     }
@@ -725,7 +748,7 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
           )}
           <div className="col-12">
             <button type="submit" className="btn btn-primary-cta px-4 py-2 fw-bold" disabled={!firstSectionId || submitting || (uploadProgress !== null && uploadProgress < 100)}>
-              إضافة الدرس
+              إضافة الدرس وإعداد الاختبار
             </button>
           </div>
         </form>
@@ -943,6 +966,9 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
                                   <button type="button" className="btn btn-sm btn-secondary-cta px-2" onClick={() => moveLesson(section, index, 1)} disabled={index === (section.lessons || []).length - 1 || submitting}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>keyboard_arrow_down</span>
                                   </button>
+                                  {!lesson.is_published && (
+                                    <button type="button" className="btn btn-sm btn-primary-cta px-3" onClick={() => publishLesson(lesson.id)} disabled={submitting}>نشر</button>
+                                  )}
                                   <button type="button" className="btn btn-sm btn-edit-course px-3" onClick={() => startEditingLesson(lesson)}>تعديل</button>
                                   <button type="button" className="btn btn-sm btn-delete-course px-3" onClick={() => deleteLesson(lesson.id)} disabled={submitting}>حذف</button>
                                 </>

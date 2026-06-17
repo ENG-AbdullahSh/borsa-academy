@@ -6,16 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Enrollments\StoreEnrollmentRequest;
 use App\Models\Course;
 use App\Models\Enrollment;
-use App\Notifications\AcademyNotification;
+use App\Notifications\StudentEnrolledInstructorNotification;
 use App\Services\CertificateService;
+use App\Services\NotificationRecipientService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class EnrollmentController extends Controller
 {
     public function __construct(
         private readonly CertificateService $certificateService,
+        private readonly NotificationRecipientService $notificationRecipients,
     ) {}
 
     public function store(StoreEnrollmentRequest $request): JsonResponse
@@ -55,6 +59,19 @@ class EnrollmentController extends Controller
         
         // Fire admin monitoring event
         event(new \App\Events\UserStartedCourseEvent($user, $course));
+
+        try {
+            $this->notificationRecipients->notifyInstructor(
+                $course,
+                new StudentEnrolledInstructorNotification($user, $course),
+            );
+        } catch (Throwable $exception) {
+            Log::warning('Instructor enrollment notification failed', [
+                'course_id' => $course->id,
+                'student_id' => $user->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
 
         return response()->json([
             'message' => 'Enrollment created successfully.',

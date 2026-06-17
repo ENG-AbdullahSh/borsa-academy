@@ -9,7 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class UpcomingChatNotification extends Notification implements ShouldQueue
+class LiveSessionStartingSoonNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -20,7 +20,7 @@ class UpcomingChatNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['database', 'mail'];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -41,17 +41,20 @@ class UpcomingChatNotification extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         $roomName = $this->chatRoom->name ?: 'المحاضرة المباشرة';
+        $isInstructor = $notifiable->role === 'instructor';
 
         return NotificationPayload::make(
             type: 'live_session.starting_soon',
-            title: 'استعد للبث المباشر',
-            message: "غرفة {$roomName} ستبدأ بعد 30 دقيقة.",
+            title: $isInstructor ? 'محاضرتك المباشرة تبدأ قريباً' : 'استعد للبث المباشر',
+            message: $isInstructor
+                ? "لديك محاضرة مباشرة بعنوان {$roomName} بعد 30 دقيقة. جهّز قاعة البث واستعد للطلاب."
+                : "البث المباشر الخاص بـ {$roomName} سيبدأ بعد 30 دقيقة. اضغط هنا للانضمام إلى الغرفة.",
             actionUrl: '/chat',
             entities: [
                 'chat_room_id' => $this->chatRoom->id,
                 'course_id' => $this->chatRoom->course_id,
             ],
-            audience: $notifiable->role ?? 'user',
+            audience: $isInstructor ? 'instructor' : 'student',
             priority: 'urgent',
             icon: 'notifications_active',
             channels: ['database', 'mail'],
