@@ -3,6 +3,46 @@ import { useNotifications } from '../context/NotificationContext';
 import { FiTrash2, FiBell, FiCheckCircle, FiMessageSquare, FiAward, FiBookOpen, FiInfo } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 
+function getNotificationGroup(notif) {
+  if (!notif) return 'system';
+  
+  const type = (notif.type || '').toLowerCase();
+  const category = (notif.category || '').toLowerCase();
+
+  // 1. Achievement
+  if (
+    type === 'achievement' ||
+    category === 'achievement' ||
+    type === 'certificate' ||
+    category === 'certificate' ||
+    type.startsWith('certificate.') ||
+    type === 'course.finished'
+  ) {
+    return 'achievement';
+  }
+
+  // 2. Course
+  if (
+    type === 'course' ||
+    category === 'course' ||
+    type === 'lesson' ||
+    category === 'lesson' ||
+    type === 'quiz' ||
+    category === 'quiz' ||
+    type === 'live_session' ||
+    category === 'live_session' ||
+    type.startsWith('course.') ||
+    type.startsWith('lesson.') ||
+    type.startsWith('quiz.') ||
+    type.startsWith('live_session.')
+  ) {
+    return 'course';
+  }
+
+  // 3. System
+  return 'system';
+}
+
 export default function NotificationsPage() {
   const { notifications, markAllAsRead, markAsRead, deleteNotification, deleteAllNotifications } = useNotifications();
   const [filter, setFilter] = useState('all');
@@ -10,7 +50,7 @@ export default function NotificationsPage() {
 
   const filteredNotifications = notifications.filter(n => {
     if (filter === 'all') return true;
-    return n.type === filter;
+    return getNotificationGroup(n) === filter;
   });
 
   return (
@@ -131,10 +171,11 @@ export default function NotificationsPage() {
             </div>
           ) : (
             filteredNotifications.map(notif => {
+              const group = getNotificationGroup(notif);
               const isReply = notif.title && notif.title.includes('رد');
-              const isAchievement = notif.type === 'achievement';
-              const isCourse = notif.type === 'course';
-              const isSystem = notif.type === 'system';
+              const isAchievement = group === 'achievement';
+              const isCourse = group === 'course';
+              const isSystem = group === 'system';
               
               let icon = <FiBell size={18} color="#94A3B8" />;
               let iconBg = 'rgba(255, 255, 255, 0.05)';
@@ -296,4 +337,3 @@ export default function NotificationsPage() {
     </div>
   );
 }
-
