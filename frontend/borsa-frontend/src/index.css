@@ -9,25 +9,28 @@
   --surface-container: #1d2023;
   --surface-container-high: #272a2e;
   --surface-container-highest: #323538;
-  
-  --primary-color: #75ff9e;          /* Cyber Green */
+
+  --primary-color: #75ff9e;
+  /* Cyber Green */
   --primary-container: #00e676;
   --on-primary: #003918;
-  
-  --secondary-color: #81cfff;        /* Electric Blue */
+
+  --secondary-color: #81cfff;
+  /* Electric Blue */
   --secondary-container: #00a9e8;
   --on-secondary: #00344b;
-  
-  --error-color: #ffb4ab;            /* Crimson Red */
+
+  --error-color: #ffb4ab;
+  /* Crimson Red */
   --error-container: #93000a;
   --on-error: #690005;
-  
+
   --text-primary: #F8FAFC;
   --text-muted: #94A3B8;
   --text-muted-variant: #64748B;
   --outline-color: rgba(255, 255, 255, 0.08);
   --outline-active: rgba(117, 255, 158, 0.25);
-  
+
   /* Typography Variables - Arabic Premium */
   --font-sans: 'Cairo', 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', 'Cairo', monospace;
@@ -56,7 +59,12 @@ body {
 }
 
 /* Typography Helpers */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-sans);
   color: var(--text-primary);
   font-weight: 600;
@@ -139,6 +147,7 @@ p {
   0% {
     transform: translate3d(0, 0, 0);
   }
+
   100% {
     transform: translate3d(-50%, 0, 0);
   }
@@ -156,7 +165,8 @@ p {
 
 /* Layout Custom Styles */
 .pt-navbar {
-  padding-top: 4rem; /* h-16 spacer */
+  padding-top: 4rem;
+  /* h-16 spacer */
 }
 
 /* Clean Custom Form Control */
@@ -263,6 +273,7 @@ p {
   box-shadow: 0 0 12px rgba(117, 255, 158, 0.2);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .btn-glow:hover {
   box-shadow: 0 0 20px rgba(117, 255, 158, 0.4);
   transform: translateY(-1px);
@@ -274,6 +285,7 @@ p {
   opacity: 0.85;
   transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .btn-link-opacity:hover {
   opacity: 1;
 }
@@ -292,6 +304,7 @@ p {
 .card-glow {
   box-shadow: 0 0 12px rgba(117, 255, 158, 0.05);
 }
+
 .card-glow:hover {
   box-shadow: 0 0 20px rgba(117, 255, 158, 0.15);
 }
@@ -311,6 +324,7 @@ p {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
+
 .social-btn:hover {
   transform: scale(1.1);
   color: #75ff9e;
@@ -325,6 +339,7 @@ p {
   transition: all 0.3s ease;
   font-family: var(--font-sans);
 }
+
 .footer-link:hover {
   color: #75ff9e;
   text-decoration: none;
@@ -336,6 +351,7 @@ p {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -348,9 +364,17 @@ p {
 }
 
 /* Stagger delays */
-.delay-100 { animation-delay: 100ms; }
-.delay-200 { animation-delay: 200ms; }
-.delay-300 { animation-delay: 300ms; }
+.delay-100 {
+  animation-delay: 100ms;
+}
+
+.delay-200 {
+  animation-delay: 200ms;
+}
+
+.delay-300 {
+  animation-delay: 300ms;
+}
 
 /* Premium Navbar Link Hover */
 .nav-hover-link {
@@ -388,7 +412,7 @@ p {
 
 /* Primary CTA Button */
 .btn-primary-cta {
-  background: linear-gradient(135deg, rgba(117,255,158,1), rgba(0,230,118,1));
+  background: linear-gradient(135deg, rgba(117, 255, 158, 1), rgba(0, 230, 118, 1));
   border-radius: 10px !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
   color: #003918 !important;
@@ -456,11 +480,13 @@ p {
   background: transparent;
   transition: all 0.25s ease;
 }
+
 .btn-edit-course:hover {
   background: #00E676;
   color: #0b0e11;
   box-shadow: 0 0 14px rgba(0, 230, 118, 0.4);
 }
+
 .btn-edit-course:active {
   transform: scale(0.97);
 }
@@ -471,19 +497,28 @@ p {
   background: transparent;
   transition: all 0.25s ease;
 }
+
 .btn-delete-course:hover {
   background: #FF5252;
   color: #fff;
   box-shadow: 0 0 14px rgba(255, 82, 82, 0.4);
 }
+
 .btn-delete-course:active {
   transform: scale(0.97);
 }
 
 /* ── Add Course CTA — pulsate glow ─────────────────────────────── */
 @keyframes neonPulse {
-  0%, 100% { box-shadow: 0 0 10px rgba(0, 230, 118, 0.4), 0 0 20px rgba(0, 230, 118, 0.15); }
-  50%       { box-shadow: 0 0 20px rgba(0, 230, 118, 0.7), 0 0 40px rgba(0, 230, 118, 0.3); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(0, 230, 118, 0.4), 0 0 20px rgba(0, 230, 118, 0.15);
+  }
+
+  50% {
+    box-shadow: 0 0 20px rgba(0, 230, 118, 0.7), 0 0 40px rgba(0, 230, 118, 0.3);
+  }
 }
 
 .btn-add-course {
@@ -496,11 +531,13 @@ p {
   animation: neonPulse 2.4s ease-in-out infinite;
   transition: transform 0.25s ease, filter 0.25s ease;
 }
+
 .btn-add-course:hover {
   transform: translateY(-2px) scale(1.03);
   filter: brightness(1.15);
   color: #0b0e11;
 }
+
 .btn-add-course:active {
   transform: scale(0.97);
   animation: none;
@@ -521,6 +558,7 @@ p {
   transition: all 0.2s ease;
   opacity: 0.85;
 }
+
 .interactive-btn:hover {
   opacity: 1;
   transform: scale(1.1);
@@ -529,7 +567,7 @@ p {
 
 .hover-glow-text:hover {
   color: #00e676 !important;
-  text-shadow: 0 0 8px rgba(0,230,118,0.5);
+  text-shadow: 0 0 8px rgba(0, 230, 118, 0.5);
 }
 
 .volume-slider {
@@ -698,9 +736,20 @@ p {
 }
 
 @keyframes pulse-glow {
-  0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(0, 230, 118, 0); }
-  100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(0, 230, 118, 0); }
+  0% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.7);
+  }
+
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(0, 230, 118, 0);
+  }
+
+  100% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(0, 230, 118, 0);
+  }
 }
 
 /* --- VIDEO NOTES SIDEBAR --- */
@@ -718,6 +767,7 @@ p {
 .note-delete-btn {
   opacity: 0.5;
 }
+
 .note-card:hover .note-delete-btn {
   opacity: 1;
 }
@@ -726,8 +776,6 @@ p {
   color: #ffb4ab !important;
   transform: scale(1.1);
 }
-
-
 
 /* ============================================================
    MOBILE NAVBAR — Hamburger & Slide Panel
@@ -806,6 +854,7 @@ body.mobile-menu-open {
     height: 130px !important;
   }
 }
+
 .lesson-item {
   font-family: var(--font-sans);
   direction: rtl;
@@ -870,9 +919,20 @@ body.mobile-menu-open {
 }
 
 @keyframes pulse-glow {
-  0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(0, 230, 118, 0); }
-  100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(0, 230, 118, 0); }
+  0% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.7);
+  }
+
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(0, 230, 118, 0);
+  }
+
+  100% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(0, 230, 118, 0);
+  }
 }
 
 /* --- VIDEO NOTES SIDEBAR --- */
@@ -890,6 +950,7 @@ body.mobile-menu-open {
 .note-delete-btn {
   opacity: 0.5;
 }
+
 .note-card:hover .note-delete-btn {
   opacity: 1;
 }
@@ -899,7 +960,31 @@ body.mobile-menu-open {
   transform: scale(1.1);
 }
 
+/* --- MASARI PAGE --- */
+.masari-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(12px);
+}
 
+.masari-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(0, 230, 118, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 230, 118, 0.15), inset 0 0 20px rgba(0, 230, 118, 0.05);
+}
+
+.masari-card:hover .masari-icon-wrapper {
+  background-color: rgba(0, 230, 118, 0.15) !important;
+  color: #00e676 !important;
+  box-shadow: 0 0 15px rgba(0, 230, 118, 0.4);
+  transform: scale(1.05);
+  transition: all 0.3s ease;
+}
+
+.masari-icon-wrapper {
+  transition: all 0.3s ease;
+}
 
 /* ============================================================
    MOBILE NAVBAR — Hamburger & Slide Panel
@@ -984,10 +1069,13 @@ body.mobile-menu-open {
    BRAND LOGO ANIMATIONS (Navbar & Auth)
    ============================================================ */
 @keyframes cyberLogoPulse {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 15px rgba(0, 230, 118, 0.2);
     filter: drop-shadow(0 0 8px rgba(0, 230, 118, 0.3));
   }
+
   50% {
     box-shadow: 0 0 25px rgba(0, 230, 118, 0.5);
     filter: drop-shadow(0 0 16px rgba(0, 230, 118, 0.6));
@@ -1015,8 +1103,13 @@ body.mobile-menu-open {
    SKELETON LOADER ANIMATIONS
    ============================================================ */
 @keyframes skeletonShimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .skeleton-shimmer {
@@ -1024,8 +1117,15 @@ body.mobile-menu-open {
 }
 
 @keyframes skeletonPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
 }
 
 .skeleton-pulse {
@@ -1366,8 +1466,15 @@ body.mobile-menu-open {
 }
 
 @keyframes profileToastIn {
-  from { opacity: 0; transform: translate(-50%, -12px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
+  from {
+    opacity: 0;
+    transform: translate(-50%, -12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 @media (max-width: 900px) {
@@ -1433,6 +1540,7 @@ body.mobile-menu-open {
   align-items: center;
   gap: 4px;
 }
+
 .contact-field-error::before {
   content: '!';
   display: inline-flex;
@@ -1453,6 +1561,7 @@ body.mobile-menu-open {
   border-color: rgba(255, 82, 82, 0.5) !important;
   box-shadow: 0 0 8px rgba(255, 82, 82, 0.1) !important;
 }
+
 .contact-input-error:focus {
   border-color: rgba(255, 82, 82, 0.8) !important;
   box-shadow: 0 0 12px rgba(255, 82, 82, 0.2) !important;
@@ -1465,6 +1574,7 @@ body.mobile-menu-open {
   color: #475569;
   transition: color 0.3s ease;
 }
+
 .char-counter-warn {
   color: #f59e0b;
 }
@@ -1485,14 +1595,17 @@ body.mobile-menu-open {
   gap: 8px;
   min-height: 44px;
 }
+
 .contact-submit-btn:hover:not(:disabled) {
   box-shadow: 0 0 28px rgba(117, 255, 158, 0.4);
   transform: translateY(-1px);
   color: #003918;
 }
+
 .contact-submit-btn:active:not(:disabled) {
   transform: translateY(0);
 }
+
 .contact-submit-btn:disabled {
   opacity: 0.65;
   cursor: not-allowed;
@@ -1502,8 +1615,11 @@ body.mobile-menu-open {
 
 /* ── Loading spinner ── */
 @keyframes contact-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
+
 .contact-spinner {
   display: inline-block;
   width: 16px;
@@ -1521,6 +1637,7 @@ body.mobile-menu-open {
     opacity: 0;
     transform: translateX(-50%) translateY(-20px) scale(0.97);
   }
+
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0) scale(1);
@@ -1552,6 +1669,7 @@ body.mobile-menu-open {
   background: rgba(0, 57, 24, 0.92);
   border: 1px solid rgba(117, 255, 158, 0.35);
 }
+
 .contact-toast-error {
   background: rgba(105, 0, 5, 0.92);
   border: 1px solid rgba(255, 82, 82, 0.35);
@@ -1561,8 +1679,14 @@ body.mobile-menu-open {
   font-size: 22px;
   flex-shrink: 0;
 }
-.contact-toast-success .contact-toast-icon { color: #75ff9e; }
-.contact-toast-error   .contact-toast-icon { color: #ff8a80; }
+
+.contact-toast-success .contact-toast-icon {
+  color: #75ff9e;
+}
+
+.contact-toast-error .contact-toast-icon {
+  color: #ff8a80;
+}
 
 .contact-toast-text {
   flex: 1;
@@ -1583,7 +1707,10 @@ body.mobile-menu-open {
   transition: color 0.2s ease;
   flex-shrink: 0;
 }
-.contact-toast-close:hover { color: #F8FAFC; }
+
+.contact-toast-close:hover {
+  color: #F8FAFC;
+}
 
 /* ============================================================
    NOTIFICATION DROPDOWN — Bell pulse & item styles
@@ -1591,9 +1718,20 @@ body.mobile-menu-open {
 
 /* Pulsing ring around the bell icon when there are unread notifications */
 @keyframes bell-ring-pulse {
-  0%   { transform: scale(1);    box-shadow: 0 0 0 0   rgba(0, 230, 118, 0.7); }
-  50%  { transform: scale(1.08); box-shadow: 0 0 0 8px rgba(0, 230, 118, 0);   }
-  100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(0, 230, 118, 0);   }
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.7);
+  }
+
+  50% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 8px rgba(0, 230, 118, 0);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(0, 230, 118, 0);
+  }
 }
 
 .bell-has-unread {
@@ -1603,8 +1741,17 @@ body.mobile-menu-open {
 
 /* Unread dot on individual notification items */
 @keyframes notif-dot-breathe {
-  0%, 100% { opacity: 1;   transform: scale(1);    }
-  50%       { opacity: 0.6; transform: scale(0.85); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.6;
+    transform: scale(0.85);
+  }
 }
 
 .notif-unread-dot {
@@ -1618,74 +1765,41 @@ body.mobile-menu-open {
 }
 
 /* Scroll area inside the notification panel */
-.notif-scroll::-webkit-scrollbar        { width: 4px; }
-.notif-scroll::-webkit-scrollbar-track  { background: transparent; }
-.notif-scroll::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.1); border-radius: 4px; }
-.notif-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,230,118,0.3); }
+.notif-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.notif-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.notif-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.notif-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 230, 118, 0.3);
+}
 
 /* Gamification Gold Pulse Animation */
-@keyframes goldPulse { 0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); } }
-.achievement-pulse { animation: goldPulse 2s infinite cubic-bezier(0.66, 0, 0, 1); background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 165, 0, 0.1)) !important; border: 1px solid rgba(255, 215, 0, 0.5) !important; border-left: 4px solid #FFD700 !important; }
+@keyframes goldPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4);
+  }
 
-/* ============================================================
-   COURSE CURRICULUM — Double Scrollbar System
-   ============================================================ */
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 215, 0, 0);
+  }
 
-/* 1. Main outer panel scrollbar (scroll between units and sections) */
-@media (min-width: 992px) {
-  .course-curriculum-panel {
-    height: calc(100vh - 160px) !important;
-    max-height: 580px !important;
-    position: sticky;
-    top: 88px;
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0);
   }
 }
 
-.course-curriculum-scroll {
-  overflow-y: scroll !important;
-  flex-grow: 1;
-}
-
-/* 2. Inner section scrollbar (scroll between lessons and videos inside an expanded unit) */
-.section-content {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.35s ease-in-out;
-}
-
-.section-content.expanded {
-  max-height: 180px !important;
-  overflow-y: scroll !important;
-}
-
-/* 3. Hide scrollbar buttons (arrows) to remove the ugly triangles */
-.course-curriculum-scroll::-webkit-scrollbar-button,
-.section-content::-webkit-scrollbar-button {
-  display: none !important;
-}
-
-.course-curriculum-scroll::-webkit-scrollbar,
-.section-content::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.course-curriculum-scroll::-webkit-scrollbar-track,
-.section-content::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 4px;
-}
-
-.course-curriculum-scroll::-webkit-scrollbar-thumb,
-.section-content::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-  border: 1px solid transparent;
-  background-clip: padding-box;
-  transition: background-color 0.2s ease;
-}
-
-.course-curriculum-scroll::-webkit-scrollbar-thumb:hover,
-.section-content::-webkit-scrollbar-thumb:hover {
-  background: #00e676;
+.achievement-pulse {
+  animation: goldPulse 2s infinite cubic-bezier(0.66, 0, 0, 1);
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 165, 0, 0.1)) !important;
+  border: 1px solid rgba(255, 215, 0, 0.5) !important;
+  border-left: 4px solid #FFD700 !important;
 }
