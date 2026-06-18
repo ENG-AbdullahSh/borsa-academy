@@ -50,6 +50,7 @@ class CourseCurriculumController extends Controller
      */
     private function formatCourseCurriculum(Course $course, Request $request, bool $forceAccess = false): array
     {
+        /** @var \App\Models\User|null $user */
         $user = auth('sanctum')->user();
         $enrollment = $user !== null && $user->role === 'student'
             ? $user->enrollments()->where('course_id', $course->id)->first()
