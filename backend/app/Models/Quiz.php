@@ -12,12 +12,6 @@ class Quiz extends Model
 {
     protected static function booted(): void
     {
-        static::saved(function (Quiz $quiz) {
-            if ($quiz->lesson_id) {
-                $quiz->lesson()->update(['is_published' => $quiz->is_active]);
-            }
-        });
-
         static::deleted(function (Quiz $quiz) {
             if ($quiz->lesson_id) {
                 $lesson = $quiz->lesson;

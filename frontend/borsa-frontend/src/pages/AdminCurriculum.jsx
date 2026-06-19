@@ -358,25 +358,6 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
     }
   };
 
-  const publishLesson = async (lessonId) => {
-    setSubmitting(true);
-
-    try {
-      const response = await fetch(`${apiScope}/lessons/${lessonId}`, {
-        method: 'PUT',
-        headers: apiHeaders(token, true),
-        body: JSON.stringify({ is_published: true }),
-      });
-      await readJsonResponse(response);
-      showMessage('success', 'تم نشر الدرس وإرسال الإشعار للطلاب.');
-      refreshCurriculum();
-    } catch (error) {
-      showMessage('error', validationMessage(error, 'تعذر نشر الدرس.'));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const deleteLesson = async (lessonId) => {
     setSubmitting(true);
 
@@ -966,9 +947,6 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
                                   <button type="button" className="btn btn-sm btn-secondary-cta px-2" onClick={() => moveLesson(section, index, 1)} disabled={index === (section.lessons || []).length - 1 || submitting}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>keyboard_arrow_down</span>
                                   </button>
-                                  {!lesson.is_published && (
-                                    <button type="button" className="btn btn-sm btn-primary-cta px-3" onClick={() => publishLesson(lesson.id)} disabled={submitting}>نشر</button>
-                                  )}
                                   <button type="button" className="btn btn-sm btn-edit-course px-3" onClick={() => startEditingLesson(lesson)}>تعديل</button>
                                   <button type="button" className="btn btn-sm btn-delete-course px-3" onClick={() => deleteLesson(lesson.id)} disabled={submitting}>حذف</button>
                                 </>
