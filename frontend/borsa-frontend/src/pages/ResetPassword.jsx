@@ -3,6 +3,8 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { useSettings } from '../context/SettingsContext';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
+import { FieldError } from '../components/FormValidation';
+import { hasValidationErrors, invalidClass, invalidProps, normalizeLaravelErrors, validateFields, validators } from '../utils/validation';
 import '../styles/auth.css';
 import borsaLogo from '../assets/Borsa Academy.jpeg';
 
@@ -33,10 +35,42 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  const values = { password, password_confirmation: passwordConfirmation };
+  const schema = {
+    password: [
+      validators.required('كلمة المرور مطلوبة.'),
+      validators.minLength(8, 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.'),
+    ],
+    password_confirmation: [
+      validators.required('تأكيد كلمة المرور مطلوب.'),
+      validators.sameAs('password', 'كلمتا المرور غير متطابقتين.'),
+    ],
+  };
+
+  const validateAndSet = (nextValues = values) => {
+    const nextErrors = validateFields(nextValues, schema);
+    setFieldErrors(nextErrors);
+    return nextErrors;
+  };
+
+  const handleBlur = (field) => () => {
+    setTouched((current) => ({ ...current, [field]: true }));
+    setFieldErrors((current) => ({
+      ...current,
+      [field]: validateFields(values, { [field]: schema[field] })[field] || '',
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setTouched({ password: true, password_confirmation: true });
+
+    const nextErrors = validateAndSet();
+    if (hasValidationErrors(nextErrors)) return;
 
     if (!password || !passwordConfirmation) {
       setError('يرجى تعبئة جميع الحقول المطلوبة.');
@@ -73,6 +107,12 @@ export default function ResetPassword() {
       setTimeout(() => navigate('/signin', { replace: true }), 3000);
     } catch (err) {
       const firstError = Object.values(err.data?.errors || {}).flat().find(Boolean);
+      const serverErrors = normalizeLaravelErrors(err);
+      if (Object.keys(serverErrors).length) {
+        setFieldErrors(serverErrors);
+        setTouched({ password: true, password_confirmation: true });
+        return;
+      }
       setError(firstError || err.message || 'حدث خطأ ما. حاول مرة أخرى.');
     } finally {
       setLoading(false);
@@ -149,12 +189,19 @@ export default function ResetPassword() {
                       <input
                         id="reset-password"
                         type={showPassword ? 'text' : 'password'}
-                        className="auth-input auth-password-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
+                        className={`auth-input auth-password-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]${invalidClass(touched.password && fieldErrors.password)}`}
                         placeholder="••••••••••••"
                         value={password}
-                        onChange={e => setPassword(e.target.value)}
+                        onChange={e => {
+                          setPassword(e.target.value);
+                          if (touched.password || touched.password_confirmation) {
+                            validateAndSet({ ...values, password: e.target.value });
+                          }
+                        }}
+                        onBlur={handleBlur('password')}
                         required
                         minLength={8}
+                        {...invalidProps(touched.password && fieldErrors.password, 'reset-password-error')}
                       />
                       <button
                         type="button"
@@ -164,6 +211,7 @@ export default function ResetPassword() {
                         {showPassword ? <FiEyeOff /> : <FiEye />}
                       </button>
                     </div>
+                    <FieldError id="reset-password-error" message={touched.password && fieldErrors.password} />
                   </div>
 
                   <div className="auth-field mb-6 mt-4">
@@ -174,12 +222,19 @@ export default function ResetPassword() {
                       <input
                         id="reset-password-confirm"
                         type={showPasswordConfirmation ? 'text' : 'password'}
-                        className="auth-input auth-password-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
+                        className={`auth-input auth-password-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]${invalidClass(touched.password_confirmation && fieldErrors.password_confirmation)}`}
                         placeholder="••••••••••••"
                         value={passwordConfirmation}
-                        onChange={e => setPasswordConfirmation(e.target.value)}
+                        onChange={e => {
+                          setPasswordConfirmation(e.target.value);
+                          if (touched.password_confirmation) {
+                            validateAndSet({ ...values, password_confirmation: e.target.value });
+                          }
+                        }}
+                        onBlur={handleBlur('password_confirmation')}
                         required
                         minLength={8}
+                        {...invalidProps(touched.password_confirmation && fieldErrors.password_confirmation, 'reset-password-confirm-error')}
                       />
                       <button
                         type="button"
@@ -190,6 +245,7 @@ export default function ResetPassword() {
                         {showPasswordConfirmation ? <FiEyeOff /> : <FiEye />}
                       </button>
                     </div>
+                    <FieldError id="reset-password-confirm-error" message={touched.password_confirmation && fieldErrors.password_confirmation} />
                   </div>
 
                   <button

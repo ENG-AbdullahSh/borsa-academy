@@ -4,6 +4,8 @@ import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth';
 import GoogleLoginButton from '../components/GoogleLoginButton';
 import { useSettings } from '../context/SettingsContext';
+import { FieldError } from '../components/FormValidation';
+import { hasValidationErrors, invalidClass, invalidProps, normalizeLaravelErrors, validateFields, validators } from '../utils/validation';
 import '../styles/auth.css';
 import borsaLogo from '../assets/Borsa Academy.jpeg';
 
@@ -86,10 +88,40 @@ export default function SignIn() {
   const [loading, setLoading]   = useState(false);
   const [success, setSuccess]   = useState(false);
   const [error, setError]       = useState(() => location.state?.message || '');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  const values = { email, password };
+  const schema = {
+    email: [
+      validators.required('البريد الإلكتروني مطلوب.'),
+      validators.email('صيغة البريد الإلكتروني غير صحيحة.'),
+    ],
+    password: [validators.required('كلمة المرور مطلوبة.')],
+  };
+
+  const validateAndSet = (nextValues = values) => {
+    const nextErrors = validateFields(nextValues, schema);
+    setFieldErrors(nextErrors);
+    return nextErrors;
+  };
+
+  const handleBlur = (field) => () => {
+    setTouched((current) => ({ ...current, [field]: true }));
+    setFieldErrors((current) => ({
+      ...current,
+      [field]: validateFields(values, { [field]: schema[field] })[field] || '',
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setTouched({ email: true, password: true });
+
+    const nextErrors = validateAndSet();
+    if (hasValidationErrors(nextErrors)) return;
+
     if (!email || !password) {
       setError('يرجى تعبئة جميع الحقول المطلوبة.');
       return;
@@ -105,6 +137,14 @@ export default function SignIn() {
       setTimeout(() => navigate(redirectPath, { replace: true }), 700);
     } catch (err) {
       setLoading(false);
+      if (err?.status === 422) {
+        const serverErrors = normalizeLaravelErrors(err);
+        if (Object.keys(serverErrors).length) {
+          setFieldErrors(serverErrors);
+          setTouched({ email: true, password: true });
+          return;
+        }
+      }
       setError(getLoginErrorMessage(err));
     }
   };
@@ -191,13 +231,19 @@ export default function SignIn() {
                   <input
                     id="signin-email"
                     type="email"
-                    className="auth-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
+                    className={`auth-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]${invalidClass(touched.email && fieldErrors.email)}`}
                     placeholder="operator@borsa.io"
                     value={email}
-                    onChange={e => setEmail(e.target.value)}
+                    onChange={e => {
+                      setEmail(e.target.value);
+                      if (touched.email) validateAndSet({ ...values, email: e.target.value });
+                    }}
+                    onBlur={handleBlur('email')}
                     autoComplete="email"
                     required
+                    {...invalidProps(touched.email && fieldErrors.email, 'signin-email-error')}
                   />
+                  <FieldError id="signin-email-error" message={touched.email && fieldErrors.email} />
                 </div>
 
                 {/* Password */}
@@ -209,12 +255,17 @@ export default function SignIn() {
                     <input
                       id="signin-password"
                       type={showPassword ? 'text' : 'password'}
-                      className="auth-input auth-password-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
+                      className={`auth-input auth-password-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]${invalidClass(touched.password && fieldErrors.password)}`}
                       placeholder="••••••••••••"
                       value={password}
-                      onChange={e => setPassword(e.target.value)}
+                      onChange={e => {
+                        setPassword(e.target.value);
+                        if (touched.password) validateAndSet({ ...values, password: e.target.value });
+                      }}
+                      onBlur={handleBlur('password')}
                       autoComplete="current-password"
                       required
+                      {...invalidProps(touched.password && fieldErrors.password, 'signin-password-error')}
                     />
                     <button
                       type="button"
@@ -228,6 +279,7 @@ export default function SignIn() {
                       {showPassword ? <FiEyeOff aria-hidden="true" /> : <FiEye aria-hidden="true" />}
                     </button>
                   </div>
+                  <FieldError id="signin-password-error" message={touched.password && fieldErrors.password} />
                 </div>
 
                 {/* Remember + Forgot row */}

@@ -4,6 +4,8 @@ import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth';
 import GoogleLoginButton from '../components/GoogleLoginButton';
 import { useSettings } from '../context/SettingsContext';
+import { FieldError } from '../components/FormValidation';
+import { hasValidationErrors, invalidClass, invalidProps, normalizeLaravelErrors, validateFields, validators } from '../utils/validation';
 import '../styles/auth.css';
 import borsaLogo from '../assets/Borsa Academy.jpeg';
 
@@ -62,10 +64,65 @@ export default function SignUp() {
   const [loading, setLoading]           = useState(false);
   const [success, setSuccess]           = useState(false);
   const [error, setError]               = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  const values = {
+    name: fullName,
+    email,
+    password,
+    password_confirmation: confirmPassword,
+    agreed,
+  };
+  const schema = {
+    name: [
+      validators.required('الاسم مطلوب.'),
+      validators.maxLength(255, 'يجب ألا يتجاوز الاسم 255 حرفاً.'),
+    ],
+    email: [
+      validators.required('البريد الإلكتروني مطلوب.'),
+      validators.email('صيغة البريد الإلكتروني غير صحيحة.'),
+    ],
+    password: [
+      validators.required('كلمة المرور مطلوبة.'),
+      validators.minLength(8, 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.'),
+    ],
+    password_confirmation: [
+      validators.required('تأكيد كلمة المرور مطلوب.'),
+      validators.sameAs('password', 'كلمة المرور وتأكيدها غير متطابقتين.'),
+    ],
+    agreed: [
+      (value) => (value ? '' : 'يجب الموافقة على شروط الخدمة وسياسة الخصوصية للمتابعة.'),
+    ],
+  };
+
+  const validateAndSet = (nextValues = values) => {
+    const nextErrors = validateFields(nextValues, schema);
+    setFieldErrors(nextErrors);
+    return nextErrors;
+  };
+
+  const handleBlur = (field) => () => {
+    setTouched((current) => ({ ...current, [field]: true }));
+    setFieldErrors((current) => ({
+      ...current,
+      [field]: validateFields(values, { [field]: schema[field] })[field] || '',
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setTouched({
+      name: true,
+      email: true,
+      password: true,
+      password_confirmation: true,
+      agreed: true,
+    });
+
+    const nextErrors = validateAndSet();
+    if (hasValidationErrors(nextErrors)) return;
 
     if (!fullName || !email || !password || !confirmPassword) {
       setError('يرجى تعبئة جميع الحقول المطلوبة.');
@@ -98,6 +155,20 @@ export default function SignUp() {
       window.setTimeout(() => navigate('/student-dashboard', { replace: true }), 700);
     } catch (requestError) {
       setLoading(false);
+      if (requestError?.status === 422) {
+        const serverErrors = normalizeLaravelErrors(requestError);
+        if (Object.keys(serverErrors).length) {
+          setFieldErrors(serverErrors);
+          setTouched({
+            name: true,
+            email: true,
+            password: true,
+            password_confirmation: true,
+            agreed: true,
+          });
+          return;
+        }
+      }
       setError(getRegisterErrorMessage(requestError));
     }
   };
@@ -184,13 +255,19 @@ export default function SignUp() {
                   <input
                     id="signup-name"
                     type="text"
-                    className="auth-input rtl-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
+                    className={`auth-input rtl-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]${invalidClass(touched.name && fieldErrors.name)}`}
                     placeholder="محمد أحمد"
                     value={fullName}
-                    onChange={e => setFullName(e.target.value)}
+                    onChange={e => {
+                      setFullName(e.target.value);
+                      if (touched.name) validateAndSet({ ...values, name: e.target.value });
+                    }}
+                    onBlur={handleBlur('name')}
                     autoComplete="name"
                     required
+                    {...invalidProps(touched.name && fieldErrors.name, 'signup-name-error')}
                   />
+                  <FieldError id="signup-name-error" message={touched.name && fieldErrors.name} />
                 </div>
 
                 {/* Email */}
@@ -201,13 +278,19 @@ export default function SignUp() {
                   <input
                     id="signup-email"
                     type="email"
-                    className="auth-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
+                    className={`auth-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]${invalidClass(touched.email && fieldErrors.email)}`}
                     placeholder="you@borsa.io"
                     value={email}
-                    onChange={e => setEmail(e.target.value)}
+                    onChange={e => {
+                      setEmail(e.target.value);
+                      if (touched.email) validateAndSet({ ...values, email: e.target.value });
+                    }}
+                    onBlur={handleBlur('email')}
                     autoComplete="email"
                     required
+                    {...invalidProps(touched.email && fieldErrors.email, 'signup-email-error')}
                   />
+                  <FieldError id="signup-email-error" message={touched.email && fieldErrors.email} />
                 </div>
 
                 {/* Password */}
@@ -219,12 +302,19 @@ export default function SignUp() {
                     <input
                       id="signup-password"
                       type={showPassword ? 'text' : 'password'}
-                      className="auth-input auth-password-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
+                      className={`auth-input auth-password-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]${invalidClass(touched.password && fieldErrors.password)}`}
                       placeholder="••••••••  (8 أحرف على الأقل)"
                       value={password}
-                      onChange={e => setPassword(e.target.value)}
+                      onChange={e => {
+                        setPassword(e.target.value);
+                        if (touched.password || touched.password_confirmation) {
+                          validateAndSet({ ...values, password: e.target.value });
+                        }
+                      }}
+                      onBlur={handleBlur('password')}
                       autoComplete="new-password"
                       required
+                      {...invalidProps(touched.password && fieldErrors.password, 'signup-password-error')}
                     />
                     <button
                       type="button"
@@ -238,6 +328,7 @@ export default function SignUp() {
                       {showPassword ? <FiEyeOff aria-hidden="true" /> : <FiEye aria-hidden="true" />}
                     </button>
                   </div>
+                  <FieldError id="signup-password-error" message={touched.password && fieldErrors.password} />
                 </div>
 
                 {/* Confirm Password */}
@@ -249,12 +340,19 @@ export default function SignUp() {
                     <input
                       id="signup-confirm"
                       type={showConfirmPassword ? 'text' : 'password'}
-                      className="auth-input auth-password-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
+                      className={`auth-input auth-password-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]${invalidClass(touched.password_confirmation && fieldErrors.password_confirmation)}`}
                       placeholder="••••••••"
                       value={confirmPassword}
-                      onChange={e => setConfirm(e.target.value)}
+                      onChange={e => {
+                        setConfirm(e.target.value);
+                        if (touched.password_confirmation) {
+                          validateAndSet({ ...values, password_confirmation: e.target.value });
+                        }
+                      }}
+                      onBlur={handleBlur('password_confirmation')}
                       autoComplete="new-password"
                       required
+                      {...invalidProps(touched.password_confirmation && fieldErrors.password_confirmation, 'signup-confirm-error')}
                       style={{
                         borderColor: confirmPassword && password !== confirmPassword
                           ? 'rgba(255,82,82,0.5)'
@@ -273,6 +371,7 @@ export default function SignUp() {
                       {showConfirmPassword ? <FiEyeOff aria-hidden="true" /> : <FiEye aria-hidden="true" />}
                     </button>
                   </div>
+                  <FieldError id="signup-confirm-error" message={touched.password_confirmation && fieldErrors.password_confirmation} />
                 </div>
 
                 {/* Terms Agreement */}
@@ -282,7 +381,12 @@ export default function SignUp() {
                     type="checkbox"
                     className="w-4 h-4 accent-[#00E676] cursor-pointer mt-1 flex-shrink-0"
                     checked={agreed}
-                    onChange={e => setAgreed(e.target.checked)}
+                    onChange={e => {
+                      setAgreed(e.target.checked);
+                      if (touched.agreed) validateAndSet({ ...values, agreed: e.target.checked });
+                    }}
+                    onBlur={handleBlur('agreed')}
+                    {...invalidProps(touched.agreed && fieldErrors.agreed, 'signup-terms-error')}
                   />
                   <span className="auth-terms-label text-[13px] text-slate-400 leading-relaxed">
                     أوافق على{' '}
@@ -291,6 +395,7 @@ export default function SignUp() {
                     <a href="#privacy" onClick={e => e.preventDefault()} className="text-[#00E676] font-bold no-underline hover:text-[#5effe8] transition-colors">سياسة الخصوصية</a>
                   </span>
                 </label>
+                <FieldError id="signup-terms-error" message={touched.agreed && fieldErrors.agreed} />
 
                 {/* CTA */}
                 <button

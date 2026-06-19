@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
+import { FieldError } from '../components/FormValidation';
+import { hasValidationErrors, invalidClass, invalidProps, normalizeLaravelErrors, validateFields, validators } from '../utils/validation';
 
 const EMPTY_QUIZ = {
   title: '',
@@ -44,6 +46,10 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
+  const [quizErrors, setQuizErrors] = useState({});
+  const [quizTouched, setQuizTouched] = useState({});
+  const [questionErrors, setQuestionErrors] = useState({});
+  const [questionTouched, setQuestionTouched] = useState({});
   const lessons = useMemo(() => (
     (curriculum?.sections || []).flatMap((section) => (
       (section.lessons || []).map((lesson) => ({
@@ -53,6 +59,41 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
     ))
   ), [curriculum]);
   const selectedLesson = lessons.find((lesson) => String(lesson.id) === String(selectedLessonId));
+
+  const quizSchema = {
+    title: [
+      validators.required('عنوان الاختبار مطلوب.'),
+      validators.maxLength(255, 'يجب ألا يتجاوز عنوان الاختبار 255 حرفاً.'),
+    ],
+    passing_score: [validators.number({ min: 1, max: 100 })],
+  };
+
+  const validateQuizForm = (nextForm = quizForm) => validateFields(nextForm, quizSchema);
+
+  const validateQuestionForm = (nextForm = questionForm) => {
+    const errors = validateFields(nextForm, {
+      question_text: [validators.required('السؤال مطلوب.')],
+      points: [validators.number({ min: 1, max: 1000 })],
+      order: [validators.number({ min: 0 })],
+    });
+
+    const validOptions = nextForm.options.filter((option) => option.option_text.trim());
+    const correctOptions = nextForm.options.filter((option) => option.is_correct);
+
+    if (nextForm.options.length < 2 || validOptions.length < 2) {
+      errors.options = 'كل سؤال يحتاج خيارين صالحين على الأقل.';
+    } else if (correctOptions.length !== 1) {
+      errors.options = 'يجب تحديد إجابة صحيحة واحدة فقط.';
+    }
+
+    nextForm.options.forEach((option, index) => {
+      if (!option.option_text.trim()) {
+        errors[`options.${index}.option_text`] = 'نص الخيار مطلوب.';
+      }
+    });
+
+    return errors;
+  };
 
   const showMessage = useCallback((type, text) => {
     setMessage({ type, text });
@@ -233,6 +274,11 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
 
   const saveQuiz = async (event) => {
     event.preventDefault();
+    setQuizTouched({ title: true, passing_score: true });
+    const nextErrors = validateQuizForm();
+    setQuizErrors(nextErrors);
+    if (hasValidationErrors(nextErrors)) return;
+
     setSaving(true);
     setMessage(null);
 
@@ -252,8 +298,16 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
       );
       const payload = await readJsonResponse(response);
       hydrateQuiz(payload.data);
+      setQuizErrors({});
+      setQuizTouched({});
       showMessage('success', quiz ? 'تم تحديث إعدادات الاختبار.' : 'تم إنشاء الاختبار.');
     } catch (error) {
+      const serverErrors = normalizeLaravelErrors(error);
+      if (Object.keys(serverErrors).length) {
+        setQuizErrors(serverErrors);
+        setQuizTouched({ title: true, passing_score: true });
+        return;
+      }
       showMessage('error', requestMessage(error, 'تعذر حفظ الاختبار.'));
     } finally {
       setSaving(false);
@@ -341,6 +395,15 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
   const createQuestion = async (event) => {
     event.preventDefault();
     if (!quiz) return;
+    setQuestionTouched({
+      question_text: true,
+      points: true,
+      order: true,
+      options: true,
+    });
+    const nextErrors = validateQuestionForm();
+    setQuestionErrors(nextErrors);
+    if (hasValidationErrors(nextErrors)) return;
 
     setSaving(true);
 
@@ -360,9 +423,22 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
       });
       await readJsonResponse(response);
       setQuestionForm(EMPTY_QUESTION);
+      setQuestionErrors({});
+      setQuestionTouched({});
       showMessage('success', 'تمت إضافة السؤال.');
       await refresh();
     } catch (error) {
+      const serverErrors = normalizeLaravelErrors(error);
+      if (Object.keys(serverErrors).length) {
+        setQuestionErrors(serverErrors);
+        setQuestionTouched({
+          question_text: true,
+          points: true,
+          order: true,
+          options: true,
+        });
+        return;
+      }
       showMessage('error', requestMessage(error, 'تعذر إضافة السؤال.'));
     } finally {
       setSaving(false);
@@ -563,10 +639,20 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
                 <label className="form-label text-muted">عنوان الاختبار</label>
                 <input
                   value={quizForm.title}
-                  onChange={(event) => setQuizForm({ ...quizForm, title: event.target.value })}
-                  className="form-control custom-input"
+                  onChange={(event) => {
+                    const nextForm = { ...quizForm, title: event.target.value };
+                    setQuizForm(nextForm);
+                    if (quizTouched.title) setQuizErrors(validateQuizForm(nextForm));
+                  }}
+                  onBlur={() => {
+                    setQuizTouched((current) => ({ ...current, title: true }));
+                    setQuizErrors(validateQuizForm());
+                  }}
+                  className={`form-control custom-input${invalidClass(quizTouched.title && quizErrors.title)}`}
                   required
+                  {...invalidProps(quizTouched.title && quizErrors.title, 'quiz-title-error')}
                 />
+                <FieldError id="quiz-title-error" message={quizTouched.title && quizErrors.title} />
               </div>
               <div className="col-6 col-lg-3">
                 <label className="form-label text-muted">درجة النجاح %</label>
@@ -575,10 +661,20 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
                   min="1"
                   max="100"
                   value={quizForm.passing_score}
-                  onChange={(event) => setQuizForm({ ...quizForm, passing_score: event.target.value })}
-                  className="form-control custom-input"
+                  onChange={(event) => {
+                    const nextForm = { ...quizForm, passing_score: event.target.value };
+                    setQuizForm(nextForm);
+                    if (quizTouched.passing_score) setQuizErrors(validateQuizForm(nextForm));
+                  }}
+                  onBlur={() => {
+                    setQuizTouched((current) => ({ ...current, passing_score: true }));
+                    setQuizErrors(validateQuizForm());
+                  }}
+                  className={`form-control custom-input${invalidClass(quizTouched.passing_score && quizErrors.passing_score)}`}
                   required
+                  {...invalidProps(quizTouched.passing_score && quizErrors.passing_score, 'quiz-passing-score-error')}
                 />
+                <FieldError id="quiz-passing-score-error" message={quizTouched.passing_score && quizErrors.passing_score} />
               </div>
               <div className="col-6 col-lg-3 d-flex align-items-end">
                 <label className="d-flex align-items-center gap-2 text-white mb-2">
@@ -622,11 +718,21 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
                     <label className="form-label text-muted">نص السؤال</label>
                     <textarea
                       value={questionForm.question_text}
-                      onChange={(event) => setQuestionForm({ ...questionForm, question_text: event.target.value })}
-                      className="form-control custom-input"
+                      onChange={(event) => {
+                        const nextForm = { ...questionForm, question_text: event.target.value };
+                        setQuestionForm(nextForm);
+                        if (questionTouched.question_text) setQuestionErrors(validateQuestionForm(nextForm));
+                      }}
+                      onBlur={() => {
+                        setQuestionTouched((current) => ({ ...current, question_text: true }));
+                        setQuestionErrors(validateQuestionForm());
+                      }}
+                      className={`form-control custom-input${invalidClass(questionTouched.question_text && questionErrors.question_text)}`}
                       rows={2}
                       required
+                      {...invalidProps(questionTouched.question_text && questionErrors.question_text, 'question-text-error')}
                     />
+                    <FieldError id="question-text-error" message={questionTouched.question_text && questionErrors.question_text} />
                   </div>
                   <div className="col-6 col-lg-2">
                     <label className="form-label text-muted">النقاط</label>
@@ -634,9 +740,19 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
                       type="number"
                       min="1"
                       value={questionForm.points}
-                      onChange={(event) => setQuestionForm({ ...questionForm, points: event.target.value })}
-                      className="form-control custom-input"
+                      onChange={(event) => {
+                        const nextForm = { ...questionForm, points: event.target.value };
+                        setQuestionForm(nextForm);
+                        if (questionTouched.points) setQuestionErrors(validateQuestionForm(nextForm));
+                      }}
+                      onBlur={() => {
+                        setQuestionTouched((current) => ({ ...current, points: true }));
+                        setQuestionErrors(validateQuestionForm());
+                      }}
+                      className={`form-control custom-input${invalidClass(questionTouched.points && questionErrors.points)}`}
+                      {...invalidProps(questionTouched.points && questionErrors.points, 'question-points-error')}
                     />
+                    <FieldError id="question-points-error" message={questionTouched.points && questionErrors.points} />
                   </div>
                   <div className="col-6 col-lg-2">
                     <label className="form-label text-muted">الترتيب</label>
@@ -644,9 +760,19 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
                       type="number"
                       min="0"
                       value={questionForm.order}
-                      onChange={(event) => setQuestionForm({ ...questionForm, order: event.target.value })}
-                      className="form-control custom-input"
+                      onChange={(event) => {
+                        const nextForm = { ...questionForm, order: event.target.value };
+                        setQuestionForm(nextForm);
+                        if (questionTouched.order) setQuestionErrors(validateQuestionForm(nextForm));
+                      }}
+                      onBlur={() => {
+                        setQuestionTouched((current) => ({ ...current, order: true }));
+                        setQuestionErrors(validateQuestionForm());
+                      }}
+                      className={`form-control custom-input${invalidClass(questionTouched.order && questionErrors.order)}`}
+                      {...invalidProps(questionTouched.order && questionErrors.order, 'question-order-error')}
                     />
+                    <FieldError id="question-order-error" message={questionTouched.order && questionErrors.order} />
                   </div>
                 </div>
 
@@ -655,6 +781,7 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
                     <h3 className="h6 text-white mb-0">الخيارات</h3>
                     <button type="button" onClick={addQuestionOption} className="btn btn-secondary-cta btn-sm">إضافة خيار</button>
                   </div>
+                  <FieldError id="question-options-error" message={questionTouched.options && questionErrors.options} />
                   {questionForm.options.map((option, index) => (
                     <div key={index} className="row g-2 align-items-center">
                       <div className="col-auto">
@@ -670,11 +797,26 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
                       <div className="col">
                         <input
                           value={option.option_text}
-                          onChange={(event) => updateQuestionOption(index, 'option_text', event.target.value)}
-                          className="form-control custom-input"
+                          onChange={(event) => {
+                            const nextOptions = questionForm.options.map((currentOption, optionIndex) => (
+                              optionIndex === index
+                                ? { ...currentOption, option_text: event.target.value }
+                                : currentOption
+                            ));
+                            const nextForm = { ...questionForm, options: nextOptions };
+                            updateQuestionOption(index, 'option_text', event.target.value);
+                            if (questionTouched.options) setQuestionErrors(validateQuestionForm(nextForm));
+                          }}
+                          onBlur={() => {
+                            setQuestionTouched((current) => ({ ...current, options: true }));
+                            setQuestionErrors(validateQuestionForm());
+                          }}
+                          className={`form-control custom-input${invalidClass(questionTouched.options && questionErrors[`options.${index}.option_text`])}`}
                           placeholder={`الخيار ${index + 1}`}
                           required
+                          {...invalidProps(questionTouched.options && questionErrors[`options.${index}.option_text`], `question-option-${index}-error`)}
                         />
+                        <FieldError id={`question-option-${index}-error`} message={questionTouched.options && questionErrors[`options.${index}.option_text`]} />
                       </div>
                       <div className="col-auto">
                         <button type="button" onClick={() => removeQuestionOption(index)} className="btn text-danger border-0" disabled={questionForm.options.length <= 2}>

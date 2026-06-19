@@ -3,6 +3,11 @@ import { createPortal } from 'react-dom';
 import { FiCamera, FiEye, FiEyeOff, FiLock, FiUser } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
+import { FieldError } from '../components/FormValidation';
+import { hasValidationErrors, invalidClass, invalidProps, normalizeLaravelErrors, validateFields, validators } from '../utils/validation';
+
+const PROFILE_IMAGE_MAX_BYTES = 4 * 1024 * 1024;
+const PROFILE_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
 
 function PasswordInput({
   id,
@@ -13,6 +18,8 @@ function PasswordInput({
   onToggle,
   autoComplete,
   minLength,
+  error,
+  onBlur,
 }) {
   const visibilityLabel = visible ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور';
 
@@ -25,12 +32,14 @@ function PasswordInput({
           type={visible ? 'text' : 'password'}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="profile-input profile-password-input"
+          onBlur={onBlur}
+          className={`profile-input profile-password-input${invalidClass(error)}`}
           placeholder="••••••••"
           required
           minLength={minLength}
           autoComplete={autoComplete}
           dir="ltr"
+          {...invalidProps(error, `${id}-error`)}
         />
         <button
           type="button"
@@ -44,6 +53,7 @@ function PasswordInput({
           {visible ? <FiEyeOff aria-hidden="true" /> : <FiEye aria-hidden="true" />}
         </button>
       </div>
+      <FieldError id={`${id}-error`} message={error} />
     </div>
   );
 }
@@ -54,10 +64,14 @@ export default function ProfileSettings() {
   const [name, setName] = useState('');
   const [profileImageFile, setProfileImageFile] = useState(null);
   const [profileImagePreview, setProfileImagePreview] = useState(null);
+  const [profileErrors, setProfileErrors] = useState({});
+  const [profileTouched, setProfileTouched] = useState({});
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirmation, setNewPasswordConfirmation] = useState('');
+  const [passwordErrors, setPasswordErrors] = useState({});
+  const [passwordTouched, setPasswordTouched] = useState({});
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
@@ -89,6 +103,37 @@ export default function ProfileSettings() {
     }, 3000);
   };
 
+  const profileSchema = {
+    name: [
+      validators.required('الاسم مطلوب.'),
+      validators.minLength(2, 'يجب ألا يقل الاسم عن حرفين.'),
+      validators.maxLength(100, 'يجب ألا يتجاوز الاسم 100 حرف.'),
+    ],
+    profile_image: [
+      validators.fileType(PROFILE_IMAGE_TYPES, 'صيغة الصورة غير مدعومة. استخدم JPEG أو PNG أو JPG أو GIF أو WebP.'),
+      validators.fileSize(PROFILE_IMAGE_MAX_BYTES, 'حجم الصورة يجب ألا يتجاوز 4MB.'),
+    ],
+  };
+
+  const passwordSchema = {
+    current_password: [validators.required('كلمة المرور الحالية مطلوبة.')],
+    new_password: [
+      validators.required('كلمة المرور الجديدة مطلوبة.'),
+      validators.minLength(8, 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.'),
+    ],
+    new_password_confirmation: [
+      validators.required('تأكيد كلمة المرور مطلوب.'),
+      validators.sameAs('new_password', 'كلمتا المرور غير متطابقتين.'),
+    ],
+  };
+
+  const profileValues = () => ({ name, profile_image: profileImageFile });
+  const passwordValues = () => ({
+    current_password: currentPassword,
+    new_password: newPassword,
+    new_password_confirmation: newPasswordConfirmation,
+  });
+
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
 
@@ -96,10 +141,17 @@ export default function ProfileSettings() {
 
     setProfileImageFile(file);
     setProfileImagePreview(URL.createObjectURL(file));
+    setProfileTouched((current) => ({ ...current, profile_image: true }));
+    setProfileErrors(validateFields({ name, profile_image: file }, profileSchema));
   };
 
   const handleProfileSubmit = async (event) => {
     event.preventDefault();
+    const nextErrors = validateFields(profileValues(), profileSchema);
+    setProfileTouched({ name: true, profile_image: true });
+    setProfileErrors(nextErrors);
+    if (hasValidationErrors(nextErrors)) return;
+
     setIsUpdatingProfile(true);
 
     try {
@@ -127,9 +179,13 @@ export default function ProfileSettings() {
       }
 
       showToast('تم تحديث البيانات بنجاح');
+      setProfileErrors({});
+      setProfileTouched({});
     } catch (error) {
       if (error.status === 422 && error.data?.errors) {
-        showToast(Object.values(error.data.errors).flat().join('\n'), 'error');
+        const serverErrors = normalizeLaravelErrors(error);
+        setProfileErrors(serverErrors);
+        setProfileTouched({ name: true, profile_image: true });
       } else {
         showToast(error.message || 'فشل تحديث البيانات', 'error');
       }
@@ -140,6 +196,15 @@ export default function ProfileSettings() {
 
   const handlePasswordSubmit = async (event) => {
     event.preventDefault();
+    const nextErrors = validateFields(passwordValues(), passwordSchema);
+    setPasswordTouched({
+      current_password: true,
+      new_password: true,
+      new_password_confirmation: true,
+    });
+    setPasswordErrors(nextErrors);
+    if (hasValidationErrors(nextErrors)) return;
+
     setIsUpdatingPassword(true);
 
     try {
@@ -160,10 +225,18 @@ export default function ProfileSettings() {
       setShowCurrent(false);
       setShowNew(false);
       setShowConfirm(false);
+      setPasswordErrors({});
+      setPasswordTouched({});
       showToast('تم تغيير كلمة المرور بنجاح');
     } catch (error) {
       if (error.status === 422 && error.data?.errors) {
-        showToast(Object.values(error.data.errors).flat().join('\n'), 'error');
+        const serverErrors = normalizeLaravelErrors(error);
+        setPasswordErrors(serverErrors);
+        setPasswordTouched({
+          current_password: true,
+          new_password: true,
+          new_password_confirmation: true,
+        });
       } else {
         showToast(error.message || 'فشل تغيير كلمة المرور', 'error');
       }
@@ -215,6 +288,7 @@ export default function ProfileSettings() {
                   accept="image/*"
                   className="visually-hidden"
                   onChange={handleFileChange}
+                  {...invalidProps(profileTouched.profile_image && profileErrors.profile_image, 'profile-image-error')}
                 />
                 <span className="profile-avatar-preview">
                   {profileImagePreview ? (
@@ -233,18 +307,31 @@ export default function ProfileSettings() {
               </div>
             </div>
 
+            <FieldError id="profile-image-error" message={profileTouched.profile_image && profileErrors.profile_image} />
+
             <div className="profile-field">
               <label className="profile-label" htmlFor="profile-name">الاسم</label>
               <input
                 id="profile-name"
                 type="text"
-                className="profile-input"
+                className={`profile-input${invalidClass(profileTouched.name && profileErrors.name)}`}
                 value={name}
-                onChange={(event) => setName(event.target.value)}
+                onChange={(event) => {
+                  setName(event.target.value);
+                  if (profileTouched.name) {
+                    setProfileErrors(validateFields({ name: event.target.value, profile_image: profileImageFile }, profileSchema));
+                  }
+                }}
+                onBlur={() => {
+                  setProfileTouched((current) => ({ ...current, name: true }));
+                  setProfileErrors(validateFields(profileValues(), profileSchema));
+                }}
                 placeholder="الاسم الكامل"
                 autoComplete="name"
                 required
+                {...invalidProps(profileTouched.name && profileErrors.name, 'profile-name-error')}
               />
+              <FieldError id="profile-name-error" message={profileTouched.name && profileErrors.name} />
             </div>
 
             <div className="profile-field">
@@ -289,6 +376,11 @@ export default function ProfileSettings() {
               visible={showCurrent}
               onToggle={() => setShowCurrent((current) => !current)}
               autoComplete="current-password"
+              error={passwordTouched.current_password && passwordErrors.current_password}
+              onBlur={() => {
+                setPasswordTouched((current) => ({ ...current, current_password: true }));
+                setPasswordErrors(validateFields(passwordValues(), passwordSchema));
+              }}
             />
             <PasswordInput
               id="profile-new-password"
@@ -299,6 +391,11 @@ export default function ProfileSettings() {
               onToggle={() => setShowNew((current) => !current)}
               autoComplete="new-password"
               minLength={8}
+              error={passwordTouched.new_password && passwordErrors.new_password}
+              onBlur={() => {
+                setPasswordTouched((current) => ({ ...current, new_password: true }));
+                setPasswordErrors(validateFields(passwordValues(), passwordSchema));
+              }}
             />
             <PasswordInput
               id="profile-confirm-password"
@@ -309,6 +406,11 @@ export default function ProfileSettings() {
               onToggle={() => setShowConfirm((current) => !current)}
               autoComplete="new-password"
               minLength={8}
+              error={passwordTouched.new_password_confirmation && passwordErrors.new_password_confirmation}
+              onBlur={() => {
+                setPasswordTouched((current) => ({ ...current, new_password_confirmation: true }));
+                setPasswordErrors(validateFields(passwordValues(), passwordSchema));
+              }}
             />
 
             <button

@@ -1803,3 +1803,43 @@ body.mobile-menu-open {
   border: 1px solid rgba(255, 215, 0, 0.5) !important;
   border-left: 4px solid #FFD700 !important;
 }
+
+.form-validation-error {
+  color: #ffb4ab;
+  font-size: 11.5px;
+  font-family: var(--font-sans);
+  margin-top: 5px;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.form-validation-error::before {
+  content: '!';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  background: rgba(255, 180, 171, 0.15);
+  border: 1px solid rgba(255, 180, 171, 0.3);
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.is-invalid,
+.custom-input.is-invalid,
+.auth-input.is-invalid {
+  border-color: rgba(255, 82, 82, 0.5) !important;
+  box-shadow: 0 0 8px rgba(255, 82, 82, 0.1) !important;
+}
+
+.is-invalid:focus,
+.custom-input.is-invalid:focus,
+.auth-input.is-invalid:focus {
+  border-color: rgba(255, 82, 82, 0.8) !important;
+  box-shadow: 0 0 12px rgba(255, 82, 82, 0.2) !important;
+}

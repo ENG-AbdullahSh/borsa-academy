@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL, apiHeaders } from '../utils/api';
+import { FieldError } from '../components/FormValidation';
+import { hasValidationErrors, invalidClass, invalidProps, normalizeLaravelErrors, validateFields, validators } from '../utils/validation';
 
 export default function AdminChatRooms() {
   const { user, token } = useAuth();
@@ -23,6 +25,38 @@ export default function AdminChatRooms() {
     is_live: false,
     start_now: false,
   });
+  const [formErrors, setFormErrors] = useState({});
+  const [formTouched, setFormTouched] = useState({});
+
+  const validateRoom = (values = formData) => {
+    const errors = validateFields(values, {
+      name: [
+        validators.required('اسم الغرفة مطلوب.'),
+        validators.maxLength(255, 'يجب ألا يتجاوز اسم الغرفة 255 حرفاً.'),
+      ],
+    });
+
+    if (values.audience_type === 'course_id' && !values.course_id) {
+      errors.course_id = 'اختيار الكورس مطلوب عند استهداف طلاب كورس محدد.';
+    }
+
+    return errors;
+  };
+
+  const updateForm = (patch) => {
+    setFormData((current) => {
+      const next = { ...current, ...patch };
+      if (Object.keys(formTouched).length) {
+        setFormErrors(validateRoom(next));
+      }
+      return next;
+    });
+  };
+
+  const touchField = (field) => {
+    setFormTouched((current) => ({ ...current, [field]: true }));
+    setFormErrors(validateRoom());
+  };
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -99,11 +133,19 @@ export default function AdminChatRooms() {
         start_now: false,
       });
     }
+    setFormErrors({});
+    setFormTouched({});
     setShowModal(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const touchedFields = { name: true, course_id: true };
+    const nextErrors = validateRoom();
+    setFormTouched(touchedFields);
+    setFormErrors(nextErrors);
+    if (hasValidationErrors(nextErrors)) return;
+
     try {
       const url = editingRoom
         ? `${API_BASE_URL}/admin/chat-rooms/${editingRoom.id}`
@@ -138,9 +180,17 @@ export default function AdminChatRooms() {
       const data = await response.json();
       if (data.status === 'success') {
         setShowModal(false);
+        setFormErrors({});
+        setFormTouched({});
         fetchRooms();
         showToast(editingRoom ? 'تم تحديث الغرفة بنجاح' : 'تم إنشاء الغرفة وإضافة المشتركين بنجاح');
       } else {
+        const serverErrors = normalizeLaravelErrors(data);
+        if (Object.keys(serverErrors).length) {
+          setFormErrors(serverErrors);
+          setFormTouched(touchedFields);
+          return;
+        }
         const errMsg = data.errors
           ? Object.values(data.errors).flat().join(' | ')
           : (data.message || 'حدث خطأ');
@@ -274,12 +324,15 @@ export default function AdminChatRooms() {
                     <label className="form-label text-white">اسم الغرفة</label>
                     <input
                       type="text"
-                      className="form-control"
+                      className={`form-control${invalidClass(formTouched.name && formErrors.name)}`}
                       style={{ backgroundColor: '#2a2d31', color: '#fff', border: '1px solid #444' }}
                       required
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) => updateForm({ name: e.target.value })}
+                      onBlur={() => touchField('name')}
+                      {...invalidProps(formTouched.name && formErrors.name, 'chat-room-name-error')}
                     />
+                    <FieldError id="chat-room-name-error" message={formTouched.name && formErrors.name} />
                   </div>
 
                   {/* Type */}
@@ -289,7 +342,7 @@ export default function AdminChatRooms() {
                       className="form-select"
                       style={{ backgroundColor: '#2a2d31', color: '#fff', border: '1px solid #444' }}
                       value={formData.type}
-                      onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                      onChange={(e) => updateForm({ type: e.target.value })}
                     >
                       <option value="group">مجموعة (Group Chat)</option>
                       <option value="global">عامة (للجميع)</option>
@@ -303,7 +356,7 @@ export default function AdminChatRooms() {
                       className="form-select"
                       style={{ backgroundColor: '#2a2d31', color: '#fff', border: '1px solid #444' }}
                       value={formData.audience_type}
-                      onChange={(e) => setFormData({ ...formData, audience_type: e.target.value })}
+                      onChange={(e) => updateForm({ audience_type: e.target.value, course_id: e.target.value === 'course_id' ? formData.course_id : '' })}
                     >
                       <option value="all">جميع المستخدمين</option>
                       <option value="course_id">طلاب كورس محدد</option>
@@ -316,17 +369,20 @@ export default function AdminChatRooms() {
                     <div className="mb-3">
                       <label className="form-label text-white">اختر الكورس</label>
                       <select
-                        className="form-select"
+                        className={`form-select${invalidClass(formTouched.course_id && formErrors.course_id)}`}
                         style={{ backgroundColor: '#2a2d31', color: '#fff', border: '1px solid #444' }}
                         required
                         value={formData.course_id}
-                        onChange={(e) => setFormData({ ...formData, course_id: e.target.value })}
+                        onChange={(e) => updateForm({ course_id: e.target.value })}
+                        onBlur={() => touchField('course_id')}
+                        {...invalidProps(formTouched.course_id && formErrors.course_id, 'chat-room-course-error')}
                       >
                         <option value="">-- اختر الكورس --</option>
                         {courses.map(c => (
                           <option key={c.id} value={c.id}>{c.title}</option>
                         ))}
                       </select>
+                      <FieldError id="chat-room-course-error" message={formTouched.course_id && formErrors.course_id} />
                     </div>
                   )}
 
@@ -342,7 +398,7 @@ export default function AdminChatRooms() {
                       type="checkbox"
                       id="startNow"
                       checked={formData.start_now}
-                      onChange={(e) => setFormData({ ...formData, start_now: e.target.checked, is_live: e.target.checked, scheduled_at: '' })}
+                      onChange={(e) => updateForm({ start_now: e.target.checked, is_live: e.target.checked, scheduled_at: '' })}
                     />
                     <label className="form-check-label text-white ms-2" htmlFor="startNow">
                       🔴 <strong>بدء بث مباشر الآن فوراً</strong>
@@ -357,7 +413,7 @@ export default function AdminChatRooms() {
                         type="checkbox"
                         id="isLive"
                         checked={formData.is_live}
-                        onChange={(e) => setFormData({ ...formData, is_live: e.target.checked })}
+                        onChange={(e) => updateForm({ is_live: e.target.checked })}
                       />
                       <label className="form-check-label text-white ms-2" htmlFor="isLive">
                         🟢 <strong>تفعيل الغرفة للبث والمحادثة (نشطة الآن)</strong>
@@ -374,7 +430,7 @@ export default function AdminChatRooms() {
                         className="form-control"
                         style={{ backgroundColor: '#2a2d31', color: '#fff', border: '1px solid #444' }}
                         value={formData.scheduled_at}
-                        onChange={(e) => setFormData({ ...formData, scheduled_at: e.target.value })}
+                        onChange={(e) => updateForm({ scheduled_at: e.target.value })}
                       />
                       <small className="text-muted d-block mt-1">
                         الوقت بتوقيتك المحلي • سيُرسل إشعار للطلاب قبل الموعد بـ 30 دقيقة تلقائياً

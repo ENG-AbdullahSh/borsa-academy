@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { useSettings } from '../context/SettingsContext';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
+import { FieldError } from '../components/FormValidation';
+import { hasValidationErrors, invalidClass, invalidProps, normalizeLaravelErrors, validateFields, validators } from '../utils/validation';
 import '../styles/auth.css';
 import borsaLogo from '../assets/Borsa Academy.jpeg';
 
@@ -36,7 +38,30 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [touched, setTouched] = useState({});
   const [resendTimer, setResendTimer] = useState(0);
+
+  const passwordValues = { password, password_confirmation: passwordConfirmation };
+  const passwordSchema = {
+    password: [
+      validators.required('كلمة المرور مطلوبة.'),
+      validators.minLength(8, 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.'),
+    ],
+    password_confirmation: [
+      validators.required('تأكيد كلمة المرور مطلوب.'),
+      validators.sameAs('password', 'كلمتا المرور غير متطابقتين.'),
+    ],
+  };
+
+  const applyServerFieldErrors = (err, fields) => {
+    const serverErrors = normalizeLaravelErrors(err);
+    if (!Object.keys(serverErrors).length) return false;
+
+    setFieldErrors(serverErrors);
+    setTouched(fields.reduce((result, field) => ({ ...result, [field]: true }), {}));
+    return true;
+  };
 
   useEffect(() => {
     let timer;
@@ -49,12 +74,26 @@ export default function ForgotPassword() {
   const sendCode = async (e) => {
     if (e) e.preventDefault();
     setError('');
+    setTouched({ email: true });
+
+    const emailErrors = validateFields(
+      { email },
+      {
+        email: [
+          validators.required('يرجى إدخال البريد الإلكتروني.'),
+          validators.email('يرجى إدخال بريد إلكتروني صحيح.'),
+        ],
+      },
+    );
+    setFieldErrors(emailErrors);
+    if (hasValidationErrors(emailErrors)) return;
 
     if (!email.trim()) {
       setError('يرجى إدخال البريد الإلكتروني.');
       return;
     }
 
+    setFieldErrors({});
     setLoading(true);
 
     try {
@@ -70,6 +109,7 @@ export default function ForgotPassword() {
       setResendTimer(60);
       setCodeDigits(['', '', '', '', '', '']);
     } catch (err) {
+      if (applyServerFieldErrors(err, ['email'])) return;
       setError(getErrorMessage(err, 'حدث خطأ أثناء إرسال الكود. حاول مرة أخرى.'));
     } finally {
       setLoading(false);
@@ -113,14 +153,17 @@ export default function ForgotPassword() {
   const verifyCode = async (e) => {
     e.preventDefault();
     setError('');
+    setTouched({ token: true });
     
     const fullCode = codeDigits.join('');
 
     if (fullCode.length < 6) {
+      setFieldErrors({ token: 'يرجى إدخال الكود المكون من 6 أرقام بشكل كامل.' });
       setError('يرجى إدخال الكود المكون من 6 أرقام بشكل كامل.');
       return;
     }
 
+    setFieldErrors({});
     setLoading(true);
 
     try {
@@ -133,7 +176,10 @@ export default function ForgotPassword() {
 
       setMessage(data.message || 'تم التحقق من الكود. اختر كلمة مرور جديدة.');
       setStep('password');
+      setTouched({});
+      setFieldErrors({});
     } catch (err) {
+      if (applyServerFieldErrors(err, ['email', 'token'])) return;
       setError(getErrorMessage(err, 'الكود غير صحيح أو انتهت صلاحيته.'));
     } finally {
       setLoading(false);
@@ -143,6 +189,11 @@ export default function ForgotPassword() {
   const resetPassword = async (e) => {
     e.preventDefault();
     setError('');
+    setTouched({ password: true, password_confirmation: true });
+
+    const passwordErrors = validateFields(passwordValues, passwordSchema);
+    setFieldErrors(passwordErrors);
+    if (hasValidationErrors(passwordErrors)) return;
 
     if (!password || !passwordConfirmation) {
       setError('يرجى تعبئة جميع الحقول المطلوبة.');
@@ -177,6 +228,7 @@ export default function ForgotPassword() {
       setStep('success');
       setTimeout(() => navigate('/signin', { replace: true }), 2500);
     } catch (err) {
+      if (applyServerFieldErrors(err, ['email', 'token', 'password', 'password_confirmation'])) return;
       setError(getErrorMessage(err, 'تعذر تحديث كلمة المرور. حاول مرة أخرى.'));
     } finally {
       setLoading(false);
@@ -264,13 +316,30 @@ export default function ForgotPassword() {
                     <input
                       id="forgot-email"
                       type="email"
-                      className="auth-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
+                      className={`auth-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]${invalidClass(touched.email && fieldErrors.email)}`}
                       placeholder="name@gmail.com"
                       value={email}
-                      onChange={e => setEmail(e.target.value)}
+                      onChange={e => {
+                        setEmail(e.target.value);
+                        if (touched.email) {
+                          const nextErrors = validateFields(
+                            { email: e.target.value },
+                            {
+                              email: [
+                                validators.required('يرجى إدخال البريد الإلكتروني.'),
+                                validators.email('يرجى إدخال بريد إلكتروني صحيح.'),
+                              ],
+                            },
+                          );
+                          setFieldErrors(nextErrors);
+                        }
+                      }}
+                      onBlur={() => setTouched({ email: true })}
                       autoComplete="email"
                       required
+                      {...invalidProps(touched.email && fieldErrors.email, 'forgot-email-error')}
                     />
+                    <FieldError id="forgot-email-error" message={touched.email && fieldErrors.email} />
                   </div>
                   <button type="submit" className="auth-cta-btn" disabled={loading}>
                     {loading && <span className="auth-spinner" />}
@@ -295,7 +364,7 @@ export default function ForgotPassword() {
                           onChange={(e) => handleDigitChange(index, e.target.value)}
                           onKeyDown={(e) => handleKeyDown(index, e)}
                           onPaste={index === 0 ? handlePaste : undefined}
-                          className="auth-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
+                          className={`auth-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]${invalidClass(touched.token && fieldErrors.token)}`}
                           style={{
                             width: '45px',
                             height: '50px',
@@ -305,9 +374,11 @@ export default function ForgotPassword() {
                             borderRadius: '8px',
                           }}
                           required
+                          {...invalidProps(touched.token && fieldErrors.token, 'forgot-token-error')}
                         />
                       ))}
                     </div>
+                    <FieldError id="forgot-token-error" message={touched.token && fieldErrors.token} />
                   </div>
                   <button type="submit" className="auth-cta-btn" disabled={loading}>
                     {loading && <span className="auth-spinner" />}
@@ -341,16 +412,27 @@ export default function ForgotPassword() {
                       <input
                         id="new-password"
                         type={showPassword ? 'text' : 'password'}
-                        className="auth-input auth-password-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
+                        className={`auth-input auth-password-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]${invalidClass(touched.password && fieldErrors.password)}`}
                         value={password}
-                        onChange={e => setPassword(e.target.value)}
+                        onChange={e => {
+                          setPassword(e.target.value);
+                          if (touched.password || touched.password_confirmation) {
+                            setFieldErrors(validateFields(
+                              { ...passwordValues, password: e.target.value },
+                              passwordSchema,
+                            ));
+                          }
+                        }}
+                        onBlur={() => setTouched((current) => ({ ...current, password: true }))}
                         required
                         minLength={8}
+                        {...invalidProps(touched.password && fieldErrors.password, 'forgot-password-error')}
                       />
                       <button type="button" className="auth-password-toggle" onClick={() => setShowPassword(current => !current)}>
                         {showPassword ? <FiEyeOff /> : <FiEye />}
                       </button>
                     </div>
+                    <FieldError id="forgot-password-error" message={touched.password && fieldErrors.password} />
                   </div>
 
                   <div className="auth-field mb-6 mt-4">
@@ -359,16 +441,27 @@ export default function ForgotPassword() {
                       <input
                         id="new-password-confirmation"
                         type={showPasswordConfirmation ? 'text' : 'password'}
-                        className="auth-input auth-password-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]"
+                        className={`auth-input auth-password-input bg-[#0B0F19] border-white/5 focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676]${invalidClass(touched.password_confirmation && fieldErrors.password_confirmation)}`}
                         value={passwordConfirmation}
-                        onChange={e => setPasswordConfirmation(e.target.value)}
+                        onChange={e => {
+                          setPasswordConfirmation(e.target.value);
+                          if (touched.password_confirmation) {
+                            setFieldErrors(validateFields(
+                              { ...passwordValues, password_confirmation: e.target.value },
+                              passwordSchema,
+                            ));
+                          }
+                        }}
+                        onBlur={() => setTouched((current) => ({ ...current, password_confirmation: true }))}
                         required
                         minLength={8}
+                        {...invalidProps(touched.password_confirmation && fieldErrors.password_confirmation, 'forgot-password-confirmation-error')}
                       />
                       <button type="button" className="auth-password-toggle" onClick={() => setShowPasswordConfirmation(current => !current)}>
                         {showPasswordConfirmation ? <FiEyeOff /> : <FiEye />}
                       </button>
                     </div>
+                    <FieldError id="forgot-password-confirmation-error" message={touched.password_confirmation && fieldErrors.password_confirmation} />
                   </div>
 
                   <button type="submit" className="auth-cta-btn" disabled={loading}>

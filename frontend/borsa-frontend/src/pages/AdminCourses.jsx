@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNotification } from '../context/NotificationContext';
+import { FieldError } from '../components/FormValidation';
+import { hasValidationErrors, invalidClass, invalidProps, normalizeLaravelErrors, validateFields, validators } from '../utils/validation';
 
 const ADMIN_COURSES_API_URL = 'http://127.0.0.1:8000/api/admin/courses';
 
@@ -44,6 +46,33 @@ const DEFAULT_CATEGORIES = [
   'التداول الخوارزمي',
   'إدارة المحافظ',
 ];
+
+const IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/svg+xml'];
+
+const COURSE_SCHEMA = {
+  title: [
+    validators.required('عنوان الكورس مطلوب.'),
+    validators.maxLength(255, 'يجب ألا يتجاوز عنوان الكورس 255 حرفاً.'),
+  ],
+  slug: [validators.maxLength(191, 'يجب ألا يتجاوز الرابط المختصر 191 حرفاً.')],
+  short_description: [
+    validators.required('الوصف القصير مطلوب.'),
+    validators.maxLength(500, 'يجب ألا يتجاوز الوصف القصير 500 حرف.'),
+  ],
+  description: [validators.required('الوصف الكامل مطلوب.')],
+  price: [validators.required('السعر مطلوب.'), validators.number({ min: 0, max: 99999999.99 })],
+  category: [
+    validators.required('التصنيف مطلوب.'),
+    validators.maxLength(191, 'يجب ألا يتجاوز التصنيف 191 حرفاً.'),
+  ],
+  instructor_id: [validators.required('اختيار المدرب مطلوب.')],
+  duration_hours: [validators.required('عدد الساعات مطلوب.'), validators.number({ min: 1, max: 1000 })],
+  file: [
+    validators.fileType(IMAGE_TYPES, 'صيغة صورة الغلاف غير مدعومة. استخدم JPEG أو PNG أو JPG أو GIF أو SVG.'),
+    validators.fileSize(IMAGE_MAX_BYTES, 'حجم صورة الغلاف يجب ألا يتجاوز 10MB.'),
+  ],
+};
 
 const getLevelLabel = (level) => LEVEL_OPTIONS.find((item) => item.value === level)?.label || level;
 const getStatusLabel = (status) => STATUS_OPTIONS.find((item) => item.value === status)?.label || status;
@@ -111,7 +140,17 @@ function courseToForm(course) {
   };
 }
 
-function CourseForm({ form, onChange, onSubmit, submitting, submitLabel, compact = false }) {
+function CourseForm({
+  form,
+  onChange,
+  onSubmit,
+  submitting,
+  submitLabel,
+  compact = false,
+  errors = {},
+  touched = {},
+  onBlur,
+}) {
   const [dragActive, setDragActive] = useState(false);
 
   const handleDrag = (e) => {
@@ -153,37 +192,45 @@ function CourseForm({ form, onChange, onSubmit, submitting, submitLabel, compact
     onChange({ ...form, [name]: value });
   };
 
+  const errorFor = (field) => touched[field] && errors[field];
+
   return (
     <form onSubmit={onSubmit} className="d-flex flex-column gap-3" style={{ direction: 'rtl' }}>
       <div className="row g-3">
         <div className="col-12 col-lg-6">
           <label className="form-label text-muted" style={{ fontSize: '12px' }}>عنوان الكورس</label>
-          <input name="title" value={form.title} onChange={handleChange} className="form-control custom-input" required maxLength={255} />
+          <input name="title" value={form.title} onChange={handleChange} onBlur={() => onBlur?.('title')} className={`form-control custom-input${invalidClass(errorFor('title'))}`} required maxLength={255} {...invalidProps(errorFor('title'), 'course-title-error')} />
+          <FieldError id="course-title-error" message={errorFor('title')} />
         </div>
         <div className="col-12 col-lg-6">
           <label className="form-label text-muted" style={{ fontSize: '12px' }}>الرابط المختصر اختياري</label>
-          <input name="slug" value={form.slug} onChange={handleChange} className="form-control custom-input" maxLength={191} placeholder="advanced-trading-course" style={{ direction: 'ltr', textAlign: 'left' }} />
+          <input name="slug" value={form.slug} onChange={handleChange} onBlur={() => onBlur?.('slug')} className={`form-control custom-input${invalidClass(errorFor('slug'))}`} maxLength={191} placeholder="advanced-trading-course" style={{ direction: 'ltr', textAlign: 'left' }} {...invalidProps(errorFor('slug'), 'course-slug-error')} />
+          <FieldError id="course-slug-error" message={errorFor('slug')} />
         </div>
         <div className="col-12 col-lg-4">
           <label className="form-label text-muted" style={{ fontSize: '12px' }}>المدرب</label>
-          <select name="instructor_id" value={form.instructor_id} onChange={handleChange} className="form-select custom-input" required>
+          <select name="instructor_id" value={form.instructor_id} onChange={handleChange} onBlur={() => onBlur?.('instructor_id')} className={`form-select custom-input${invalidClass(errorFor('instructor_id'))}`} required {...invalidProps(errorFor('instructor_id'), 'course-instructor-error')}>
              <option value="" disabled>اختر المدرب</option>
              {form.available_instructors?.map(inst => (
                <option key={inst.id} value={inst.id}>{inst.name || inst.user?.name}</option>
              ))}
           </select>
+          <FieldError id="course-instructor-error" message={errorFor('instructor_id')} />
         </div>
         <div className="col-12 col-lg-4">
           <label className="form-label text-muted" style={{ fontSize: '12px' }}>التصنيف</label>
-          <input name="category" value={form.category} onChange={handleChange} className="form-control custom-input" required maxLength={191} list="admin-course-categories" />
+          <input name="category" value={form.category} onChange={handleChange} onBlur={() => onBlur?.('category')} className={`form-control custom-input${invalidClass(errorFor('category'))}`} required maxLength={191} list="admin-course-categories" {...invalidProps(errorFor('category'), 'course-category-error')} />
+          <FieldError id="course-category-error" message={errorFor('category')} />
         </div>
         <div className="col-6 col-lg-2">
           <label className="form-label text-muted" style={{ fontSize: '12px' }}>السعر</label>
-          <input name="price" type="number" min="0" step="0.01" value={form.price} onChange={handleChange} className="form-control custom-input" required style={{ direction: 'ltr', textAlign: 'left' }} />
+          <input name="price" type="number" min="0" step="0.01" value={form.price} onChange={handleChange} onBlur={() => onBlur?.('price')} className={`form-control custom-input${invalidClass(errorFor('price'))}`} required style={{ direction: 'ltr', textAlign: 'left' }} {...invalidProps(errorFor('price'), 'course-price-error')} />
+          <FieldError id="course-price-error" message={errorFor('price')} />
         </div>
         <div className="col-6 col-lg-2">
           <label className="form-label text-muted" style={{ fontSize: '12px' }}>الساعات</label>
-          <input name="duration_hours" type="number" min="1" max="1000" value={form.duration_hours} onChange={handleChange} className="form-control custom-input" required style={{ direction: 'ltr', textAlign: 'left' }} />
+          <input name="duration_hours" type="number" min="1" max="1000" value={form.duration_hours} onChange={handleChange} onBlur={() => onBlur?.('duration_hours')} className={`form-control custom-input${invalidClass(errorFor('duration_hours'))}`} required style={{ direction: 'ltr', textAlign: 'left' }} {...invalidProps(errorFor('duration_hours'), 'course-duration-error')} />
+          <FieldError id="course-duration-error" message={errorFor('duration_hours')} />
         </div>
         <div className="col-12 col-lg-4">
           <label className="form-label text-muted" style={{ fontSize: '12px' }}>المستوى</label>
@@ -246,17 +293,21 @@ function CourseForm({ form, onChange, onSubmit, submitting, submitLabel, compact
               type="file" 
               accept="image/jpeg, image/png, image/jpg, image/gif, image/svg+xml" 
               className="d-none" 
-              onChange={handleFileChange} 
+              onChange={handleFileChange}
+              {...invalidProps(errorFor('file'), 'course-image-error')}
             />
           </div>
+          <FieldError id="course-image-error" message={errorFor('file')} />
         </div>
         <div className="col-12">
           <label className="form-label text-muted" style={{ fontSize: '12px' }}>وصف قصير</label>
-          <textarea name="short_description" value={form.short_description} onChange={handleChange} className="form-control custom-input" required maxLength={500} rows={compact ? 2 : 3} />
+          <textarea name="short_description" value={form.short_description} onChange={handleChange} onBlur={() => onBlur?.('short_description')} className={`form-control custom-input${invalidClass(errorFor('short_description'))}`} required maxLength={500} rows={compact ? 2 : 3} {...invalidProps(errorFor('short_description'), 'course-short-description-error')} />
+          <FieldError id="course-short-description-error" message={errorFor('short_description')} />
         </div>
         <div className="col-12">
           <label className="form-label text-muted" style={{ fontSize: '12px' }}>الوصف الكامل</label>
-          <textarea name="description" value={form.description} onChange={handleChange} className="form-control custom-input" required rows={compact ? 4 : 5} />
+          <textarea name="description" value={form.description} onChange={handleChange} onBlur={() => onBlur?.('description')} className={`form-control custom-input${invalidClass(errorFor('description'))}`} required rows={compact ? 4 : 5} {...invalidProps(errorFor('description'), 'course-description-error')} />
+          <FieldError id="course-description-error" message={errorFor('description')} />
         </div>
       </div>
 
@@ -300,6 +351,10 @@ export default function AdminCourses() {
   const [levelFilter, setLevelFilter] = useState('');
   const [addForm, setAddForm] = useState(EMPTY_FORM);
   const [editForm, setEditForm] = useState(EMPTY_FORM);
+  const [addErrors, setAddErrors] = useState({});
+  const [addTouched, setAddTouched] = useState({});
+  const [editErrors, setEditErrors] = useState({});
+  const [editTouched, setEditTouched] = useState({});
   const [editingCourse, setEditingCourse] = useState(null);
   const [deletingCourse, setDeletingCourse] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -322,6 +377,29 @@ export default function AdminCourses() {
     published: courses.filter((course) => course.status === 'published').length,
     draft: courses.filter((course) => course.status === 'draft').length,
   }), [courses, pagination.total]);
+
+  const validateCourse = (form) => validateFields(form, COURSE_SCHEMA);
+
+  const touchCourseFields = () => ({
+    title: true,
+    slug: true,
+    short_description: true,
+    description: true,
+    price: true,
+    category: true,
+    instructor_id: true,
+    duration_hours: true,
+    file: true,
+  });
+
+  const handleCourseBlur = (mode, field) => {
+    const form = mode === 'edit' ? editForm : addForm;
+    const setTouched = mode === 'edit' ? setEditTouched : setAddTouched;
+    const setErrors = mode === 'edit' ? setEditErrors : setAddErrors;
+
+    setTouched((current) => ({ ...current, [field]: true }));
+    setErrors(validateCourse(form));
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -389,11 +467,23 @@ export default function AdminCourses() {
 
   const submitCourse = async (event, mode) => {
     event.preventDefault();
-    setSubmitting(true);
-
     const isEdit = mode === 'edit';
     const form = isEdit ? editForm : addForm;
     const endpoint = isEdit ? `${ADMIN_COURSES_API_URL}/${editingCourse.id}` : ADMIN_COURSES_API_URL;
+    const nextErrors = validateCourse(form);
+    const touchedFields = touchCourseFields();
+
+    if (isEdit) {
+      setEditTouched(touchedFields);
+      setEditErrors(nextErrors);
+    } else {
+      setAddTouched(touchedFields);
+      setAddErrors(nextErrors);
+    }
+
+    if (hasValidationErrors(nextErrors)) return;
+
+    setSubmitting(true);
 
     try {
       let finalPath = form.image_path;
@@ -438,14 +528,29 @@ export default function AdminCourses() {
 
       if (isEdit) {
         setEditingCourse(null);
+        setEditErrors({});
+        setEditTouched({});
         addNotification({ type: 'success', title: '✅ تم التحديث', message: 'تم تحديث الكورس بنجاح.' });
       } else {
         setAddForm({ ...EMPTY_FORM, available_instructors: addForm.available_instructors });
+        setAddErrors({});
+        setAddTouched({});
         addNotification({ type: 'success', title: '✅ تمت الإضافة', message: 'تمت إضافة الكورس بنجاح!' });
       }
 
       setRefreshKey((current) => current + 1);
     } catch (error) {
+      const serverErrors = normalizeLaravelErrors(error);
+      if (Object.keys(serverErrors).length) {
+        if (isEdit) {
+          setEditErrors(serverErrors);
+          setEditTouched(touchedFields);
+        } else {
+          setAddErrors(serverErrors);
+          setAddTouched(touchedFields);
+        }
+        return;
+      }
       addNotification({ type: 'error', title: '❌ خطأ', message: error.message || 'تعذر حفظ الكورس.' });
     } finally {
       setSubmitting(false);
@@ -520,6 +625,9 @@ export default function AdminCourses() {
             onChange={setAddForm}
             onSubmit={(event) => submitCourse(event, 'create')}
             submitting={submitting && !editingCourse}
+            errors={addErrors}
+            touched={addTouched}
+            onBlur={(field) => handleCourseBlur('create', field)}
             submitLabel="إضافة الكورس"
           />
         </section>
@@ -624,6 +732,9 @@ export default function AdminCourses() {
             onChange={setEditForm}
             onSubmit={(event) => submitCourse(event, 'edit')}
             submitting={submitting}
+            errors={editErrors}
+            touched={editTouched}
+            onBlur={(field) => handleCourseBlur('edit', field)}
             submitLabel="حفظ التعديلات"
             compact
           />

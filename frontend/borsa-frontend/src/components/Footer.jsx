@@ -2,18 +2,33 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaTelegram, FaYoutube, FaXTwitter, FaDiscord } from 'react-icons/fa6';
 import { useSettings } from '../context/SettingsContext';
+import { FieldError } from './FormValidation';
+import { invalidClass, invalidProps, validateFields, validators } from '../utils/validation';
 
 export default function Footer() {
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [touched, setTouched] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const { settings } = useSettings();
+  const schema = {
+    email: [
+      validators.required('البريد الإلكتروني مطلوب.'),
+      validators.email('يرجى إدخال بريد إلكتروني صحيح.'),
+    ],
+  };
 
   const handleSubscribe = (e) => {
     e.preventDefault();
-    if (email) {
+    setTouched(true);
+    const errors = validateFields({ email }, schema);
+    setEmailError(errors.email || '');
+    if (!errors.email) {
       setSubscribed(true);
       setTimeout(() => setSubscribed(false), 3000);
       setEmail('');
+      setEmailError('');
+      setTouched(false);
     }
   };
 
@@ -65,12 +80,23 @@ export default function Footer() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (touched) {
+                      setEmailError(validateFields({ email: e.target.value }, schema).email || '');
+                    }
+                  }}
+                  onBlur={() => {
+                    setTouched(true);
+                    setEmailError(validateFields({ email }, schema).email || '');
+                  }}
                   placeholder="البريد الإلكتروني"
                   required
-                  className="form-control custom-input py-2"
+                  className={`form-control custom-input py-2${invalidClass(touched && emailError)}`}
                   style={{ fontSize: '13px', direction: 'ltr', textAlign: 'left' }}
+                  {...invalidProps(touched && emailError, 'footer-newsletter-email-error')}
                 />
+                <FieldError id="footer-newsletter-email-error" message={touched && emailError} />
                 <button type="submit" className="btn py-2 fw-bold btn-glow" style={{ color: '#003918', fontSize: '13px' }}>
                   اشترك الآن
                 </button>

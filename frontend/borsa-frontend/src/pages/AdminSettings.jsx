@@ -3,6 +3,11 @@ import { useAuth } from '../hooks/useAuth';
 import { useSettings } from '../context/SettingsContext';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
 import { FiUploadCloud, FiImage } from 'react-icons/fi';
+import { FieldError } from '../components/FormValidation';
+import { hasValidationErrors, invalidClass, invalidProps, normalizeLaravelErrors, validateFields, validators } from '../utils/validation';
+
+const LOGO_MAX_BYTES = 5 * 1024 * 1024;
+const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
 
 export default function AdminSettings() {
   const { token } = useAuth();
@@ -20,7 +25,26 @@ export default function AdminSettings() {
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
   const fileInputRef = useRef(null);
+
+  const schema = {
+    academy_name: [
+      validators.required('اسم الأكاديمية مطلوب.'),
+      validators.maxLength(255, 'يجب ألا يتجاوز اسم الأكاديمية 255 حرفاً.'),
+    ],
+    admin_email: [validators.email('صيغة بريد الدعم غير صحيحة.')],
+    logo: [
+      validators.fileType(LOGO_TYPES, 'صيغة الشعار غير مدعومة. استخدم PNG أو JPG أو SVG.'),
+      validators.fileSize(LOGO_MAX_BYTES, 'حجم الشعار يجب ألا يتجاوز 5MB.'),
+    ],
+  };
+
+  const validateSettings = (nextForm = formData, nextFile = selectedFile) => validateFields(
+    { ...nextForm, logo: nextFile },
+    schema,
+  );
 
   // Initialize form with global settings once they load
   useEffect(() => {
@@ -39,7 +63,11 @@ export default function AdminSettings() {
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
-    setFormData(prev => ({ ...prev, [id]: value }));
+    setFormData(prev => {
+      const next = { ...prev, [id]: value };
+      if (touched[id]) setErrors(validateSettings(next, selectedFile));
+      return next;
+    });
   };
 
   const handleFileSelect = (e) => {
@@ -54,6 +82,8 @@ export default function AdminSettings() {
     setSelectedFile(file);
     const objectUrl = URL.createObjectURL(file);
     setFilePreview(objectUrl);
+    setTouched((current) => ({ ...current, logo: true }));
+    setErrors(validateSettings(formData, file));
   };
 
   const uploadLogo = async () => {
@@ -77,6 +107,12 @@ export default function AdminSettings() {
       setIsUploading(false);
       return result.path;
     } catch (error) {
+      const serverErrors = normalizeLaravelErrors(error);
+      if (Object.keys(serverErrors).length) {
+        setErrors(serverErrors);
+        setTouched({ academy_name: true, admin_email: true, logo: true });
+        return;
+      }
       setIsUploading(false);
       console.error('Upload Error:', error);
       throw new Error('فشل رفع شعار الأكاديمية.');
@@ -86,6 +122,11 @@ export default function AdminSettings() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage(null);
+    setTouched({ academy_name: true, admin_email: true, logo: true });
+    const nextErrors = validateSettings();
+    setErrors(nextErrors);
+    if (hasValidationErrors(nextErrors)) return;
+
     setIsSaving(true);
 
     try {
@@ -114,6 +155,8 @@ export default function AdminSettings() {
       // 3. Reload global settings context
       await reloadSettings();
       setSelectedFile(null);
+      setErrors({});
+      setTouched({});
       
     } catch (error) {
       setMessage({ type: 'error', text: error.message || 'حدث خطأ أثناء حفظ الإعدادات.' });
@@ -155,26 +198,38 @@ export default function AdminSettings() {
                   <input
                     id="academy_name"
                     type="text"
-                    className="form-control custom-input py-3 border-0 rounded-3 text-white"
+                    className={`form-control custom-input py-3 border-0 rounded-3 text-white${invalidClass(touched.academy_name && errors.academy_name)}`}
                     placeholder="مثال: بورصة أكاديمي"
                     value={formData.academy_name}
                     onChange={handleInputChange}
+                    onBlur={() => {
+                      setTouched((current) => ({ ...current, academy_name: true }));
+                      setErrors(validateSettings());
+                    }}
                     required
+                    {...invalidProps(touched.academy_name && errors.academy_name, 'settings-academy-name-error')}
                     style={{ background: 'rgba(255,255,255,0.04)' }}
                   />
+                  <FieldError id="settings-academy-name-error" message={touched.academy_name && errors.academy_name} />
                 </div>
                 <div className="col-12 col-md-6">
                   <label className="form-label text-muted fw-semibold" htmlFor="admin_email" style={{ fontSize: '13px' }}>البريد الإلكتروني للدعم/الإدارة</label>
                   <input
                     id="admin_email"
                     type="email"
-                    className="form-control custom-input py-3 border-0 rounded-3 text-white"
+                    className={`form-control custom-input py-3 border-0 rounded-3 text-white${invalidClass(touched.admin_email && errors.admin_email)}`}
                     placeholder="support@borsa.io"
                     value={formData.admin_email}
                     onChange={handleInputChange}
+                    onBlur={() => {
+                      setTouched((current) => ({ ...current, admin_email: true }));
+                      setErrors(validateSettings());
+                    }}
                     dir="ltr"
+                    {...invalidProps(touched.admin_email && errors.admin_email, 'settings-admin-email-error')}
                     style={{ textAlign: 'left', background: 'rgba(255,255,255,0.04)' }}
                   />
+                  <FieldError id="settings-admin-email-error" message={touched.admin_email && errors.admin_email} />
                 </div>
               </div>
 
@@ -238,8 +293,10 @@ export default function AdminSettings() {
                   onChange={handleFileSelect}
                   accept="image/png, image/jpeg, image/jpg, image/svg+xml" 
                   className="d-none"
+                  {...invalidProps(touched.logo && errors.logo, 'settings-logo-error')}
                 />
               </div>
+              <FieldError id="settings-logo-error" message={touched.logo && errors.logo} />
             </section>
           </div>
 

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
+import { FieldError } from '../components/FormValidation';
+import { hasValidationErrors, invalidClass, invalidProps, normalizeLaravelErrors, validateFields, validators } from '../utils/validation';
 import axios from 'axios';
 
 const EMPTY_SECTION_FORM = {
@@ -19,6 +21,10 @@ const EMPTY_LESSON_FORM = {
   is_preview: false,
   is_published: false,
 };
+
+const VIDEO_MAX_BYTES = 500 * 1024 * 1024;
+const PDF_MAX_BYTES = 20 * 1024 * 1024;
+const VIDEO_TYPES = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/webm'];
 
 function validationMessage(error, fallback) {
   if (error?.data?.errors) {
@@ -90,12 +96,60 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
   const [uploadProgress, setUploadProgress] = useState(null);
   const [lessonPdfFile, setLessonPdfFile] = useState(null);
   const [fileInputKey, setFileInputKey] = useState(() => Date.now());
+  const [sectionErrors, setSectionErrors] = useState({});
+  const [sectionTouched, setSectionTouched] = useState({});
+  const [lessonErrors, setLessonErrors] = useState({});
+  const [lessonTouched, setLessonTouched] = useState({});
 
   const headers = useMemo(() => apiHeaders(token), [token]);
   const apiScope = `${API_BASE_URL}/${scope}`;
   const sections = curriculum?.sections || [];
   const selectedCourse = courses.find((course) => String(course.id) === String(selectedCourseId));
   const firstSectionId = sections[0]?.id || '';
+
+  const sectionSchema = {
+    title: [
+      validators.required('عنوان القسم مطلوب.'),
+      validators.maxLength(255, 'يجب ألا يتجاوز عنوان القسم 255 حرفاً.'),
+    ],
+    order: [validators.number({ min: 0, max: 10000 })],
+  };
+
+  const lessonSchema = {
+    section_id: [validators.required('القسم مطلوب.')],
+    title: [
+      validators.required('عنوان الدرس مطلوب.'),
+      validators.maxLength(255, 'يجب ألا يتجاوز عنوان الدرس 255 حرفاً.'),
+    ],
+    video_url: [validators.url('رابط الفيديو يجب أن يبدأ بـ http أو https.')],
+    duration_minutes: [validators.number({ min: 1, max: 10000 })],
+    order: [validators.number({ min: 0, max: 10000 })],
+    video: [
+      validators.required('يرجى رفع ملف فيديو قبل إضافة الدرس.'),
+      validators.fileType(VIDEO_TYPES, 'نوع الفيديو غير مدعوم. ارفع MP4 أو MPEG أو MOV أو WebM.'),
+      validators.fileSize(VIDEO_MAX_BYTES, 'حجم الفيديو يجب ألا يتجاوز 500MB.'),
+    ],
+    pdf: [
+      validators.fileType(['application/pdf', '.pdf'], 'ملف PDF يجب أن يكون بصيغة PDF.'),
+      validators.fileSize(PDF_MAX_BYTES, 'حجم ملف PDF يجب ألا يتجاوز 20MB.'),
+    ],
+  };
+
+  const validateSection = (nextForm = sectionForm) => validateFields(nextForm, sectionSchema);
+  const validateLesson = (
+    nextForm = lessonForm,
+    nextVideoFile = lessonVideoFile,
+    nextPdfFile = lessonPdfFile,
+    sectionId = nextForm.section_id || firstSectionId,
+  ) => validateFields(
+    {
+      ...nextForm,
+      section_id: sectionId,
+      video: nextVideoFile,
+      pdf: nextPdfFile,
+    },
+    lessonSchema,
+  );
 
   const showMessage = (type, text) => {
     setMessage({ type, text });
@@ -188,6 +242,8 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
   const handleVideoFileChange = (event) => {
     const file = event.target.files[0];
     setLessonVideoFile(file || null);
+    setLessonTouched((current) => ({ ...current, video: true }));
+    setLessonErrors(validateLesson(lessonForm, file || null, lessonPdfFile));
 
     if (file && file.type.startsWith('video/')) {
       const video = document.createElement('video');
@@ -216,6 +272,11 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
   const createSection = async (event) => {
     event.preventDefault();
     if (!selectedCourseId) return;
+    setSectionTouched({ title: true, order: true });
+
+    const nextErrors = validateSection();
+    setSectionErrors(nextErrors);
+    if (hasValidationErrors(nextErrors)) return;
 
     setSubmitting(true);
 
@@ -227,9 +288,17 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
       });
       await readJsonResponse(response);
       setSectionForm(EMPTY_SECTION_FORM);
+      setSectionTouched({});
+      setSectionErrors({});
       showMessage('success', 'تمت إضافة القسم بنجاح.');
       refreshCurriculum();
     } catch (error) {
+      const serverErrors = normalizeLaravelErrors(error);
+      if (Object.keys(serverErrors).length) {
+        setSectionErrors(serverErrors);
+        setSectionTouched({ title: true, order: true });
+        return;
+      }
       showMessage('error', validationMessage(error, 'تعذر إضافة القسم.'));
     } finally {
       setSubmitting(false);
@@ -279,9 +348,25 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
     const sectionId = lessonForm.section_id || firstSectionId;
 
     if (!sectionId) {
+      setLessonTouched((current) => ({ ...current, section_id: true }));
+      setLessonErrors((current) => ({ ...current, section_id: 'أضف قسماً قبل إضافة الدروس.' }));
       showMessage('error', 'أضف قسماً قبل إضافة الدروس.');
       return;
     }
+
+    setLessonTouched({
+      section_id: true,
+      title: true,
+      video_url: true,
+      duration_minutes: true,
+      order: true,
+      video: true,
+      pdf: true,
+    });
+
+    const nextErrors = validateLesson(lessonForm, lessonVideoFile, lessonPdfFile, sectionId);
+    setLessonErrors(nextErrors);
+    if (hasValidationErrors(nextErrors)) return;
 
     if (!lessonVideoFile) {
       showMessage('error', 'يرجى رفع ملف فيديو قبل إضافة الدرس.');
@@ -323,6 +408,8 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
       setLessonForm({ ...EMPTY_LESSON_FORM, section_id: sectionId });
       setLessonVideoFile(null);
       setLessonPdfFile(null);
+      setLessonTouched({});
+      setLessonErrors({});
       setUploadProgress(null);
       setFileInputKey(Date.now()); // Reset file input element
       showMessage('success', 'تمت إضافة الدرس كمسودة. يرجى إعداد الاختبار لنشر الدرس.');
@@ -330,6 +417,20 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
       onLessonCreated?.(response.data?.data);
     } catch (error) {
       console.error(error);
+      const serverErrors = normalizeLaravelErrors(error);
+      if (Object.keys(serverErrors).length) {
+        setLessonErrors(serverErrors);
+        setLessonTouched({
+          section_id: true,
+          title: true,
+          video_url: true,
+          duration_minutes: true,
+          order: true,
+          video: true,
+          pdf: true,
+        });
+        return;
+      }
       const errorMsg = error.response ? validationMessage(error.response, 'تعذر إضافة الدرس.') : 'تعذر إضافة الدرس.';
       showMessage('error', errorMsg);
     } finally {
@@ -482,23 +583,43 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
             <label className="form-label text-muted" style={{ fontSize: '12px' }}>عنوان القسم</label>
             <input
               value={sectionForm.title}
-              onChange={(event) => setSectionForm({ ...sectionForm, title: event.target.value })}
-              className="form-control custom-input"
+              onChange={(event) => {
+                const nextForm = { ...sectionForm, title: event.target.value };
+                setSectionForm(nextForm);
+                if (sectionTouched.title) setSectionErrors(validateSection(nextForm));
+              }}
+              onBlur={() => {
+                setSectionTouched((current) => ({ ...current, title: true }));
+                setSectionErrors(validateSection());
+              }}
+              className={`form-control custom-input${invalidClass(sectionTouched.title && sectionErrors.title)}`}
               required
               maxLength={255}
+              {...invalidProps(sectionTouched.title && sectionErrors.title, 'section-title-error')}
               placeholder="مثال: الوحدة الأولى - أساسيات التداول"
             />
+            <FieldError id="section-title-error" message={sectionTouched.title && sectionErrors.title} />
           </div>
           <div className="col-6 col-lg-2">
             <label className="form-label text-muted" style={{ fontSize: '12px' }}>الترتيب</label>
             <input
               value={sectionForm.order}
-              onChange={(event) => setSectionForm({ ...sectionForm, order: event.target.value })}
+              onChange={(event) => {
+                const nextForm = { ...sectionForm, order: event.target.value };
+                setSectionForm(nextForm);
+                if (sectionTouched.order) setSectionErrors(validateSection(nextForm));
+              }}
+              onBlur={() => {
+                setSectionTouched((current) => ({ ...current, order: true }));
+                setSectionErrors(validateSection());
+              }}
               type="number"
               min="0"
-              className="form-control custom-input"
+              className={`form-control custom-input${invalidClass(sectionTouched.order && sectionErrors.order)}`}
               style={{ direction: 'ltr', textAlign: 'left' }}
+              {...invalidProps(sectionTouched.order && sectionErrors.order, 'section-order-error')}
             />
+            <FieldError id="section-order-error" message={sectionTouched.order && sectionErrors.order} />
           </div>
           <div className="col-6 col-lg-2">
             <button type="submit" className="btn btn-primary-cta w-100 fw-bold" disabled={!selectedCourseId || submitting}>
@@ -515,35 +636,65 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
             <label className="form-label text-muted" style={{ fontSize: '12px' }}>القسم</label>
             <select
               value={lessonForm.section_id || firstSectionId}
-              onChange={(event) => setLessonForm({ ...lessonForm, section_id: event.target.value })}
-              className="form-select custom-input"
+              onChange={(event) => {
+                const nextForm = { ...lessonForm, section_id: event.target.value };
+                setLessonForm(nextForm);
+                if (lessonTouched.section_id) setLessonErrors(validateLesson(nextForm));
+              }}
+              onBlur={() => {
+                setLessonTouched((current) => ({ ...current, section_id: true }));
+                setLessonErrors(validateLesson());
+              }}
+              className={`form-select custom-input${invalidClass(lessonTouched.section_id && lessonErrors.section_id)}`}
               required
+              {...invalidProps(lessonTouched.section_id && lessonErrors.section_id, 'lesson-section-error')}
             >
               {sections.map((section) => (
                 <option key={section.id} value={section.id}>{section.title}</option>
               ))}
             </select>
+            <FieldError id="lesson-section-error" message={lessonTouched.section_id && lessonErrors.section_id} />
           </div>
           <div className="col-12 col-lg-5">
             <label className="form-label text-muted" style={{ fontSize: '12px' }}>عنوان الدرس</label>
             <input
               value={lessonForm.title}
-              onChange={(event) => setLessonForm({ ...lessonForm, title: event.target.value })}
-              className="form-control custom-input"
+              onChange={(event) => {
+                const nextForm = { ...lessonForm, title: event.target.value };
+                setLessonForm(nextForm);
+                if (lessonTouched.title) setLessonErrors(validateLesson(nextForm));
+              }}
+              onBlur={() => {
+                setLessonTouched((current) => ({ ...current, title: true }));
+                setLessonErrors(validateLesson());
+              }}
+              className={`form-control custom-input${invalidClass(lessonTouched.title && lessonErrors.title)}`}
               required
               maxLength={255}
+              {...invalidProps(lessonTouched.title && lessonErrors.title, 'lesson-title-error')}
             />
+            <FieldError id="lesson-title-error" message={lessonTouched.title && lessonErrors.title} />
           </div>
           <div className="col-6 col-lg-3">
             <label className="form-label text-muted" style={{ fontSize: '12px' }}>المدة بالدقائق</label>
             <input
               value={lessonForm.duration_minutes}
-              onChange={(event) => setLessonForm({ ...lessonForm, duration_minutes: event.target.value })}
+              onChange={(event) => {
+                const nextForm = { ...lessonForm, duration_minutes: event.target.value };
+                setLessonForm(nextForm);
+                if (lessonTouched.duration_minutes) setLessonErrors(validateLesson(nextForm));
+              }}
+              onBlur={() => {
+                setLessonTouched((current) => ({ ...current, duration_minutes: true }));
+                setLessonErrors(validateLesson());
+              }}
               type="number"
               min="1"
-              className="form-control custom-input"
+              className={`form-control custom-input${invalidClass(lessonTouched.duration_minutes && lessonErrors.duration_minutes)}`}
               style={{ direction: 'ltr', textAlign: 'left' }}
+              {...invalidProps(lessonTouched.duration_minutes && lessonErrors.duration_minutes, 'lesson-duration-error')}
             />
+            <FieldError id="lesson-duration-error" message={lessonTouched.duration_minutes && lessonErrors.duration_minutes} />
           </div>
           <div className="col-12">
             <label className="form-label text-muted" style={{ fontSize: '12px' }}>الوصف</label>
@@ -558,11 +709,21 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
             <label className="form-label text-muted" style={{ fontSize: '12px' }}>رابط الفيديو (خارجي)</label>
             <input
               value={lessonForm.video_url}
-              onChange={(event) => setLessonForm({ ...lessonForm, video_url: event.target.value })}
-              className="form-control custom-input"
+              onChange={(event) => {
+                const nextForm = { ...lessonForm, video_url: event.target.value };
+                setLessonForm(nextForm);
+                if (lessonTouched.video_url) setLessonErrors(validateLesson(nextForm));
+              }}
+              onBlur={() => {
+                setLessonTouched((current) => ({ ...current, video_url: true }));
+                setLessonErrors(validateLesson());
+              }}
+              className={`form-control custom-input${invalidClass(lessonTouched.video_url && lessonErrors.video_url)}`}
               placeholder="https://..."
               style={{ direction: 'ltr', textAlign: 'left' }}
+              {...invalidProps(lessonTouched.video_url && lessonErrors.video_url, 'lesson-video-url-error')}
             />
+            <FieldError id="lesson-video-url-error" message={lessonTouched.video_url && lessonErrors.video_url} />
           </div>
 
           {/* ── Video file upload ── */}
@@ -625,7 +786,9 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
               accept="video/*"
               onChange={handleVideoFileChange}
               style={{ display: 'none' }}
+              {...invalidProps(lessonTouched.video && lessonErrors.video, 'lesson-video-error')}
             />
+            <FieldError id="lesson-video-error" message={lessonTouched.video && lessonErrors.video} />
           </div>
 
           {/* ── PDF file upload ── */}
@@ -685,20 +848,37 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
               key={`pdf-${fileInputKey}`}
               type="file"
               accept=".pdf"
-              onChange={(event) => setLessonPdfFile(event.target.files[0] || null)}
+              onChange={(event) => {
+                const file = event.target.files[0] || null;
+                setLessonPdfFile(file);
+                setLessonTouched((current) => ({ ...current, pdf: true }));
+                setLessonErrors(validateLesson(lessonForm, lessonVideoFile, file));
+              }}
               style={{ display: 'none' }}
+              {...invalidProps(lessonTouched.pdf && lessonErrors.pdf, 'lesson-pdf-error')}
             />
+            <FieldError id="lesson-pdf-error" message={lessonTouched.pdf && lessonErrors.pdf} />
           </div>
           <div className="col-6 col-lg-1">
             <label className="form-label text-muted" style={{ fontSize: '12px' }}>الترتيب</label>
             <input
               value={lessonForm.order}
-              onChange={(event) => setLessonForm({ ...lessonForm, order: event.target.value })}
+              onChange={(event) => {
+                const nextForm = { ...lessonForm, order: event.target.value };
+                setLessonForm(nextForm);
+                if (lessonTouched.order) setLessonErrors(validateLesson(nextForm));
+              }}
+              onBlur={() => {
+                setLessonTouched((current) => ({ ...current, order: true }));
+                setLessonErrors(validateLesson());
+              }}
               type="number"
               min="0"
-              className="form-control custom-input"
+              className={`form-control custom-input${invalidClass(lessonTouched.order && lessonErrors.order)}`}
               style={{ direction: 'ltr', textAlign: 'left' }}
+              {...invalidProps(lessonTouched.order && lessonErrors.order, 'lesson-order-error')}
             />
+            <FieldError id="lesson-order-error" message={lessonTouched.order && lessonErrors.order} />
           </div>
           <div className="col-6 col-lg-1 d-flex align-items-end">
             <label className="d-flex align-items-center gap-2 text-muted mb-2" style={{ fontSize: '12px' }}>

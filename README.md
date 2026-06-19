@@ -91,6 +91,27 @@ _For a full Swagger/OpenAPI spec, see `backend/docs/openapi.yaml`._
 
 ---
 
+## Recent Implementation: Form Validation
+- Added lightweight frontend validation utilities without introducing new libraries.
+- Added reusable inline field error rendering with `is-invalid`, `aria-invalid`, and `aria-describedby` support.
+- Mapped Laravel `422` validation responses from `{ errors: { field: [...] } }` back to the matching frontend fields.
+- Covered critical flows: sign in, sign up, forgot password, reset password, contact form, admin curriculum section creation, lesson creation with video/PDF checks, quiz settings, question creation, options, and correct-answer validation.
+- Verified the frontend production build:
+  ```powershell
+  cd frontend/borsa-frontend
+  npm run build
+  ```
+
+## Recent Implementation: Lesson Publishing Notifications
+- Fixed the lesson publishing flow so new lesson notifications are sent only when the instructor/admin explicitly clicks `Publish lesson and quiz`.
+- Removed automatic lesson publishing from `backend/app/Models/Quiz.php`; that path bypassed `LessonController` and skipped `notifyStudentsAboutPublishedLesson()`.
+- Kept `LessonController` as the single publishing path so `lesson.published` notifications are reliably created for enrolled students.
+- Removed the old publish control from the curriculum screen; lessons are saved as drafts until a ready quiz exists.
+- Backfilled missing `lesson.published` notifications for previously published lessons.
+- Notification grouping remains intentional: lesson/course updates appear under Course notifications, while course completion and certificates appear under Achievement notifications.
+
+---
+
 ## Development Guidelines
 - **Coding Standards** – Follow PSR‑12 for PHP and Airbnb’s style guide for JavaScript.
 - **Branching Model** – `main` is production‑ready. Develop new features on `feature/*` branches and create pull requests.

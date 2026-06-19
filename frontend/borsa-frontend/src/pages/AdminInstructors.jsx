@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { FieldError } from '../components/FormValidation';
+import { hasValidationErrors, invalidClass, invalidProps, normalizeLaravelErrors, validateFields, validators } from '../utils/validation';
 
 const ADMIN_INSTRUCTORS_API_URL = 'http://127.0.0.1:8000/api/admin/instructors';
 
@@ -14,6 +16,47 @@ const EMPTY_FORM = {
   file: null,
   preview: '',
 };
+
+const IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/svg+xml'];
+
+function instructorSchema(isEdit) {
+  return {
+    name: [
+      validators.required('اسم المدرب مطلوب.'),
+      validators.maxLength(255, 'يجب ألا يتجاوز اسم المدرب 255 حرفاً.'),
+    ],
+    specialization: [validators.maxLength(255, 'يجب ألا يتجاوز التخصص 255 حرفاً.')],
+    login_email: isEdit
+      ? [validators.email('صيغة بريد الدخول غير صحيحة.')]
+      : [validators.email('صيغة بريد الدخول غير صحيحة.')],
+    password: isEdit
+      ? [validators.minLength(8, 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.')]
+      : [validators.minLength(8, 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.')],
+    file: [
+      validators.fileType(IMAGE_TYPES, 'صيغة الصورة غير مدعومة. استخدم JPEG أو PNG أو JPG أو GIF أو SVG.'),
+      validators.fileSize(IMAGE_MAX_BYTES, 'حجم الصورة يجب ألا يتجاوز 10MB.'),
+    ],
+  };
+}
+
+function validateInstructorForm(form, isEdit) {
+  const errors = validateFields(form, instructorSchema(isEdit));
+
+  if (!isEdit && !form.user_id && !form.login_email.trim()) {
+    errors.login_email = 'اربط المدرب بحساب موجود أو أدخل بريد دخول جديد.';
+  }
+
+  if (!isEdit && !form.user_id && !form.password) {
+    errors.password = 'كلمة المرور مطلوبة عند إنشاء حساب دخول جديد.';
+  }
+
+  if (form.user_id && (form.login_email.trim() || form.password)) {
+    errors.user_id = 'اختر حساباً موجوداً أو أنشئ بيانات دخول جديدة، وليس كليهما.';
+  }
+
+  return errors;
+}
 
 function getValidationSummary(data) {
   if (!data?.errors) {
@@ -65,6 +108,9 @@ function InstructorForm({
   submitLabel,
   isEdit,
   availableUsers,
+  errors = {},
+  touched = {},
+  onBlur,
 }) {
   const [dragActive, setDragActive] = useState(false);
 
@@ -107,12 +153,15 @@ function InstructorForm({
     onChange({ ...form, [name]: value });
   };
 
+  const errorFor = (field) => touched[field] && errors[field];
+
   return (
     <form onSubmit={onSubmit} className="d-flex flex-column gap-3" style={{ direction: 'rtl' }}>
       <div className="row g-3">
         <div className="col-12 col-lg-6">
           <label className="form-label text-muted" style={{ fontSize: '12px' }}>اسم المدرب</label>
-          <input name="name" value={form.name} onChange={handleChange} className="form-control custom-input" required maxLength={255} />
+          <input name="name" value={form.name} onChange={handleChange} onBlur={() => onBlur?.('name')} className={`form-control custom-input${invalidClass(errorFor('name'))}`} required maxLength={255} {...invalidProps(errorFor('name'), 'instructor-name-error')} />
+          <FieldError id="instructor-name-error" message={errorFor('name')} />
         </div>
         <div className="col-12 col-lg-6">
           <label className="form-label text-muted" style={{ fontSize: '12px' }}>التخصص (اختياري)</label>
@@ -167,9 +216,11 @@ function InstructorForm({
               type="file" 
               accept="image/jpeg, image/png, image/jpg, image/gif, image/svg+xml" 
               className="d-none" 
-              onChange={handleFileChange} 
+              onChange={handleFileChange}
+              {...invalidProps(errorFor('file'), 'instructor-image-error')}
             />
           </div>
+          <FieldError id="instructor-image-error" message={errorFor('file')} />
         </div>
         
         <div className="col-12">
@@ -191,8 +242,10 @@ function InstructorForm({
               name="user_id"
               value={form.user_id}
               onChange={handleChange}
-              className="form-select custom-input"
+              onBlur={() => onBlur?.('user_id')}
+              className={`form-select custom-input${invalidClass(errorFor('user_id'))}`}
               disabled={!isEdit && Boolean(form.login_email || form.password)}
+              {...invalidProps(errorFor('user_id'), 'instructor-user-error')}
             >
               <option value="">{isEdit ? 'بدون حساب دخول' : 'اختر حساب مدرب موجود'}</option>
               {availableUsers.map((user) => (
@@ -201,6 +254,7 @@ function InstructorForm({
                 </option>
               ))}
             </select>
+            <FieldError id="instructor-user-error" message={errorFor('user_id')} />
 
             {!isEdit && (
               <div className="row g-3 mt-1">
@@ -211,11 +265,14 @@ function InstructorForm({
                     name="login_email"
                     value={form.login_email}
                     onChange={handleChange}
-                    className="form-control custom-input"
+                    onBlur={() => onBlur?.('login_email')}
+                    className={`form-control custom-input${invalidClass(errorFor('login_email'))}`}
                     disabled={Boolean(form.user_id)}
                     required={!isEdit && !form.user_id}
                     autoComplete="off"
+                    {...invalidProps(errorFor('login_email'), 'instructor-login-email-error')}
                   />
+                  <FieldError id="instructor-login-email-error" message={errorFor('login_email')} />
                 </div>
                 <div className="col-12 col-lg-6">
                   <label className="form-label text-muted" style={{ fontSize: '12px' }}>كلمة المرور</label>
@@ -224,12 +281,15 @@ function InstructorForm({
                     name="password"
                     value={form.password}
                     onChange={handleChange}
-                    className="form-control custom-input"
+                    onBlur={() => onBlur?.('password')}
+                    className={`form-control custom-input${invalidClass(errorFor('password'))}`}
                     minLength={8}
                     disabled={Boolean(form.user_id)}
                     required={!isEdit && !form.user_id}
                     autoComplete="new-password"
+                    {...invalidProps(errorFor('password'), 'instructor-password-error')}
                   />
+                  <FieldError id="instructor-password-error" message={errorFor('password')} />
                 </div>
               </div>
             )}
@@ -252,6 +312,8 @@ export default function AdminInstructors() {
   const [loading, setLoading] = useState(true);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
   const [editingInstructor, setEditingInstructor] = useState(null);
   const [deletingInstructor, setDeletingInstructor] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -309,11 +371,33 @@ export default function AdminInstructors() {
     }, 5000);
   };
 
+  const touchInstructorFields = () => ({
+    name: true,
+    specialization: true,
+    user_id: true,
+    login_email: true,
+    password: true,
+    file: true,
+  });
+
+  const handleInstructorBlur = (field) => {
+    const isEdit = Boolean(editingInstructor);
+    setTouched((current) => ({ ...current, [field]: true }));
+    setErrors(validateInstructorForm(form, isEdit));
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setSubmitting(true);
-
     const isEdit = !!editingInstructor;
+    const nextErrors = validateInstructorForm(form, isEdit);
+    const touchedFields = touchInstructorFields();
+
+    setTouched(touchedFields);
+    setErrors(nextErrors);
+
+    if (hasValidationErrors(nextErrors)) return;
+
+    setSubmitting(true);
 
     if (!isEdit && !form.user_id && (!form.login_email.trim() || !form.password)) {
       showMessage('error', 'لإضافة مدرب جديد، اربطه بحساب مدرب موجود أو أدخل بريد وكلمة مرور لحساب دخول جديد.');
@@ -378,8 +462,16 @@ export default function AdminInstructors() {
       setAddModalOpen(false);
       setEditingInstructor(null);
       setForm(EMPTY_FORM);
+      setErrors({});
+      setTouched({});
       setRefreshKey((k) => k + 1);
     } catch (error) {
+      const serverErrors = normalizeLaravelErrors(error);
+      if (Object.keys(serverErrors).length) {
+        setErrors(serverErrors);
+        setTouched(touchedFields);
+        return;
+      }
       showMessage('error', error.message || 'تعذر حفظ البيانات.');
     } finally {
       setSubmitting(false);
@@ -529,6 +621,9 @@ export default function AdminInstructors() {
             submitting={submitting}
             submitLabel={editingInstructor ? "حفظ التعديلات" : "حفظ المدرب"}
             isEdit={Boolean(editingInstructor)}
+            errors={errors}
+            touched={touched}
+            onBlur={handleInstructorBlur}
             availableUsers={instructorUsers.filter((user) => (
               !instructors.some((instructor) => instructor.user_id === user.id)
               || user.id === editingInstructor?.user_id

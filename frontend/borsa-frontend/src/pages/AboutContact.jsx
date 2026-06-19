@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { FaInstagram, FaTelegram, FaWhatsapp } from 'react-icons/fa6';
 import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
+import { normalizeLaravelErrors } from '../utils/validation';
 
 /* ─── Static data ────────────────────────────────────────────── */
 const MENTORS = [
@@ -145,10 +146,7 @@ export default function AboutContact() {
     } catch (err) {
       // Handle 422 validation errors from server
       if (err.status === 422 && err.data?.errors) {
-        const serverErrors = {};
-        Object.entries(err.data.errors).forEach(([k, msgs]) => {
-          serverErrors[k] = msgs[0];
-        });
+        const serverErrors = normalizeLaravelErrors(err);
         setErrors(serverErrors);
         setTouched(allTouched);
       } else if (err.status === 429) {
