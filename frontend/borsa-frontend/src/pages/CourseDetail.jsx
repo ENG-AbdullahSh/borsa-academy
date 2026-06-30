@@ -5,6 +5,7 @@ import CourseCurriculum from '../components/CourseCurriculum';
 import VideoNotesSidebar from '../components/VideoNotesSidebar';
 import CourseQuiz from '../components/CourseQuiz';
 import LessonPdfViewer from '../components/LessonPdfViewer';
+import CourseReviews from '../components/CourseReviews';
 import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
 import { courseImage, levelLabel } from '../utils/courseDisplay';
@@ -619,7 +620,7 @@ export default function CourseDetail() {
               </div>
               <div className="col-12 col-md-4">
                 <div className="glass-card p-4 rounded-3 text-center h-100 d-flex flex-column align-items-center justify-content-between">
-                  <div className="rounded-circle border border-2 p-1 mb-3" style={{ width: '96px', height: '96px', borderColor: '#75ff9e' }}>
+                  <div className="rounded-circle border p-1 mb-3" style={{ width: '96px', height: '96px', borderColor: '#75ff9e' }}>
                     <img alt={course.instructor_name} className="w-100 h-100 object-cover rounded-circle" src={courseImage(course)} />
                   </div>
                   <h3 className="h6 text-white fw-bold m-0" style={{ fontFamily: 'var(--font-sans)' }}>{course.instructor_name}</h3>
@@ -634,6 +635,15 @@ export default function CourseDetail() {
             {canAccessCourse && currentLesson?.pdf_url && (
               <LessonPdfViewer lesson={currentLesson} />
             )}
+
+            {/* Course Reviews Section */}
+            <div className="mt-4 pt-4 border-top" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+              <CourseReviews 
+                courseId={courseId} 
+                enrollment={enrollment} 
+                canReview={canAccessCourse && progressPercentage >= 100} 
+              />
+            </div>
           </div>
 
           <aside className="col-12 col-lg-4">

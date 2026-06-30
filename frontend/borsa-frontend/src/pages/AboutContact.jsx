@@ -208,7 +208,7 @@ export default function AboutContact() {
           {MENTORS.map((m, i) => (
             <div key={i} className="col-12 col-sm-6 col-lg-3">
               <div className="glass-card rounded-3 overflow-hidden d-flex flex-column h-100 hover-glow">
-                <div className="p-4 d-flex flex-column align-items-center text-center flex-grow-1">
+                <div className="p-4 d-flex flex-column align-items-center text-center grow">
                   <div
                     className="d-flex align-items-center justify-content-center rounded-circle mb-4 fw-bold font-mono-data"
                     style={{ width: '80px', height: '80px', backgroundColor: 'rgba(255,255,255,0.04)', border: `2px solid ${m.color}20`, color: m.color, fontSize: '20px' }}

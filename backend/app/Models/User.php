@@ -90,6 +90,11 @@ class User extends Authenticatable
         return $this->hasOne(Instructor::class);
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(CourseReview::class);
+    }
+
     /**
      * Send the password reset notification.
      *

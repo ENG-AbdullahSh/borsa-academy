@@ -28,6 +28,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/courses', [CourseController::class, 'index']);
 Route::get('/courses/{id}', [CourseController::class, 'show'])->whereNumber('id');
 Route::get('/courses/{id}/curriculum', [CourseCurriculumController::class, 'show'])->whereNumber('id');
+Route::get('/courses/{course}/reviews', [\App\Http\Controllers\Api\CourseReviewController::class, 'index'])->whereNumber('course');
+Route::get('/courses/{course}/rating-summary', [\App\Http\Controllers\Api\CourseReviewController::class, 'summary'])->whereNumber('course');
 Route::get('/settings', [SettingController::class, 'getSettings']);
 
 // ── Video Streaming (Range-request aware, auth handled inside controller) ──
@@ -84,7 +86,16 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/my-courses/{course}/quiz-status', [QuizController::class, 'status'])->whereNumber('course');
         Route::post('/lessons/{lesson}/complete', [LessonProgressController::class, 'complete'])->whereNumber('lesson');
         Route::delete('/lessons/{lesson}/complete', [LessonProgressController::class, 'destroy'])->whereNumber('lesson');
+
+        Route::post('/courses/{course}/reviews', [\App\Http\Controllers\Api\CourseReviewController::class, 'store'])->whereNumber('course');
+        Route::post('/courses/{course}/review', [\App\Http\Controllers\Api\CourseReviewController::class, 'upsert'])->whereNumber('course');
     });
+
+    // Review actions — accessible to owner (student) or admin; policy enforces ownership
+    Route::put('/reviews/{review}', [\App\Http\Controllers\Api\CourseReviewController::class, 'update'])->whereNumber('review');
+    Route::delete('/reviews/{review}', [\App\Http\Controllers\Api\CourseReviewController::class, 'destroy'])->whereNumber('review');
+    Route::post('/reviews/{review}/helpful', [\App\Http\Controllers\Api\CourseReviewController::class, 'toggleHelpful'])->whereNumber('review');
+    Route::post('/reviews/{review}/report', [\App\Http\Controllers\Api\CourseReviewController::class, 'report'])->whereNumber('review');
 
     Route::middleware('role:instructor')->group(function (): void {
         Route::get('/instructor/dashboard', [InstructorPortalController::class, 'dashboard']);

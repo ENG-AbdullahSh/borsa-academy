@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -27,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 ])]
 class Course extends Model
 {
+    use HasFactory;
     public const LEVELS = ['beginner', 'intermediate', 'advanced'];
 
     public const STATUSES = ['draft', 'published'];
@@ -39,6 +41,8 @@ class Course extends Model
         return [
             'price' => 'decimal:2',
             'duration_hours' => 'integer',
+            'average_rating' => 'decimal:2',
+            'total_reviews' => 'integer',
         ];
     }
 
@@ -101,5 +105,26 @@ class Course extends Model
     public function instructor(): BelongsTo
     {
         return $this->belongsTo(Instructor::class);
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(CourseReview::class);
+    }
+
+    /**
+     * Recalculate and update the average rating and total reviews for the course.
+     */
+    public function updateRatingStats(): void
+    {
+        $stats = $this->reviews()
+            ->where('is_visible', true)
+            ->selectRaw('COUNT(*) as total, AVG(rating) as average')
+            ->first();
+
+        $this->forceFill([
+            'total_reviews' => (int) ($stats->total ?? 0),
+            'average_rating' => round((float) ($stats->average ?? 0), 2),
+        ])->save();
     }
 }

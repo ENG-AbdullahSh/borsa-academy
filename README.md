@@ -2,9 +2,7 @@
 
 ## Project Overview
 Borsa Academy is an **online learning platform** that enables instructors (trainers) to create courses, lessons, and quizzes, and allows students to enroll, progress through content, and earn certificates. The platform integrates a robust notification system to keep users informed about new lessons, course completions, and achievements.
-
 ---
-
 ## Key Features
 - **Course Management** – Create, edit, and publish courses with lessons and quizzes.
 - **Progress Tracking** – Automatic calculation of lesson and course completion percentages.

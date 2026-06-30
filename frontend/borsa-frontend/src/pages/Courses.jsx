@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import CourseCard from '../components/CourseCard';
 
 const COURSES_API_URL = 'http://127.0.0.1:8000/api/courses';
 const PER_PAGE = 9;
@@ -53,19 +54,15 @@ const fallbackImageFor = (id = 0) => {
 const BACKEND_URL = 'http://127.0.0.1:8000';
 
 const resolveImage = (course, index) => {
-  // 1. If thumbnail is a full HTTP URL, use it directly
   if (course.thumbnail && /^https?:\/\//i.test(course.thumbnail)) {
     return course.thumbnail;
   }
-  // 2. If image_path is a relative storage path, build the full URL
   if (course.image_path && !course.image_path.startsWith('http')) {
     return `${BACKEND_URL}/storage/${course.image_path}`;
   }
-  // 3. If image_path is already a full URL
   if (course.image_path && /^https?:\/\//i.test(course.image_path)) {
     return course.image_path;
   }
-  // 4. Fallback
   return fallbackImageFor(course.id ?? index);
 };
 
@@ -80,7 +77,9 @@ const normalizeCourse = (course, index) => {
     instructor: course.instructor_name || 'بورصة أكاديمي',
     category: course.category || 'تداول',
     level: levelLabel(course.level),
-    rating: 4.8,
+    rating: Number(course.average_rating ?? 0),
+    average_rating: course.average_rating,
+    total_reviews: course.total_reviews,
     image,
     createdAt: course.created_at,
     highlights: [
@@ -203,13 +202,6 @@ export default function Courses() {
     setPage(1);
   };
 
-  const catColor = (cat) => {
-    if (cat === 'العملات الرقمية') return 'rgba(0,230,118,0.85)';
-    if (cat === 'الفوركس') return 'rgba(0,169,232,0.85)';
-    if (cat === 'التحليل الفني' || cat === 'حركة السعر') return 'rgba(117,255,158,0.85)';
-    return 'rgba(244,67,54,0.85)';
-  };
-
   const goToPage = (nextPage) => {
     const lastPage = Math.max(Number(pagination.last_page) || 1, 1);
     const safePage = Math.min(Math.max(nextPage, 1), lastPage);
@@ -225,8 +217,6 @@ export default function Courses() {
           <aside className="col-12 col-md-3">
             <div className="d-flex flex-column gap-4">
               <div className="glass-card p-4 rounded-3">
-
-                {/* Search */}
                 <div className="mb-4">
                   <label className="font-mono-data d-block mb-2 text-uppercase" style={{ fontSize: '10px', color: '#75ff9e', letterSpacing: '0.08em' }}>بحث في الكتالوج</label>
                   <div className="position-relative">
@@ -237,14 +227,12 @@ export default function Courses() {
                   </div>
                 </div>
 
-                {/* Level */}
                 <div className="mb-4">
                   <h3 className="font-mono-data text-white text-uppercase mb-3 d-flex align-items-center gap-1" style={{ fontSize: '11px', letterSpacing: '0.08em' }}>
                     <span className="material-symbols-outlined" style={{ color: '#75ff9e', fontSize: '16px' }}>signal_cellular_alt</span> المستوى
                   </h3>
                   {LEVELS.map((lvl) => {
                     const checked = !selectedLevel || selectedLevel === lvl.value;
-
                     return (
                       <label key={lvl.value} className="d-flex align-items-center gap-2 mb-2 cursor-pointer" style={{ color: checked ? '#75ff9e' : '#bacbb9', fontSize: '14px', fontFamily: 'var(--font-sans)' }}>
                         <input type="checkbox" checked={checked} onChange={() => toggleLevel(lvl.value)} style={{ accentColor: '#75ff9e' }} />
@@ -254,14 +242,12 @@ export default function Courses() {
                   })}
                 </div>
 
-                {/* Market */}
                 <div>
                   <h3 className="font-mono-data text-white text-uppercase mb-3 d-flex align-items-center gap-1" style={{ fontSize: '11px', letterSpacing: '0.08em' }}>
                     <span className="material-symbols-outlined" style={{ color: '#75ff9e', fontSize: '16px' }}>monitoring</span> السوق
                   </h3>
                   {CATEGORIES.map((category) => {
                     const checked = !selectedCategory || selectedCategory === category;
-
                     return (
                       <label key={category} className="d-flex align-items-center gap-2 mb-2 cursor-pointer" style={{ color: checked ? '#75ff9e' : '#bacbb9', fontSize: '14px', fontFamily: 'var(--font-sans)' }}>
                         <input type="checkbox" checked={checked} onChange={() => toggleCategory(category)} style={{ accentColor: '#75ff9e' }} />
@@ -271,7 +257,6 @@ export default function Courses() {
                   })}
                 </div>
               </div>
-
             </div>
           </aside>
 
@@ -308,50 +293,8 @@ export default function Courses() {
                   </button>
                 </div>
               ) : visibleCourses.length > 0 ? visibleCourses.map((course) => (
-                <div key={course.id} className="col-12 col-md-6 col-lg-4">
-                  <div className="glass-card rounded-3 overflow-hidden d-flex flex-column h-100">
-                    <div className="position-relative overflow-hidden" style={{ height: '160px' }}>
-                      <img
-                        src={course.image}
-                        alt={course.title}
-                        className="w-100 h-100 object-cover"
-                        onError={(event) => {
-                          event.currentTarget.onerror = null;
-                          event.currentTarget.src = fallbackImageFor(course.id);
-                        }}
-                      />
-                      <div className="position-absolute top-0 start-0 p-3 d-flex gap-1" style={{ zIndex: 2 }}>
-                        <span className="px-2 py-0 rounded text-white font-mono-data fw-bold" style={{ fontSize: '9px', backgroundColor: catColor(course.category) }}>{course.category}</span>
-                        <span className="px-2 py-0 rounded font-mono-data fw-bold" style={{ fontSize: '9px', backgroundColor: 'rgba(0,0,0,0.7)', color: '#75ff9e' }}>{course.level}</span>
-                      </div>
-                    </div>
-                    <div className="p-4 d-flex flex-column flex-grow-1">
-                      <div className="d-flex justify-content-between align-items-start gap-2 mb-1">
-                        <h3 className="h6 text-white fw-bold mb-0" style={{ fontSize: '15px', lineHeight: 1.3, fontFamily: 'var(--font-sans)', minHeight: '38px' }}>{course.title}</h3>
-                        <div className="d-flex align-items-center gap-1 flex-shrink-0">
-                          <span className="material-symbols-outlined" style={{ color: '#75ff9e', fontSize: '14px', fontVariationSettings: "'FILL' 1" }}>star</span>
-                          <span className="font-mono-data text-white fw-semibold" style={{ fontSize: '12px' }}>{course.rating.toFixed(1)}</span>
-                        </div>
-                      </div>
-                      <p className="text-muted d-flex align-items-center gap-1 mb-3" style={{ fontSize: '12px', fontFamily: 'var(--font-sans)' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>person</span> بإشراف {course.instructor}
-                      </p>
-                      <div className="mb-4 flex-grow-1">
-                        <p className="font-mono-data text-uppercase mb-2" style={{ fontSize: '10px', color: '#7c8e7c' }}>أبرز ما ستتعلمه:</p>
-                        <ul className="list-unstyled p-0 m-0">
-                          {course.highlights.map((highlight) => (
-                            <li key={highlight} className="d-flex align-items-center gap-1 mb-2" style={{ fontSize: '12px', color: '#bacbb9', fontFamily: 'var(--font-sans)' }}>
-                              <span className="material-symbols-outlined" style={{ color: '#75ff9e', fontSize: '14px' }}>check_circle</span> {highlight}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <Link to={`/courses/${course.id}`} className="btn w-100 py-2 text-white fw-semibold d-flex align-items-center justify-content-center gap-2"
-                        style={{ backgroundColor: '#272a2e', borderRadius: '6px', fontSize: '13px', fontFamily: 'var(--font-sans)', border: 'none' }}>
-                        سجل الآن <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>arrow_back</span>
-                      </Link>
-                    </div>
-                  </div>
+                <div key={course.id} className="col-12 col-md-6 col-lg-4 mb-4">
+                  <CourseCard course={course} fallbackImage={fallbackImageFor(course.id)} />
                 </div>
               )) : (
                 <div className="col-12 py-5 text-center">

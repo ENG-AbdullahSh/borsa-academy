@@ -12,6 +12,7 @@ import CourseDetail from './pages/CourseDetail';
 import AboutContact from './pages/AboutContact';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminChatRooms from './pages/AdminChatRooms';
+import AdminReviews from './pages/AdminReviews';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import ForgotPassword from './pages/ForgotPassword';
@@ -63,7 +64,7 @@ function AppShell() {
         </>
       )}
 
-      <div className="flex-grow-1">
+      <div className="grow">
         <Routes>
           {/* Main pages */}
           <Route path="/"           element={<Home />} />
@@ -83,6 +84,14 @@ function AppShell() {
             element={(
               <ProtectedAdminRoute>
                 <AdminChatRooms />
+              </ProtectedAdminRoute>
+            )}
+          />
+          <Route
+            path="/admin/reviews"
+            element={(
+              <ProtectedAdminRoute>
+                <AdminReviews />
               </ProtectedAdminRoute>
             )}
           />
