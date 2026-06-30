@@ -641,7 +641,7 @@ export default function CourseDetail() {
               <CourseReviews 
                 courseId={courseId} 
                 enrollment={enrollment} 
-                canReview={canAccessCourse && progressPercentage >= 100} 
+                canReview={canAccessCourse} 
               />
             </div>
           </div>

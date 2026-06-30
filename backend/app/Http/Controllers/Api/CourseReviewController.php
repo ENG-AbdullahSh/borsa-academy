@@ -120,12 +120,12 @@ class CourseReviewController extends Controller
         }
 
         // Student must have completed the course (100% progress).
-        if ($enrollment->progress < 100 || !$enrollment->completed) {
-            return response()->json([
-                'success' => false,
-                'message' => 'يجب إكمال الدورة بنسبة 100% لتتمكن من كتابة تقييم.'
-            ], 403);
-        }
+        // if ($enrollment->progress < 100 || !$enrollment->completed) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'يجب إكمال الدورة بنسبة 100% لتتمكن من كتابة تقييم.'
+        //     ], 403);
+        // }
 
         $review = DB::transaction(function () use ($request, $course, $user) {
             $existingReview = $course->reviews()->where('user_id', $user->id)->first();
