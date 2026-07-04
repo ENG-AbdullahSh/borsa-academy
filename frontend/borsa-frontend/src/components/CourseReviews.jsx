@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
 import ReviewCard from './ReviewCard';
 import ReviewModal from './ReviewModal';
+import DeleteConfirmModal from './DeleteConfirmModal';
 
 export default function CourseReviews({ courseId, enrollment, canReview }) {
   const { token, isAuthenticated } = useAuth();
@@ -16,6 +17,7 @@ export default function CourseReviews({ courseId, enrollment, canReview }) {
   const [editingReview, setEditingReview] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { id }
 
   // User review state
   const [userReview, setUserReview] = useState(null);
@@ -127,20 +129,24 @@ export default function CourseReviews({ courseId, enrollment, canReview }) {
     });
   };
 
-  const handleDeleteReview = async (reviewId) => {
-    if (!window.confirm('هل أنت متأكد من حذف هذا التقييم؟')) return;
-    
+  const handleDeleteReview = (reviewId) => {
+    setDeleteConfirm({ id: reviewId });
+  };
+
+  const handleConfirmDeleteReview = async () => {
+    if (!deleteConfirm) return;
     try {
-      const response = await fetch(`${API_BASE_URL}/reviews/${reviewId}`, {
+      const response = await fetch(`${API_BASE_URL}/reviews/${deleteConfirm.id}`, {
         method: 'DELETE',
         headers: apiHeaders(token)
       });
-      
       if (response.ok) {
         fetchReviews(true);
       }
     } catch (err) {
       console.error('Error deleting review:', err);
+    } finally {
+      setDeleteConfirm(null);
     }
   };
 
@@ -417,6 +423,13 @@ export default function CourseReviews({ courseId, enrollment, canReview }) {
           isSubmitting={isSubmitting}
         />
       )}
+
+      <DeleteConfirmModal
+        isOpen={!!deleteConfirm}
+        itemType="التقييم"
+        onConfirm={handleConfirmDeleteReview}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
 import { FieldError } from '../components/FormValidation';
 import { hasValidationErrors, invalidClass, invalidProps, normalizeLaravelErrors, validateFields, validators } from '../utils/validation';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
 
 const EMPTY_QUIZ = {
   title: '',
@@ -50,6 +51,7 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
   const [quizTouched, setQuizTouched] = useState({});
   const [questionErrors, setQuestionErrors] = useState({});
   const [questionTouched, setQuestionTouched] = useState({});
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { type: 'quiz'|'question', id, name }
   const lessons = useMemo(() => (
     (curriculum?.sections || []).flatMap((section) => (
       (section.lessons || []).map((lesson) => ({
@@ -314,24 +316,9 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
     }
   };
 
-  const deleteQuiz = async () => {
-    if (!quiz || !window.confirm('هل تريد حذف الاختبار وكل أسئلته ومحاولاته؟')) return;
-
-    setSaving(true);
-
-    try {
-      const response = await fetch(`${apiScope}/quizzes/${quiz.id}`, {
-        method: 'DELETE',
-        headers,
-      });
-      await readJsonResponse(response);
-      hydrateQuiz(null);
-      showMessage('success', 'تم حذف الاختبار.');
-    } catch (error) {
-      showMessage('error', requestMessage(error, 'تعذر حذف الاختبار.'));
-    } finally {
-      setSaving(false);
-    }
+  const deleteQuiz = () => {
+    if (!quiz) return;
+    setDeleteConfirm({ type: 'quiz', id: quiz.id, name: quiz.title });
   };
 
   const publishLesson = async () => {
@@ -469,23 +456,30 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
     }
   };
 
-  const deleteQuestion = async (questionId) => {
-    if (!window.confirm('هل تريد حذف هذا السؤال؟')) return;
+  const deleteQuestion = (questionId, questionText) => {
+    setDeleteConfirm({ type: 'question', id: questionId, name: questionText });
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm) return;
     setSaving(true);
-
     try {
-      const response = await fetch(`${apiScope}/quiz-questions/${questionId}`, {
-        method: 'DELETE',
-        headers,
-      });
-      await readJsonResponse(response);
-      showMessage('success', 'تم حذف السؤال.');
-      await refresh();
+      if (deleteConfirm.type === 'quiz') {
+        const response = await fetch(`${apiScope}/quizzes/${deleteConfirm.id}`, { method: 'DELETE', headers });
+        await readJsonResponse(response);
+        hydrateQuiz(null);
+        showMessage('success', 'تم حذف الاختبار.');
+      } else {
+        const response = await fetch(`${apiScope}/quiz-questions/${deleteConfirm.id}`, { method: 'DELETE', headers });
+        await readJsonResponse(response);
+        showMessage('success', 'تم حذف السؤال.');
+        await refresh();
+      }
     } catch (error) {
-      showMessage('error', requestMessage(error, 'تعذر حذف السؤال.'));
+      showMessage('error', requestMessage(error, 'تعذر تنفيذ الحذف.'));
     } finally {
       setSaving(false);
+      setDeleteConfirm(null);
     }
   };
 
@@ -843,7 +837,7 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
                     <article key={question.id} className="glass-card rounded-3 p-4">
                       <div className="d-flex justify-content-between align-items-start gap-3 mb-3">
                         <span className="font-mono-data" style={{ color: '#75ff9e' }}>سؤال {questionIndex + 1}</span>
-                        <button type="button" onClick={() => deleteQuestion(question.id)} className="btn text-danger border-0 p-0" disabled={saving}>
+                        <button type="button" onClick={() => deleteQuestion(question.id, question.question_text)} className="btn text-danger border-0 p-0" disabled={saving}>
                           حذف السؤال
                         </button>
                       </div>
@@ -991,6 +985,16 @@ export default function AdminQuizManager({ courseId: fixedCourseId = '', scope =
           )}
         </>
       )}
+
+      <DeleteConfirmModal
+        isOpen={!!deleteConfirm}
+        itemName={deleteConfirm?.name}
+        itemType={deleteConfirm?.type === 'quiz' ? 'الاختبار' : 'السؤال'}
+        warning={deleteConfirm?.type === 'quiz' ? 'سيتم حذف جميع الأسئلة والمحاولات المرتبطة بهذا الاختبار نهائياً.' : undefined}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+        isLoading={saving}
+      />
     </div>
   );
 }

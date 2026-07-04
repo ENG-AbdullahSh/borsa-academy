@@ -4,6 +4,7 @@ import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
 import { FieldError } from '../components/FormValidation';
 import { hasValidationErrors, invalidClass, invalidProps, normalizeLaravelErrors, validateFields, validators } from '../utils/validation';
 import axios from 'axios';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
 
 const EMPTY_SECTION_FORM = {
   title: '',
@@ -100,8 +101,20 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
   const [sectionTouched, setSectionTouched] = useState({});
   const [lessonErrors, setLessonErrors] = useState({});
   const [lessonTouched, setLessonTouched] = useState({});
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const headers = useMemo(() => apiHeaders(token), [token]);
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm) return;
+    const { type, id } = deleteConfirm;
+    if (type === 'section') {
+      await deleteSection(id);
+    } else if (type === 'lesson') {
+      await deleteLesson(id);
+    }
+    setDeleteConfirm(null);
+  };
   const apiScope = `${API_BASE_URL}/${scope}`;
   const sections = curriculum?.sections || [];
   const selectedCourse = courses.find((course) => String(course.id) === String(selectedCourseId));
@@ -962,7 +975,7 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
                       </div>
                       <div className="d-flex gap-2">
                         <button type="button" className="btn btn-sm btn-edit-course px-3" onClick={() => startEditingSection(section)}>تعديل</button>
-                        <button type="button" className="btn btn-sm btn-delete-course px-3" onClick={() => deleteSection(section.id)} disabled={submitting}>حذف</button>
+                        <button type="button" className="btn btn-sm btn-delete-course px-3" onClick={() => setDeleteConfirm({ type: 'section', id: section.id, name: section.title })} disabled={submitting}>حذف</button>
                       </div>
                     </>
                   )}
@@ -1128,7 +1141,7 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
                                     <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>keyboard_arrow_down</span>
                                   </button>
                                   <button type="button" className="btn btn-sm btn-edit-course px-3" onClick={() => startEditingLesson(lesson)}>تعديل</button>
-                                  <button type="button" className="btn btn-sm btn-delete-course px-3" onClick={() => deleteLesson(lesson.id)} disabled={submitting}>حذف</button>
+                                  <button type="button" className="btn btn-sm btn-delete-course px-3" onClick={() => setDeleteConfirm({ type: 'lesson', id: lesson.id, name: lesson.title })} disabled={submitting}>حذف</button>
                                 </>
                               )}
                             </div>
@@ -1143,6 +1156,16 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
           </div>
         )}
       </section>
+
+      <DeleteConfirmModal
+        isOpen={!!deleteConfirm}
+        itemName={deleteConfirm?.name}
+        itemType={deleteConfirm?.type === 'section' ? 'القسم' : 'الدرس'}
+        warning={deleteConfirm?.type === 'section' ? 'سيتم حذف جميع الدروس داخل هذا القسم نهائياً.' : undefined}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+        isLoading={submitting}
+      />
     </div>
   );
 }

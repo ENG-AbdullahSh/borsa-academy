@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
 
 export default function AdminReviews() {
   const { token } = useAuth();
@@ -11,6 +12,7 @@ export default function AdminReviews() {
   const [sort, setSort] = useState('newest'); // newest, reported, highest, lowest
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { id, label }
 
   const fetchCourses = useCallback(async () => {
     try {
@@ -61,10 +63,14 @@ export default function AdminReviews() {
     }
   }, [fetchReviews, selectedCourse]);
 
-  const handleDelete = async (reviewId) => {
-    if (!window.confirm('هل أنت متأكد من حذف هذا التقييم بشكل نهائي؟')) return;
+  const handleDelete = (reviewId, reviewLabel) => {
+    setDeleteConfirm({ id: reviewId, label: reviewLabel });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm) return;
     try {
-      const response = await fetch(`${API_BASE_URL}/reviews/${reviewId}`, {
+      const response = await fetch(`${API_BASE_URL}/reviews/${deleteConfirm.id}`, {
         method: 'DELETE',
         headers: apiHeaders(token)
       });
@@ -73,6 +79,8 @@ export default function AdminReviews() {
       }
     } catch (err) {
       console.error('Error deleting review:', err);
+    } finally {
+      setDeleteConfirm(null);
     }
   };
 
@@ -92,6 +100,7 @@ export default function AdminReviews() {
   };
 
   return (
+    <>
     <div className="container-fluid py-4" style={{ direction: 'rtl' }}>
       <h2 className="text-white fw-bold mb-4" style={{ fontFamily: 'var(--font-sans)' }}>إدارة التقييمات والمراجعات</h2>
 
@@ -199,11 +208,11 @@ export default function AdminReviews() {
                         </span>
                       </button>
                       <button 
-                        className="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center"
-                        onClick={() => handleDelete(review.id)}
-                        title="حذف نهائي"
-                        style={{ width: '32px', height: '32px' }}
-                      >
+                         className="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center"
+                         onClick={() => handleDelete(review.id, review.user?.name ? `تقييم ${review.user.name}` : `تقييم #${review.id}`)}
+                         title="حذف نهائي"
+                         style={{ width: '32px', height: '32px' }}
+                       >
                         <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>delete</span>
                       </button>
                     </div>
@@ -238,5 +247,14 @@ export default function AdminReviews() {
         </div>
       )}
     </div>
+
+      <DeleteConfirmModal
+        isOpen={!!deleteConfirm}
+        itemName={deleteConfirm?.label}
+        itemType="التقييم"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
+    </>
   );
 }

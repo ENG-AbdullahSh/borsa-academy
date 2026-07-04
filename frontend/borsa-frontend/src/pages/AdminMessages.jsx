@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { API_BASE_URL, apiHeaders, readJsonResponse } from '../utils/api';
 import UserAvatar from '../components/UserAvatar';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
 
 const PER_PAGE = 15;
 
@@ -489,6 +490,7 @@ export default function AdminMessages({ onUnreadCountChange }) {
   const [busyAction, setBusyAction] = useState(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState(null);
+  const [rowDeleteConfirm, setRowDeleteConfirm] = useState(null); // { message } for table-row deletes
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -616,7 +618,11 @@ export default function AdminMessages({ onUnreadCountChange }) {
   };
 
   const deleteMessage = async (message, confirmed = false) => {
-    if (!confirmed && !window.confirm(`هل تريد حذف رسالة "${message.subject}" نهائيًا؟`)) return;
+    if (!confirmed) {
+      // Table-row click: show our premium modal instead of window.confirm
+      setRowDeleteConfirm(message);
+      return;
+    }
 
     setBusyAction(message.id);
 
@@ -812,6 +818,19 @@ export default function AdminMessages({ onUnreadCountChange }) {
           onDelete={deleteMessage}
         />
       )}
+
+      <DeleteConfirmModal
+        isOpen={!!rowDeleteConfirm}
+        itemName={rowDeleteConfirm?.subject}
+        itemType="الرسالة"
+        onConfirm={() => {
+          const msg = rowDeleteConfirm;
+          setRowDeleteConfirm(null);
+          deleteMessage(msg, true);
+        }}
+        onCancel={() => setRowDeleteConfirm(null)}
+        isLoading={!!busyAction}
+      />
     </div>
   );
 }
