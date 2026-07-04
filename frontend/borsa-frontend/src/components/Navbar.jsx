@@ -65,7 +65,7 @@ export default function Navbar() {
           <Link
             to="/"
             onClick={closeMobile}
-            className="text-decoration-none flex-shrink-0 interactive d-flex align-items-center gap-2"
+            className="text-decoration-none flex-shrink-0 interactive d-flex align-items-center gap-3"
             aria-label="بورصة أكاديمي - الصفحة الرئيسية"
             style={{ flexDirection: 'row' }}
           >

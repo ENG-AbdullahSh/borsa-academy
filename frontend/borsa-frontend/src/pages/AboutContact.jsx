@@ -6,7 +6,7 @@ import { normalizeLaravelErrors } from '../utils/validation';
 
 /* ─── Static data ────────────────────────────────────────────── */
 const MENTORS = [
-  { name: 'احمد ديب',       role: 'المهندس',             bio: 'مسؤول عن الجوانب التقنية وتطوير تجربة المنصة.',              color: '#75ff9e' },
+  { name: 'احمد ديب',       role: 'المدرب',              bio: 'خبير متمرس في تدريب الطلاب على أحدث استراتيجيات التداول وتحليل الأسواق المالية.',              color: '#75ff9e' },
   { name: 'علي ابو عصر',    role: 'ماركتنج',             bio: 'مسؤول عن التسويق والتواصل مع الجمهور وبناء حضور الأكاديمية.', color: '#81cfff' },
   { name: 'احمد العزامي',    role: 'دعم',                 bio: 'مسؤول عن دعم المستخدمين ومتابعة احتياجاتهم اليومية.',         color: '#75ff9e' },
   { name: 'كريم ابو رمضان', role: 'مدير الاعمال والتطوير', bio: 'يقود أعمال الأكاديمية وخطط التطوير والنمو.',                  color: '#81cfff' },
@@ -182,11 +182,10 @@ export default function AboutContact() {
 
       {/* ── Stats ── */}
       <section className="py-4 container" style={{ maxWidth: '1100px' }}>
-        <div className="row g-3">
+        <div className="row g-3 justify-content-center">
           {[
-            { value: '+٥٠,٠٠٠',   label: 'مستخدم نشط في المنصة', color: '#75ff9e' },
+            { value: '+٢,٨٢٥',   label: 'مستخدم نشط في المنصة', color: '#75ff9e' },
             { value: '٩٨.٤٪',     label: 'مؤشر الرضا',            color: '#81cfff' },
-            { value: '+٢.٤ مليار$', label: 'حجم التداول المحاكى', color: '#75ff9e' },
           ].map((s, i) => (
             <div key={i} className="col-12 col-md-4">
               <div className="glass-card p-4 rounded-3 text-center">

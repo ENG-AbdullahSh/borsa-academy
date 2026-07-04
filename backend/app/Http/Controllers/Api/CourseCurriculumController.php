@@ -52,9 +52,28 @@ class CourseCurriculumController extends Controller
     {
         /** @var \App\Models\User|null $user */
         $user = auth('sanctum')->user();
-        $enrollment = $user !== null && $user->role === 'student'
-            ? $user->enrollments()->where('course_id', $course->id)->first()
-            : null;
+        
+        $enrollment = null;
+        if ($user !== null && $user->role === 'student') {
+            if ((float) $course->price === 0.0) {
+                $enrollment = $user->enrollments()->firstOrCreate(
+                    ['course_id' => $course->id],
+                    [
+                        'enrolled_at' => now(),
+                        'progress' => 0,
+                        'completed' => false,
+                    ]
+                );
+                
+                if ($enrollment->wasRecentlyCreated) {
+                    event(new \App\Events\CourseEnrollmentEvent($user, $course));
+                    event(new \App\Events\UserStartedCourseEvent($user, $course));
+                }
+            } else {
+                $enrollment = $user->enrollments()->where('course_id', $course->id)->first();
+            }
+        }
+
         $isEnrolled = $enrollment !== null;
         $canAccessAllLessons = $forceAccess || $isEnrolled || $user?->role === 'admin';
         $completedLessonIds = $isEnrolled

@@ -130,6 +130,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::middleware('role:admin')->group(function (): void {
         Route::put('/admin/settings', [SettingController::class, 'updateSettings']);
         Route::get('/admin/users', [AdminUserController::class, 'index']);
+        Route::post('/admin/users', [AdminUserController::class, 'store']);
         Route::get('/admin/users/{user}', [AdminUserController::class, 'show'])->whereNumber('user');
         Route::put('/admin/users/{user}/status', [AdminUserController::class, 'updateStatus'])->whereNumber('user');
         Route::put('/admin/users/{user}/role', [AdminUserController::class, 'updateRole'])->whereNumber('user');

@@ -7,6 +7,15 @@ import UserAvatar from '../components/UserAvatar';
 const USERS_ENDPOINT = `${API_BASE_URL}/admin/users`;
 const PER_PAGE = 15;
 
+/* ── Password strength ──────────────────────────────────────────── */
+const PWD_RULES = [
+  { key: 'length', label: '8 أحرف على الأقل',         test: (p) => p.length >= 8 },
+  { key: 'letter', label: 'يحتوي على حرف (A-Z / a-z)',   test: (p) => /[a-zA-Z]/.test(p) },
+  { key: 'number', label: 'يحتوي على رقم (0-9)',        test: (p) => /[0-9]/.test(p) },
+  { key: 'symbol', label: 'يحتوي على رمز (!@#$...)',    test: (p) => /[^a-zA-Z0-9]/.test(p) },
+];
+const isAdminPwdStrong = (p) => PWD_RULES.every((r) => r.test(p));
+
 const ROLE_OPTIONS = [
   { value: 'student', label: 'طالب' },
   { value: 'instructor', label: 'مدرب' },
@@ -94,6 +103,9 @@ export default function AdminUsers() {
   const [updating, setUpdating] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [isAddingUser, setIsAddingUser] = useState(false);
+  const [newUserForm, setNewUserForm] = useState({ name: '', email: '', password: '', role: 'student' });
+  const [addingUserLoading, setAddingUserLoading] = useState(false);
 
   const headers = useMemo(() => apiHeaders(token), [token]);
 
@@ -210,6 +222,31 @@ export default function AdminUsers() {
     }
   };
 
+  const handleAddUser = async (e) => {
+    e.preventDefault();
+    if (!isAdminPwdStrong(newUserForm.password)) {
+      notify('error', 'كلمة المرور يجب أن تحتوي على حروف وأرقام ورموز (8 أحرف على الأقل).');
+      return;
+    }
+    setAddingUserLoading(true);
+    try {
+      const response = await fetch(USERS_ENDPOINT, {
+        method: 'POST',
+        headers: apiHeaders(token, true),
+        body: JSON.stringify(newUserForm),
+      });
+      const data = await readJsonResponse(response);
+      setUsers((current) => [data.data, ...current]);
+      notify('success', data.message || 'تمت إضافة المستخدم بنجاح.');
+      setIsAddingUser(false);
+      setNewUserForm({ name: '', email: '', password: '', role: 'student' });
+    } catch (requestError) {
+      notify('error', requestError.message || 'تعذر إضافة المستخدم.');
+    } finally {
+      setAddingUserLoading(false);
+    }
+  };
+
   const changeRoleFilter = (event) => {
     setRole(event.target.value);
     setPage(1);
@@ -233,6 +270,15 @@ export default function AdminUsers() {
         </div>
 
         <section className="glass-card p-3 rounded-3 d-flex flex-wrap gap-3 align-items-center">
+          <button
+            type="button"
+            className="btn btn-primary-cta fw-bold d-flex align-items-center gap-2 custom-input"
+            onClick={() => setIsAddingUser(true)}
+            style={{ minWidth: '140px', justifyContent: 'center' }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add</span>
+            إضافة مستخدم
+          </button>
           <div className="flex-grow-1" style={{ minWidth: '220px' }}>
             <input
               type="search"
@@ -453,6 +499,91 @@ export default function AdminUsers() {
               </div>
             </div>
           )}
+        </ModalShell>
+      )}
+
+      {isAddingUser && (
+        <ModalShell title="إضافة مستخدم جديد" onClose={() => setIsAddingUser(false)}>
+          <form onSubmit={handleAddUser} className="d-flex flex-column gap-3" style={{ direction: 'rtl' }}>
+            <div>
+              <label className="form-label text-white small mb-1">الاسم الكامل</label>
+              <input
+                type="text"
+                className="form-control custom-input"
+                required
+                value={newUserForm.name}
+                onChange={(e) => setNewUserForm({ ...newUserForm, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="form-label text-white small mb-1">البريد الإلكتروني</label>
+              <input
+                type="email"
+                className="form-control custom-input"
+                required
+                value={newUserForm.email}
+                onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="form-label text-white small mb-1">كلمة المرور</label>
+              <input
+                type="password"
+                className="form-control custom-input"
+                required
+                value={newUserForm.password}
+                onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
+              />
+              {/* Strength indicator */}
+              {newUserForm.password.length > 0 && (
+                <div style={{ marginTop: '8px', padding: '10px 12px', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <p style={{ fontSize: '11px', color: '#94a3b8', margin: '0 0 6px 0', fontFamily: 'var(--font-sans)' }}>متطلبات كلمة المرور:</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {PWD_RULES.map((rule) => {
+                      const passed = rule.test(newUserForm.password);
+                      return (
+                        <div key={rule.key} style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px', color: passed ? '#00e676' : '#475569', fontVariationSettings: passed ? "'FILL' 1" : "'FILL' 0", transition: 'color 0.25s' }}>
+                            {passed ? 'check_circle' : 'radio_button_unchecked'}
+                          </span>
+                          <span style={{ fontSize: '11px', fontFamily: 'var(--font-sans)', color: passed ? '#75ff9e' : '#64748b', transition: 'color 0.25s' }}>{rule.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="form-label text-white small mb-1">الدور</label>
+              <select
+                className="form-select custom-input"
+                value={newUserForm.role}
+                onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })}
+              >
+                {ROLE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="d-flex justify-content-end gap-2 mt-2">
+              <button
+                type="button"
+                className="btn btn-outline-light"
+                onClick={() => setIsAddingUser(false)}
+                disabled={addingUserLoading}
+              >
+                إلغاء
+              </button>
+              <button
+                type="submit"
+                className="btn btn-primary-cta"
+                disabled={addingUserLoading || !isAdminPwdStrong(newUserForm.password)}
+              >
+                {addingUserLoading ? 'جاري الإضافة...' : 'إضافة'}
+              </button>
+            </div>
+          </form>
         </ModalShell>
       )}
     </>

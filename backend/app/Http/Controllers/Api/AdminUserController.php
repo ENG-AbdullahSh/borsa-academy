@@ -9,8 +9,10 @@ use App\Notifications\AccountStatusChangedNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Throwable;
 
 class AdminUserController extends Controller
@@ -45,6 +47,42 @@ class AdminUserController extends Controller
             ->withQueryString();
 
         return response()->json($users);
+    }
+
+    /**
+     * Create a new user from the admin dashboard.
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name'     => ['required', 'string', 'max:255'],
+            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', Password::defaults()],
+            'role'     => ['required', Rule::in(['admin', 'instructor', 'student'])],
+        ]);
+
+        $user = DB::transaction(function () use ($validated) {
+            $newUser = User::create([
+                'name'     => $validated['name'],
+                'email'    => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'role'     => $validated['role'],
+                'status'   => 'active', // default status
+            ]);
+
+            if ($newUser->role === 'instructor') {
+                $this->ensureInstructorProfile($newUser);
+            }
+
+            return $newUser;
+        });
+
+        $user->loadCount(['enrollments', 'certificates']);
+
+        return response()->json([
+            'message' => 'تم إضافة المستخدم بنجاح.',
+            'data'    => $this->userData($user),
+        ], 201);
     }
 
     /**

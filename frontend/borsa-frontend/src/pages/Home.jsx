@@ -88,13 +88,13 @@ export default function Home() {
                 <div className="position-relative p-4 p-lg-5" style={{ zIndex: 1 }}>
                   <span className="material-symbols-outlined" style={{ color: '#75ff9e', fontSize: '48px', fontVariationSettings: "'FILL' 1" }}>format_quote</span>
                   <h4 className="fw-semibold text-white mt-3 mb-4" style={{ fontSize: '20px', lineHeight: 1.7, fontFamily: 'var(--font-sans)', maxWidth: '540px' }}>
-                    "بورصة أكاديمي لم تمنحني استراتيجية فحسب، بل منحتني مهنة كاملة. تحولت من المقامرة إلى الربحية المستدامة في ٦ أشهر فقط."
+                    "بورصة أكاديمي مش بس أعطتني استراتيجية، هادي أعطتني مصلحة كاملة أسترزق منها. تحولت من واحد بيجرب حظه لمتداول بيطّلع ربح ثابت في ٦ شهور بس، الحمد لله."
                   </h4>
                 </div>
                 <div className="position-relative d-flex align-items-center gap-3 p-4" style={{ zIndex: 1 }}>
-                  <div className="d-flex align-items-center justify-content-center font-mono-data fw-bold" style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#111417', border: '1px solid rgba(117,255,158,0.25)', color: '#75ff9e', fontSize: '13px' }}>م.ش</div>
+                  <div className="d-flex align-items-center justify-content-center font-mono-data fw-bold" style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#111417', border: '1px solid rgba(117,255,158,0.25)', color: '#75ff9e', fontSize: '13px' }}>م.أ</div>
                   <div>
-                    <p className="m-0 text-white fw-bold" style={{ fontSize: '14px', fontFamily: 'var(--font-sans)' }}>محمد الشمري</p>
+                    <p className="m-0 text-white fw-bold" style={{ fontSize: '14px', fontFamily: 'var(--font-sans)' }}>محمود الأشقر</p>
                     <p className="m-0 font-mono-data text-uppercase" style={{ color: '#75ff9e', fontSize: '9px' }}>متداول فوركس متفرغ</p>
                   </div>
                 </div>
@@ -102,17 +102,17 @@ export default function Home() {
             </div>
             <div className="col-12 col-lg-4 d-flex flex-column gap-4">
               <div className="glass-card p-4 rounded-3 flex-grow-1 d-flex flex-column justify-content-between">
-                <p className="fst-italic mb-4" style={{ fontSize: '14px', lineHeight: 1.9, color: '#E2E8F0', fontWeight: 400 }}>"وحدة علم النفس التداولي كانت القطعة المفقودة. فهم تحيزاتي غيّر كل شيء."</p>
+                <p className="fst-italic mb-4" style={{ fontSize: '14px', lineHeight: 1.9, color: '#E2E8F0', fontWeight: 400 }}>"والله جزئية النفسية في التداول كانت هي اللي ضايلالي. فهمت كيف أتحكم بحالي وهادا اللي غيّر كل إشي معي."</p>
                 <div className="d-flex align-items-center gap-2">
                   <div className="rounded-circle" style={{ width: '28px', height: '28px', backgroundColor: '#00a9e8' }} />
-                  <span className="text-white fw-semibold" style={{ fontSize: '13px' }}>سارة م.</span>
+                  <span className="text-white fw-semibold" style={{ fontSize: '13px' }}>نور حلس</span>
                 </div>
               </div>
               <div className="glass-card p-4 rounded-3 flex-grow-1 d-flex flex-column justify-content-between">
-                <p className="fst-italic mb-4" style={{ fontSize: '14px', lineHeight: 1.9, color: '#E2E8F0', fontWeight: 400 }}>"مجتمع الديسكورد يستحق الاشتراك وحده. رؤى مؤسسية عميقة يوميًا."</p>
+                <p className="fst-italic mb-4" style={{ fontSize: '14px', lineHeight: 1.9, color: '#E2E8F0', fontWeight: 400 }}>"من يوم ما دخلت الأكاديمية وأموري تمام التمام، المتابعة والشرح اشي فاخر ع الآخر وبصراحة فرقت معي كتير في التداول."</p>
                 <div className="d-flex align-items-center gap-2">
                   <div className="rounded-circle" style={{ width: '28px', height: '28px', backgroundColor: '#00e676' }} />
-                  <span className="text-white fw-semibold" style={{ fontSize: '13px' }}>داود ع.</span>
+                  <span className="text-white fw-semibold" style={{ fontSize: '13px' }}>أحمد الدحدوح</span>
                 </div>
               </div>
             </div>

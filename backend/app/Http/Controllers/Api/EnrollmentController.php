@@ -114,16 +114,50 @@ class EnrollmentController extends Controller
 
     public function show(Request $request, int $courseId): JsonResponse
     {
-        $enrollment = $request->user()
+        $user = $request->user();
+        $enrollment = $user
             ->enrollments()
             ->with('course')
             ->where('course_id', $courseId)
             ->first();
 
         if (! $enrollment) {
-            return response()->json([
-                'message' => 'يجب الاشتراك في الدورة أولاً',
-            ], 403);
+            $course = Course::query()->published()->find($courseId);
+            
+            if ($course && (float) $course->price === 0.0) {
+                $enrollment = $user->enrollments()->firstOrCreate(
+                    ['course_id' => $course->id],
+                    [
+                        'enrolled_at' => now(),
+                        'progress' => 0,
+                        'completed' => false,
+                    ]
+                );
+                
+                $enrollment->load('course');
+                
+                if ($enrollment->wasRecentlyCreated) {
+                    event(new \App\Events\CourseEnrollmentEvent($user, $course));
+                    event(new \App\Events\UserStartedCourseEvent($user, $course));
+                    
+                    try {
+                        $this->notificationRecipients->notifyInstructor(
+                            $course,
+                            new \App\Notifications\StudentEnrolledInstructorNotification($user, $course),
+                        );
+                    } catch (Throwable $exception) {
+                        Log::warning('Instructor enrollment notification failed', [
+                            'course_id' => $course->id,
+                            'student_id' => $user->id,
+                            'error' => $exception->getMessage(),
+                        ]);
+                    }
+                }
+            } else {
+                return response()->json([
+                    'message' => 'يجب الاشتراك في الدورة أولاً',
+                ], 403);
+            }
         }
 
         return response()->json([

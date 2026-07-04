@@ -68,9 +68,9 @@ function AppShell() {
         <Routes>
           {/* Main pages */}
           <Route path="/"           element={<Home />} />
-          <Route path="/courses"    element={<Courses />} />
-          <Route path="/courses/:id" element={<CourseDetail />} />
-          <Route path="/about"      element={<AboutContact />} />
+          <Route path="/courses"    element={<ProtectedAuthenticatedRoute><Courses /></ProtectedAuthenticatedRoute>} />
+          <Route path="/courses/:id" element={<ProtectedAuthenticatedRoute><CourseDetail /></ProtectedAuthenticatedRoute>} />
+          <Route path="/about"      element={<ProtectedAuthenticatedRoute><AboutContact /></ProtectedAuthenticatedRoute>} />
           <Route
             path="/admin"
             element={(

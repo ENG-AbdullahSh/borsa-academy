@@ -169,9 +169,10 @@ class CertificateController extends Controller
             ? (($certificate->course?->title ?? 'الدورة') . ' - ' . $certificate->section->title)
             : ($certificate->course?->title ?? 'الدورة');
 
-        // Arabic date (matches browser Intl.DateTimeFormat('ar-EG') output)
-        $formatter   = new \IntlDateFormatter('ar', \IntlDateFormatter::LONG, \IntlDateFormatter::NONE);
-        $rawIssuedAt = $formatter->format($certificate->issued_at ?? now());
+        // Arabic date fallback (Carbon locale)
+        $rawIssuedAt = \Carbon\Carbon::parse($certificate->issued_at ?? now())
+            ->locale('ar')
+            ->translatedFormat('j F Y');
 
         // --- 2. Shape Arabic glyphs for DomPDF -----------------------------
         $arabic = new Arabic();

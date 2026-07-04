@@ -9,6 +9,22 @@ import { hasValidationErrors, invalidClass, invalidProps, normalizeLaravelErrors
 import '../styles/auth.css';
 import borsaLogo from '../assets/Borsa Academy.jpeg';
 
+/* ── Password strength checker ───────────────────────────────────── */
+const pwdRules = [
+  { key: 'length',  label: '8 أحرف على الأقل',       test: (p) => p.length >= 8 },
+  { key: 'letter',  label: 'يحتوي على حرف (A-Z / a-z)', test: (p) => /[a-zA-Z]/.test(p) },
+  { key: 'number',  label: 'يحتوي على رقم (0-9)',      test: (p) => /[0-9]/.test(p) },
+  { key: 'symbol',  label: 'يحتوي على رمز (!@#$...)',  test: (p) => /[^a-zA-Z0-9]/.test(p) },
+];
+
+function checkPassword(pwd) {
+  return pwdRules.map((r) => ({ ...r, passed: r.test(pwd) }));
+}
+
+function isStrongPassword(pwd) {
+  return pwdRules.every((r) => r.test(pwd));
+}
+
 /* ── SVG helpers ─────────────────────────────────────────────────── */
 const CheckIcon = () => (
   <svg className="auth-feature-bullet-icon" viewBox="0 0 16 16">
@@ -85,7 +101,7 @@ export default function SignUp() {
     ],
     password: [
       validators.required('كلمة المرور مطلوبة.'),
-      validators.minLength(8, 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.'),
+      (v) => !isStrongPassword(v) ? 'كلمة المرور يجب أن تحتوي على حروف وأرقام ورموز (8 أحرف على الأقل).' : '',
     ],
     password_confirmation: [
       validators.required('تأكيد كلمة المرور مطلوب.'),
@@ -132,8 +148,8 @@ export default function SignUp() {
       setError('كلمة المرور وتأكيدها غير متطابقتين.');
       return;
     }
-    if (password.length < 8) {
-      setError('يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.');
+    if (password.length < 8 || !isStrongPassword(password)) {
+      setError('كلمة المرور يجب أن تحتوي على حروف وأرقام ورموز (8 أحرف على الأقل).');
       return;
     }
     if (!agreed) {
@@ -329,6 +345,52 @@ export default function SignUp() {
                     </button>
                   </div>
                   <FieldError id="signup-password-error" message={touched.password && fieldErrors.password} />
+
+                  {/* Password Strength Indicator */}
+                  {password.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: '10px',
+                        padding: '12px 14px',
+                        background: 'rgba(255,255,255,0.04)',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255,255,255,0.07)',
+                      }}
+                      aria-live="polite"
+                      aria-label="قوة كلمة المرور"
+                    >
+                      <p style={{ fontSize: '11px', color: '#94a3b8', margin: '0 0 8px 0', fontFamily: 'var(--font-sans)' }}>
+                        متطلبات كلمة المرور:
+                      </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                        {checkPassword(password).map((rule) => (
+                          <div key={rule.key} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span
+                              className="material-symbols-outlined"
+                              style={{
+                                fontSize: '15px',
+                                color: rule.passed ? '#00e676' : '#475569',
+                                fontVariationSettings: rule.passed ? "'FILL' 1" : "'FILL' 0",
+                                transition: 'color 0.25s',
+                              }}
+                            >
+                              {rule.passed ? 'check_circle' : 'radio_button_unchecked'}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: '12px',
+                                fontFamily: 'var(--font-sans)',
+                                color: rule.passed ? '#75ff9e' : '#64748b',
+                                transition: 'color 0.25s',
+                              }}
+                            >
+                              {rule.label}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Confirm Password */}
