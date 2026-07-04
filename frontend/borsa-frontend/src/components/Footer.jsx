@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaTelegram, FaYoutube, FaXTwitter, FaDiscord } from 'react-icons/fa6';
+import { FaTelegram, FaYoutube, FaXTwitter, FaDiscord, FaInstagram, FaWhatsapp } from 'react-icons/fa6';
 import { useSettings } from '../context/SettingsContext';
 import { FieldError } from './FormValidation';
 import { invalidClass, invalidProps, validateFields, validators } from '../utils/validation';
@@ -105,23 +105,36 @@ export default function Footer() {
           </div>
         </div>
 
+
         {/* Bottom Row: Social Icons & Copyright */}
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-center pt-4" style={{ marginTop: '20px', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
           <p className="m-0 font-mono-data text-uppercase" style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '11px', letterSpacing: '0.05em' }}>
             &copy; {new Date().getFullYear()} {settings.academy_name || 'بورصة أكاديمي'}. جميع الحقوق محفوظة.
           </p>
           <div className="d-flex align-items-center mt-3 mt-md-0" style={{ gap: '15px' }}>
+            <a
+              href="https://www.instagram.com/bors_aacademy?igsh=OXpjaDl4dmk1eTU0"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="social-icon-premium"
+              aria-label="إنستغرام"
+            >
+              <FaInstagram size={18} />
+            </a>
+            <a
+              href="https://wa.me/970598341135"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="social-icon-premium"
+              aria-label="واتساب"
+            >
+              <FaWhatsapp size={18} />
+            </a>
             <a href="#" className="social-icon-premium">
               <FaTelegram size={18} />
             </a>
             <a href="#" className="social-icon-premium">
               <FaYoutube size={18} />
-            </a>
-            <a href="#" className="social-icon-premium">
-              <FaXTwitter size={18} />
-            </a>
-            <a href="#" className="social-icon-premium">
-              <FaDiscord size={18} />
             </a>
           </div>
         </div>

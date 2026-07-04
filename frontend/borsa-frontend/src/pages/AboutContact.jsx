@@ -237,10 +237,10 @@ export default function AboutContact() {
               </p>
               <div className="d-flex flex-column gap-4">
                 {[
-                  { icon: 'mail',  label: 'نقطة دعم الكم',    value: 'terminal@borsa.academy' },
-                  { Icon: FaWhatsapp, label: 'قناة الواتس اب', value: 'قناة بورصة أكاديمي على واتساب' },
-                  { Icon: FaTelegram, label: 'قناة التلي غرام', value: 'قناة بورصة أكاديمي على تليغرام' },
-                  { Icon: FaInstagram, label: 'الانستغرام',     value: 'حساب بورصة أكاديمي على إنستغرام' },
+                  { icon: 'mail',  label: 'نقطة دعم الكم',    value: 'terminal@borsa.academy', href: null },
+                  { Icon: FaWhatsapp, label: 'واتساب', value: '+970 598 341 135', href: 'https://wa.me/970598341135' },
+                  { Icon: FaTelegram, label: 'قناة التلي غرام', value: 'قناة بورصة أكاديمي على تليغرام', href: null },
+                  { Icon: FaInstagram, label: 'الانستغرام', value: '@bors_aacademy', href: 'https://www.instagram.com/bors_aacademy?igsh=OXpjaDl4dmk1eTU0' },
                 ].map((item, i) => (
                   <div key={i} className="d-flex align-items-center gap-3">
                     <div
@@ -253,10 +253,22 @@ export default function AboutContact() {
                         <span className="material-symbols-outlined" style={{ color: '#75ff9e', fontSize: '20px' }}>{item.icon}</span>
                       )}
                     </div>
-                    <div>
-                      <p className="m-0 text-muted font-mono-data text-uppercase" style={{ fontSize: '9px', letterSpacing: '0.08em' }}>{item.label}</p>
-                      <p className="m-0 text-white fw-semibold" style={{ fontSize: '14px', fontFamily: 'var(--font-sans)' }}>{item.value}</p>
-                    </div>
+                     <div>
+                       <p className="m-0 text-muted font-mono-data text-uppercase" style={{ fontSize: '9px', letterSpacing: '0.08em' }}>{item.label}</p>
+                       {item.href ? (
+                         <a
+                           href={item.href}
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           className="m-0 fw-semibold"
+                           style={{ fontSize: '14px', fontFamily: 'var(--font-sans)', color: '#75ff9e', textDecoration: 'none' }}
+                         >
+                           {item.value}
+                         </a>
+                       ) : (
+                         <p className="m-0 text-white fw-semibold" style={{ fontSize: '14px', fontFamily: 'var(--font-sans)' }}>{item.value}</p>
+                       )}
+                     </div>
                   </div>
                 ))}
               </div>
