@@ -11,7 +11,6 @@ import Courses from './pages/Courses';
 import CourseDetail from './pages/CourseDetail';
 import AboutContact from './pages/AboutContact';
 import AdminDashboard from './pages/AdminDashboard';
-import AdminChatRooms from './pages/AdminChatRooms';
 import AdminReviews from './pages/AdminReviews';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
@@ -23,7 +22,6 @@ import StudentDashboard from './pages/StudentDashboard';
 import Certificates from './pages/Certificates';
 import CertificateDetails from './pages/CertificateDetails';
 import ProfilePage from './pages/ProfilePage';
-import ChatPage from './pages/ChatPage';
 import InstructorDashboard from './pages/InstructorDashboard';
 import InstructorCourses from './pages/InstructorCourses';
 import InstructorCourseDetails from './pages/InstructorCourseDetails';
@@ -76,14 +74,6 @@ function AppShell() {
             element={(
               <ProtectedAdminRoute>
                 <AdminDashboard />
-              </ProtectedAdminRoute>
-            )}
-          />
-          <Route
-            path="/admin/chat-rooms"
-            element={(
-              <ProtectedAdminRoute>
-                <AdminChatRooms />
               </ProtectedAdminRoute>
             )}
           />
@@ -180,14 +170,6 @@ function AppShell() {
             element={(
               <ProtectedAuthenticatedRoute>
                 <ProfilePage />
-              </ProtectedAuthenticatedRoute>
-            )}
-          />
-          <Route
-            path="/chat"
-            element={(
-              <ProtectedAuthenticatedRoute>
-                <ChatPage />
               </ProtectedAuthenticatedRoute>
             )}
           />

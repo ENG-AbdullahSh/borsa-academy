@@ -40,22 +40,46 @@ export default function CertificateCard({ certificate }) {
         </h3>
 
         <div className="row g-3 text-start">
-          <div className="col-12 col-md-4">
+          <div className="col-6 col-md-3">
             <div className="rounded-3 p-3 h-100" style={{ background: 'rgba(255,255,255,0.035)' }}>
               <span className="text-muted d-block mb-1" style={{ fontSize: '12px' }}>تاريخ الإصدار</span>
               <strong className="text-white">{formatCertificateDate(certificate.issued_at)}</strong>
             </div>
           </div>
-          <div className="col-12 col-md-4">
+          <div className="col-6 col-md-3">
             <div className="rounded-3 p-3 h-100" style={{ background: 'rgba(255,255,255,0.035)' }}>
               <span className="text-muted d-block mb-1" style={{ fontSize: '12px' }}>رقم الشهادة</span>
               <strong className="font-mono-data" dir="ltr" style={{ color: '#d4af37' }}>{certificate.certificate_number}</strong>
             </div>
           </div>
-          <div className="col-12 col-md-4">
+          <div className="col-6 col-md-3">
             <div className="rounded-3 p-3 h-100" style={{ background: 'rgba(255,255,255,0.035)' }}>
               <span className="text-muted d-block mb-1" style={{ fontSize: '12px' }}>نسبة الإنجاز</span>
               <strong style={{ color: '#75ff9e' }}>{certificate.progress_percentage}%</strong>
+            </div>
+          </div>
+          <div className="col-6 col-md-3">
+            <div className="rounded-3 p-3 h-100" style={{ background: 'rgba(255,255,255,0.035)' }}>
+              <span className="text-muted d-block mb-1" style={{ fontSize: '12px' }}>عدد الساعات</span>
+              <strong className="text-white">{certificate.duration_hours ? `${certificate.duration_hours} ساعة` : '—'}</strong>
+            </div>
+          </div>
+        </div>
+
+        {/* Signatures row */}
+        <div className="row g-3 text-center mt-2">
+          <div className="col-12 col-md-6">
+            <div className="rounded-3 p-3 h-100" style={{ background: 'rgba(255,255,255,0.035)' }}>
+              <span className="text-muted d-block mb-1" style={{ fontSize: '12px' }}>المدرب</span>
+              <div style={{ width: '120px', borderBottom: '1px solid rgba(212,175,55,0.4)', margin: '12px auto 8px' }} />
+              <strong className="text-white">{certificate.instructor_name || '—'}</strong>
+            </div>
+          </div>
+          <div className="col-12 col-md-6">
+            <div className="rounded-3 p-3 h-100" style={{ background: 'rgba(255,255,255,0.035)' }}>
+              <span className="text-muted d-block mb-1" style={{ fontSize: '12px' }}>مدير المركز</span>
+              <div style={{ width: '120px', borderBottom: '1px solid rgba(212,175,55,0.4)', margin: '12px auto 8px' }} />
+              <strong className="text-white">{certificate.center_director_name || '—'}</strong>
             </div>
           </div>
         </div>

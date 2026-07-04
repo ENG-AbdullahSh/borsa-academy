@@ -6,7 +6,7 @@ import AdminMessages from './AdminMessages';
 import AdminQuizManager from './AdminQuizManager';
 import AdminUsers from './AdminUsers';
 import AdminSettings from './AdminSettings';
-import AdminChatRooms from './AdminChatRooms';
+
 import ProfileSettings from './ProfileSettings';
 import AdminActivityWidget from '../components/AdminActivityWidget';
 import UserAvatar from '../components/UserAvatar';
@@ -21,7 +21,7 @@ const TABS = [
   { id: 'instructors', label: 'المدربون', icon: 'group' },
   { id: 'users', label: 'المستخدمون', icon: 'people' },
   { id: 'messages', label: 'الرسائل', icon: 'forum' },
-  { id: 'chat-rooms', label: 'غرف الدردشة', icon: 'video_camera_front' },
+
   { id: 'profile', label: 'الملف الشخصي', icon: 'account_circle' },
   { id: 'settings', label: 'الإعدادات', icon: 'settings' },
 ];
@@ -310,7 +310,7 @@ export default function AdminDashboard() {
     if (activeTab === 'messages') {
       return <AdminMessages onUnreadCountChange={setUnreadMsgCount} />;
     }
-    if (activeTab === 'chat-rooms') return <AdminChatRooms />;
+
     if (activeTab === 'profile') return <ProfileSettings />;
     if (activeTab === 'settings') return <AdminSettings />;
     return renderOverview();
@@ -365,7 +365,7 @@ export default function AdminDashboard() {
                       borderRight: selected ? '3px solid #00e676' : '3px solid transparent',
                     }}
                   >
-                    <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '22px' }}>{tab.icon}</span>
+                    <span className="material-symbols-outlined shrink-0" style={{ fontSize: '22px' }}>{tab.icon}</span>
                     {sidebarOpen && (
                       <>
                         <span style={{ fontSize: '14px', fontFamily: 'var(--font-sans)', fontWeight: selected ? 700 : 500 }}>
@@ -412,7 +412,7 @@ export default function AdminDashboard() {
           </div>
         </aside>
 
-        <main className="flex-grow-1 overflow-x-hidden" style={{ paddingBottom: '82px' }}>
+        <main className="grow overflow-x-hidden" style={{ paddingBottom: '82px' }}>
           <div className="p-3 p-md-4 p-lg-5">
             <div className="container-fluid p-0" style={{ maxWidth: '1200px' }}>
               {renderContent()}

@@ -17,6 +17,7 @@ export default function AdminSettings() {
     academy_name: '',
     admin_email: '',
     general_description: '',
+    center_director_name: '',
     logo_path: '',
   });
   
@@ -35,6 +36,9 @@ export default function AdminSettings() {
       validators.maxLength(255, 'يجب ألا يتجاوز اسم الأكاديمية 255 حرفاً.'),
     ],
     admin_email: [validators.email('صيغة بريد الدعم غير صحيحة.')],
+    center_director_name: [
+      validators.maxLength(255, 'يجب ألا يتجاوز اسم مدير المركز 255 حرفاً.'),
+    ],
     logo: [
       validators.fileType(LOGO_TYPES, 'صيغة الشعار غير مدعومة. استخدم PNG أو JPG أو SVG.'),
       validators.fileSize(LOGO_MAX_BYTES, 'حجم الشعار يجب ألا يتجاوز 5MB.'),
@@ -53,6 +57,7 @@ export default function AdminSettings() {
         academy_name: settings.academy_name || '',
         admin_email: settings.admin_email || '',
         general_description: settings.general_description || '',
+        center_director_name: settings.center_director_name || '',
         logo_path: settings.logo_path || '',
       });
       if (settings.logo_path) {
@@ -122,7 +127,7 @@ export default function AdminSettings() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage(null);
-    setTouched({ academy_name: true, admin_email: true, logo: true });
+    setTouched({ academy_name: true, admin_email: true, logo: true, center_director_name: true });
     const nextErrors = validateSettings();
     setErrors(nextErrors);
     if (hasValidationErrors(nextErrors)) return;
@@ -175,7 +180,7 @@ export default function AdminSettings() {
       </div>
 
       {message && (
-        <div className={`alert ${message.type === 'error' ? 'alert-danger bg-danger bg-opacity-10 text-danger border-danger border-opacity-25' : 'alert-success bg-success bg-opacity-10 text-success border-success border-opacity-25'} d-flex align-items-center gap-2`} role="alert">
+        <div className={`alert ${message.type === 'error' ? 'alert-danger bg-danger bg-opacity-10 text-danger border-danger border-opacity-25' : 'alert-success bg-success bg-opacity-10 text-success border-success border-success border-opacity-25'} d-flex align-items-center gap-2`} role="alert">
           <span className="material-symbols-outlined fs-5">{message.type === 'error' ? 'error' : 'check_circle'}</span>
           <span style={{ fontSize: '14px', fontFamily: 'var(--font-sans)' }}>{message.text}</span>
         </div>
@@ -233,7 +238,7 @@ export default function AdminSettings() {
                 </div>
               </div>
 
-              <div className="mb-2">
+              <div className="mb-3">
                 <label className="form-label text-muted fw-semibold" htmlFor="general_description" style={{ fontSize: '13px' }}>الوصف العام (يظهر في التذييل)</label>
                 <textarea
                   id="general_description"
@@ -244,6 +249,25 @@ export default function AdminSettings() {
                   rows="3"
                   style={{ background: 'rgba(255,255,255,0.04)', resize: 'vertical' }}
                 />
+              </div>
+
+              <div className="mb-2">
+                <label className="form-label text-muted fw-semibold" htmlFor="center_director_name" style={{ fontSize: '13px' }}>اسم مدير المركز (يظهر على الشهادات)</label>
+                <input
+                  id="center_director_name"
+                  type="text"
+                  className={`form-control custom-input py-3 border-0 rounded-3 text-white${invalidClass(touched.center_director_name && errors.center_director_name)}`}
+                  placeholder="مثال: كريم ابو رمضان"
+                  value={formData.center_director_name}
+                  onChange={handleInputChange}
+                  onBlur={() => {
+                    setTouched((current) => ({ ...current, center_director_name: true }));
+                    setErrors(validateSettings());
+                  }}
+                  {...invalidProps(touched.center_director_name && errors.center_director_name, 'settings-director-error')}
+                  style={{ background: 'rgba(255,255,255,0.04)' }}
+                />
+                <FieldError id="settings-director-error" message={touched.center_director_name && errors.center_director_name} />
               </div>
             </section>
           </div>
@@ -257,7 +281,7 @@ export default function AdminSettings() {
               </h2>
 
               <div 
-                className="upload-area flex-grow-1 d-flex flex-column align-items-center justify-content-center p-4 rounded-4 position-relative overflow-hidden"
+                className="upload-area grow d-flex flex-column align-items-center justify-content-center p-4 rounded-4 position-relative overflow-hidden"
                 style={{ 
                   border: '2px dashed rgba(255,255,255,0.1)', 
                   background: 'rgba(255,255,255,0.02)',

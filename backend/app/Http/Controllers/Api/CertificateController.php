@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\CertificateResource;
 use App\Models\Certificate;
 use App\Models\CourseSection;
+use App\Models\Setting;
 use App\Services\CertificateService;
 use ArPHP\I18N\Arabic;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -24,7 +25,7 @@ class CertificateController extends Controller
     {
         $certificates = $request->user()
             ->certificates()
-            ->with(['user:id,name', 'course:id,title', 'section:id,title,course_id'])
+            ->with(['user:id,name', 'course:id,title,instructor_name,instructor_id,duration_hours', 'course.instructor:id,name', 'section:id,title,course_id'])
             ->latest('issued_at')
             ->get()
             ->filter(function (Certificate $certificate) use ($request): bool {
@@ -56,7 +57,7 @@ class CertificateController extends Controller
         }
 
         return new CertificateResource(
-            $certificate->load(['user:id,name', 'course:id,title', 'section:id,title,course_id']),
+            $certificate->load(['user:id,name', 'course:id,title,instructor_name,instructor_id,duration_hours', 'course.instructor:id,name', 'section:id,title,course_id']),
         );
     }
 
@@ -86,7 +87,7 @@ class CertificateController extends Controller
         $certificate = $this->certificateService->issueForEnrollment($enrollment);
 
         return (new CertificateResource(
-            $certificate->load(['user:id,name', 'course:id,title', 'section:id,title,course_id']),
+            $certificate->load(['user:id,name', 'course:id,title,instructor_name,instructor_id,duration_hours', 'course.instructor:id,name', 'section:id,title,course_id']),
         ))->response()->setStatusCode(200);
     }
 
@@ -122,7 +123,7 @@ class CertificateController extends Controller
         $certificate = $this->certificateService->issueForSection($enrollment, $section);
 
         return (new CertificateResource(
-            $certificate->load(['user:id,name', 'course:id,title', 'section:id,title,course_id']),
+            $certificate->load(['user:id,name', 'course:id,title,instructor_name,instructor_id,duration_hours', 'course.instructor:id,name', 'section:id,title,course_id']),
         ))->response()->setStatusCode(200);
     }
 
@@ -142,7 +143,7 @@ class CertificateController extends Controller
      */
     public function downloadPdf(Request $request, int $id): Response|JsonResponse
     {
-        $certificate = Certificate::with(['user:id,name', 'course:id,title', 'section:id,title,course_id'])
+        $certificate = Certificate::with(['user:id,name', 'course:id,title,instructor_name,instructor_id,duration_hours', 'course.instructor:id,name', 'section:id,title,course_id'])
             ->find($id);
 
         // 404 - certificate does not exist
@@ -174,21 +175,36 @@ class CertificateController extends Controller
             ->locale('ar')
             ->translatedFormat('j F Y');
 
+        // Resolve instructor name & center director
+        $rawInstructorName = $certificate->course?->instructor?->name
+            ?? $certificate->course?->instructor_name
+            ?? 'المدرب';
+
+        $rawCenterDirector = Setting::first()?->center_director_name ?? 'كريم ابو رمضان';
+
+        $durationHours = $certificate->course?->duration_hours ?? 0;
+
         // --- 2. Shape Arabic glyphs for DomPDF -----------------------------
         $arabic = new Arabic();
 
-        $shapedStudentName = $arabic->utf8Glyphs($rawStudentName);
-        $shapedCourseName  = $arabic->utf8Glyphs($rawCourseName);
-        $shapedIssuedAt    = $arabic->utf8Glyphs($rawIssuedAt);
+        $shapedStudentName    = $arabic->utf8Glyphs($rawStudentName);
+        $shapedCourseName     = $arabic->utf8Glyphs($rawCourseName);
+        $shapedIssuedAt       = $arabic->utf8Glyphs($rawIssuedAt);
+        $shapedInstructorName = $arabic->utf8Glyphs($rawInstructorName);
+        $shapedCenterDirector = $arabic->utf8Glyphs($rawCenterDirector);
 
         // Static Arabic UI labels (shaped once)
         $labels = [
-            'certTitle'       => $arabic->utf8Glyphs('شهادة إتمام دورة'),
-            'presentedTo'     => $arabic->utf8Glyphs('تشهد أكاديمية بورصة بأن الطالب/ة'),
-            'completionText'  => $arabic->utf8Glyphs('قد أتم/ت بنجاح دورة'),
-            'labelDate'       => $arabic->utf8Glyphs('تاريخ الإصدار'),
-            'labelCertNumber' => $arabic->utf8Glyphs('رقم الشهادة'),
-            'labelProgress'   => $arabic->utf8Glyphs('نسبة الإنجاز'),
+            'certTitle'        => $arabic->utf8Glyphs('شهادة إتمام دورة'),
+            'presentedTo'      => $arabic->utf8Glyphs('تشهد أكاديمية بورصة بأن الطالب/ة'),
+            'completionText'   => $arabic->utf8Glyphs('قد أتم/ت بنجاح دورة'),
+            'labelDate'        => $arabic->utf8Glyphs('تاريخ الإصدار'),
+            'labelCertNumber'  => $arabic->utf8Glyphs('رقم الشهادة'),
+            'labelProgress'    => $arabic->utf8Glyphs('نسبة الإنجاز'),
+            'labelHours'       => $arabic->utf8Glyphs('عدد الساعات'),
+            'labelInstructor'  => $arabic->utf8Glyphs('المدرب'),
+            'labelDirector'    => $arabic->utf8Glyphs('مدير المركز'),
+            'labelHour'        => $arabic->utf8Glyphs('ساعة'),
         ];
 
         // --- 3. Manage Fonts (Download official Cairo if missing/corrupt) ---
@@ -256,14 +272,17 @@ class CertificateController extends Controller
 
         // --- 4. Render & stream PDF ----------------------------------------
         $pdf = Pdf::loadView('certificates.pdf', [
-            'studentName' => $shapedStudentName,
-            'courseName'  => $shapedCourseName,
-            'issuedAt'    => $shapedIssuedAt,
-            'certNumber'  => $certificate->certificate_number,
-            'progress'    => $certificate->progress_percentage ?? 100,
-            'labels'      => $labels,
-            'fontRegular' => $fontRegular,
-            'fontBold'    => $fontBold,
+            'studentName'    => $shapedStudentName,
+            'courseName'     => $shapedCourseName,
+            'issuedAt'       => $shapedIssuedAt,
+            'certNumber'     => $certificate->certificate_number,
+            'progress'       => $certificate->progress_percentage ?? 100,
+            'durationHours'  => $durationHours,
+            'instructorName' => $shapedInstructorName,
+            'centerDirector' => $shapedCenterDirector,
+            'labels'         => $labels,
+            'fontRegular'    => $fontRegular,
+            'fontBold'       => $fontBold,
         ])->setPaper('a4', 'landscape');
 
         event(new \App\Events\FileDownloadedEvent($request->user(), 'certificate-' . $id . '.pdf'));

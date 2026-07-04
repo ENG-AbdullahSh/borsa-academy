@@ -3,16 +3,63 @@
 ## Project Overview
 Borsa Academy is an **online learning platform** that enables instructors (trainers) to create courses, lessons, and quizzes, and allows students to enroll, progress through content, and earn certificates. The platform integrates a robust notification system to keep users informed about new lessons, course completions, and achievements.
 ---
-## Key Features
-- **Course Management** – Create, edit, and publish courses with lessons and quizzes.
-- **Progress Tracking** – Automatic calculation of lesson and course completion percentages.
-- **Certification** – Issue certificates automatically when a student completes a course.
-- **Rich Notification System** – Real‑time alerts for:
-  - New lesson publication
-  - Quiz availability
-  - Course completion & certificate issuance
-  - Achievement celebrations with animated UI cues
-- **Responsive Front‑end** – Built with React + Vite, offering a modern, glass‑morphic UI.
+## Comprehensive Features
+
+### 1. Student Experience & Learning Path
+- **Authentication & Security:** 
+  - Standard Register & Sign-In with robust validation.
+  - Social Login via Google OAuth integration.
+  - Profile Management (updating user details, email, and custom avatar upload).
+- **Course Discovery:**
+  - Interactive course library with filtering by category, difficulty level (Beginner, Intermediate, Advanced), and dynamic search.
+  - Comprehensive course details page displaying sections, lesson titles, quizzes, rating scores, reviews, and instructor profiles.
+- **Interactive Curriculum Player:**
+  - Dedicated lesson-viewing dashboard with dynamic progress tracking.
+  - Premium video player with secure video streaming (preventing raw hotlinking/unauthorized downloads).
+  - Built-in PDF reader for reading supplementary lesson materials.
+  - Mark-as-completed functionality that updates the student's progress in real-time.
+- **Quiz Assessment System:**
+  - Interactive multiple-choice quizzes at the end of lessons or courses.
+  - Real-time score validation, marking correct options, and calculating passing scores.
+  - Support for multiple quiz attempts to reinforce learning.
+- **Automatic Certification:**
+  - Automated certificate generation upon 100% course completion.
+  - Custom certificate viewing dashboard with a unique certificate ID, issuing date, and one-click PDF print/download support.
+- **Real-Time Notification System:**
+  - Live alerts polled every 10 seconds.
+  - Notifications are categorised into three tabs:
+    - **Course notifications:** Announcements of new lessons, published quizzes, etc.
+    - **Achievement notifications:** Course completions and certificate issuances (featuring a gold‑pulse animation).
+    - **System notifications:** Important account alerts (e.g. account suspension or activation).
+  - Star ratings and reviews system for students to review completed courses.
+
+### 2. Instructor Dashboard & Management
+- **Performance Overview:**
+  - Analytics dashboard showing active courses, total enrolled students, overall progress rates, and student details.
+- **Student Performance Auditing:**
+  - View individual student progress lists for their assigned courses.
+  - Track quiz grades, attempts, and submitted answer sheets.
+
+### 3. Administrator Control Center (Admin Panel)
+- **Advanced Operations Dashboard:**
+  - Real-time statistics monitoring (total courses, published courses, students, total enrollments, completion rates, issued certificates).
+- **Curriculum & Course Creator:**
+  - Full CRUD operations for courses, sections, and lessons.
+  - Secure lesson media management (video file uploads, PDF documents).
+- **Quiz Constructor:**
+  - Build comprehensive quizzes, add multiple-choice questions, specify answer options, and set correct answers.
+- **User & Role Management:**
+  - View list of all system users.
+  - Manage account status (activating or suspending user accounts dynamically).
+- **Instructor Assignment:**
+  - Link instructors to specific courses and review their portal access.
+- **Contact Messages Inbox:**
+  - Centralized messaging inbox for receiving student/guest queries from the contact page.
+  - Direct email replying tool linked to SMTP, saving thread state, and marking message status (pending/replied).
+- **System Configuration Settings:**
+  - Modify Borsa Academy parameters dynamically: change academy name, upload official branding logos, edit copyright details, and manage contact emails.
+- **Audit Logs:**
+  - View and filter administrative activity logs.
 
 ---
 

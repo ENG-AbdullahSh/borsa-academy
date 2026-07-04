@@ -180,7 +180,7 @@ export default function CourseReviews({ courseId, enrollment, canReview }) {
                     <span className="text-muted text-end" style={{ width: '40px', fontSize: '13px' }}>
                       {dist.rating === 1 ? 'نجمة' : 'نجوم'}
                     </span>
-                    <div className="flex-grow-1" style={{ height: '6px', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div className="grow" style={{ height: '6px', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' }}>
                       <div 
                         style={{ 
                           height: '100%', 

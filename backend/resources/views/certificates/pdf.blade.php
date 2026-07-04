@@ -276,11 +276,11 @@
       {{-- Course name --}}
       <div class="course-name">{{ $courseName }}</div>
 
-      {{-- Footer info row --}}
+      {{-- Footer info row 1 --}}
       <table class="footer-table">
         <tr>
           {{-- Date --}}
-          <td style="width: 33.33%; padding: 0;">
+          <td style="width: 25%; padding: 0;">
             <div class="footer-card">
               <span class="footer-label">{{ $labels['labelDate'] }}</span>
               <span class="footer-value">{{ $issuedAt }}</span>
@@ -288,7 +288,7 @@
           </td>
 
           {{-- Certificate number --}}
-          <td style="width: 33.33%; padding: 0;">
+          <td style="width: 25%; padding: 0;">
             <div class="footer-card">
               <span class="footer-label">{{ $labels['labelCertNumber'] }}</span>
               <span class="footer-value-gold" dir="ltr">{{ $certNumber }}</span>
@@ -296,10 +296,41 @@
           </td>
 
           {{-- Progress --}}
-          <td style="width: 33.33%; padding: 0;">
+          <td style="width: 25%; padding: 0;">
             <div class="footer-card">
               <span class="footer-label">{{ $labels['labelProgress'] }}</span>
               <span class="footer-value-green">{{ $progress }}%</span>
+            </div>
+          </td>
+
+          {{-- Duration hours --}}
+          <td style="width: 25%; padding: 0;">
+            <div class="footer-card">
+              <span class="footer-label">{{ $labels['labelHours'] }}</span>
+              <span class="footer-value">{{ $durationHours }} {{ $labels['labelHour'] }}</span>
+            </div>
+          </td>
+        </tr>
+      </table>
+
+      {{-- Signatures row --}}
+      <table class="footer-table" style="margin-top: 5mm;">
+        <tr>
+          {{-- Instructor --}}
+          <td style="width: 50%; padding: 0;">
+            <div class="footer-card" style="text-align: center;">
+              <span class="footer-label" style="text-align: center;">{{ $labels['labelInstructor'] }}</span>
+              <div style="width: 30mm; border-bottom: 1px solid rgba(212,175,55,0.4); margin: 4mm auto 2mm;"></div>
+              <span class="footer-value" style="text-align: center;">{{ $instructorName }}</span>
+            </div>
+          </td>
+
+          {{-- Center Director --}}
+          <td style="width: 50%; padding: 0;">
+            <div class="footer-card" style="text-align: center;">
+              <span class="footer-label" style="text-align: center;">{{ $labels['labelDirector'] }}</span>
+              <div style="width: 30mm; border-bottom: 1px solid rgba(212,175,55,0.4); margin: 4mm auto 2mm;"></div>
+              <span class="footer-value" style="text-align: center;">{{ $centerDirector }}</span>
             </div>
           </td>
         </tr>

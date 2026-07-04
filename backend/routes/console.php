@@ -13,4 +13,4 @@ Schedule::call(function () {
     app(NotificationSchedulerService::class)->runDailyNudges();
 })->dailyAt('10:00')->name('daily_learning_nudges')->withoutOverlapping();
 
-Schedule::command('chat:notify-upcoming')->everyMinute()->withoutOverlapping();
+

@@ -29,7 +29,6 @@ export default function Navbar() {
     ? [
         { label: 'لوحة المدرب', path: '/instructor-dashboard' },
         { label: 'دوراتي', path: '/instructor/courses' },
-        { label: 'الرسائل', path: '/chat' },
         { label: 'الملف الشخصي', path: '/profile' },
       ]
     : [
@@ -40,7 +39,6 @@ export default function Navbar() {
           { label: 'دوراتي', path: '/my-courses' },
           { label: 'شهاداتي', path: '/certificates' },
         ] : []),
-        ...(isAuthenticated ? [{ label: 'الرسائل', path: '/chat' }] : []),
         { label: 'من نحن واتصل بنا', path: '/about' },
         ...(user?.role === 'admin' ? [{ label: 'لوحة التحكم', path: '/admin' }] : []),
       ];
@@ -65,7 +63,7 @@ export default function Navbar() {
           <Link
             to="/"
             onClick={closeMobile}
-            className="text-decoration-none flex-shrink-0 interactive d-flex align-items-center gap-3"
+            className="text-decoration-none shrink-0 interactive d-flex align-items-center gap-3"
             aria-label="بورصة أكاديمي - الصفحة الرئيسية"
             style={{ flexDirection: 'row' }}
           >
@@ -81,7 +79,7 @@ export default function Navbar() {
           </Link>
 
           {/* ── Desktop Nav Links (hidden on mobile) ── */}
-          <div className="d-none d-lg-flex align-items-center gap-4 flex-grow-1 justify-content-center">
+          <div className="d-none d-lg-flex align-items-center gap-4 grow justify-content-center">
             {navLinks.map(({ label, path }) => (
               <Link
                 key={path}
@@ -95,7 +93,7 @@ export default function Navbar() {
           </div>
 
           {/* ── Desktop Action Buttons & Notifications (hidden on mobile) ── */}
-          <div className="d-none d-lg-flex align-items-center gap-3 flex-shrink-0">
+          <div className="d-none d-lg-flex align-items-center gap-3 shrink-0">
             
             {/* Notification Bell */}
             {isAuthenticated && (

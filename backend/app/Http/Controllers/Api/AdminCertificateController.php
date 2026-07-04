@@ -17,7 +17,7 @@ class AdminCertificateController extends Controller
         ]);
 
         $certificates = Certificate::query()
-            ->with(['user:id,name', 'course:id,title', 'section:id,title,course_id'])
+            ->with(['user:id,name', 'course:id,title,instructor_name,instructor_id,duration_hours', 'course.instructor:id,name', 'section:id,title,course_id'])
             ->latest('issued_at')
             ->paginate($validated['per_page'] ?? 20)
             ->withQueryString();

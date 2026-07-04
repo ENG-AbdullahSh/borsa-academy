@@ -13,8 +13,15 @@ class SettingController extends Controller
     {
         $setting = Setting::firstOrCreate(
             ['id' => 1],
-            ['academy_name' => 'Borsa Academy']
+            [
+                'academy_name' => 'Borsa Academy',
+                'center_director_name' => 'كريم ابو رمضان',
+            ]
         );
+
+        if (is_null($setting->center_director_name)) {
+            $setting->update(['center_director_name' => 'كريم ابو رمضان']);
+        }
 
         return response()->json([
             'data' => $setting,
@@ -28,11 +35,15 @@ class SettingController extends Controller
             'admin_email' => 'nullable|email|max:255',
             'logo_path' => 'nullable|string|max:2048',
             'general_description' => 'nullable|string',
+            'center_director_name' => 'nullable|string|max:255',
         ]);
 
         $setting = Setting::firstOrCreate(
             ['id' => 1],
-            ['academy_name' => 'Borsa Academy']
+            [
+                'academy_name' => 'Borsa Academy',
+                'center_director_name' => 'كريم ابو رمضان',
+            ]
         );
 
         $setting->update($validated);

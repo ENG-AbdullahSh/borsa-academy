@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
     'admin_email',
     'logo_path',
     'general_description',
+    'center_director_name',
 ])]
 class Setting extends Model
 {
