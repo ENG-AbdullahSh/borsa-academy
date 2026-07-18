@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiEye, FiEyeOff, FiInfo } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiInfo, FiX, FiAlertTriangle, FiMail, FiCheckCircle } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth';
 import { useSettings } from '../context/SettingsContext';
 import { FieldError } from '../components/FormValidation';
@@ -79,6 +79,7 @@ export default function SignUp() {
   const [loading, setLoading]           = useState(false);
   const [success, setSuccess]           = useState(false);
   const [error, setError]               = useState('');
+  const [showValdexModal, setShowValdexModal] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [touched, setTouched] = useState({});
 
@@ -184,7 +185,11 @@ export default function SignUp() {
           return;
         }
       }
-      setError(getRegisterErrorMessage(requestError));
+      const msg = getRegisterErrorMessage(requestError);
+      setError(msg);
+      if (msg.includes('شركة فالدكس')) {
+        setShowValdexModal(true);
+      }
     }
   };
 
@@ -261,21 +266,52 @@ export default function SignUp() {
                 </p>
               </div>
 
-              {/* Error */}
-              {error && (
-                error.includes('شركة فالدكس') ? (
-                  <div className="auth-valdex-banner">
-                    <div className="auth-valdex-icon">
-                      <FiInfo size={22} />
+              {/* Valdex Modal */}
+              {showValdexModal && (
+                <div className="valdex-modal-overlay" onClick={() => setShowValdexModal(false)}>
+                  <div className="valdex-modal" onClick={e => e.stopPropagation()}>
+                    <button className="valdex-modal-close" onClick={() => setShowValdexModal(false)}>
+                      <FiX size={18} />
+                    </button>
+                    <div className="valdex-modal-icon-wrap">
+                      <FiAlertTriangle size={32} />
                     </div>
-                    <div className="auth-valdex-content">
-                      <h4 className="auth-valdex-title">تنبيه هام</h4>
-                      <p className="auth-valdex-text">{error}</p>
+                    <h3 className="valdex-modal-title">غير مسجّل في شركة فالدكس</h3>
+                    <p className="valdex-modal-subtitle">
+                      بريدك الإلكتروني غير مرتبط بأي حساب نشط في شركة <strong>فالدكس (Valdex)</strong>.
+                      لا يمكن الوصول إلى منصتنا إلا للأعضاء المسجّلين في الشركة.
+                    </p>
+                    <div className="valdex-modal-steps">
+                      <div className="valdex-modal-step">
+                        <span className="valdex-modal-step-num">1</span>
+                        <div>
+                          <strong>سجّل في شركة فالدكس أولاً</strong>
+                          <p>تواصل مع ممثلك أو راجع البريد الرسمي للشركة للتسجيل</p>
+                        </div>
+                      </div>
+                      <div className="valdex-modal-step">
+                        <span className="valdex-modal-step-num">2</span>
+                        <div>
+                          <strong>أنشئ حسابك على المنصة</strong>
+                          <p>بعد التسجيل في الشركة، عُد هنا وأكمل إنشاء حسابك</p>
+                        </div>
+                      </div>
                     </div>
+                    <div className="valdex-modal-email-notice">
+                      <FiMail size={16} />
+                      <span>تم إرسال تعليمات التسجيل إلى بريدك الإلكتروني — يُرجى مراجعة صندوق الوارد.</span>
+                    </div>
+                    <button className="valdex-modal-btn" onClick={() => setShowValdexModal(false)}>
+                      <FiCheckCircle size={16} />
+                      حسناً، فهمت
+                    </button>
                   </div>
-                ) : (
-                  <div className="auth-error-banner">{error}</div>
-                )
+                </div>
+              )}
+
+              {/* Error */}
+              {error && !error.includes('شركة فالدكس') && (
+                <div className="auth-error-banner">{error}</div>
               )}
 
               <form onSubmit={handleSubmit} noValidate>

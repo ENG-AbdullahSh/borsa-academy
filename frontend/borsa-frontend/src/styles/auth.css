@@ -758,19 +758,204 @@
 }
 
 /* ══════════════════════════════
+   Valdex Modal (Center Screen)
+══════════════════════════════ */
+.valdex-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  animation: authFadeIn 0.25s ease both;
+}
+
+.valdex-modal {
+  position: relative;
+  background: linear-gradient(145deg, #0F1729 0%, #111827 60%, #0d1f3c 100%);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  border-radius: 20px;
+  padding: 36px 32px 28px 32px;
+  max-width: 460px;
+  width: 100%;
+  direction: rtl;
+  text-align: right;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(59, 130, 246, 0.1), inset 0 1px 0 rgba(255,255,255,0.05);
+  animation: valdexModalIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes valdexModalIn {
+  from { opacity: 0; transform: scale(0.85) translateY(20px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.valdex-modal-close {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94A3B8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.valdex-modal-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #E2E8F0;
+}
+
+.valdex-modal-icon-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.15) 0%, rgba(234, 179, 8, 0.05) 100%);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FACC15;
+  margin: 0 0 20px 0;
+  box-shadow: 0 0 20px rgba(234, 179, 8, 0.15);
+}
+
+.valdex-modal-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #F1F5F9;
+  margin: 0 0 10px 0;
+  line-height: 1.3;
+}
+
+.valdex-modal-subtitle {
+  font-size: 14px;
+  color: #94A3B8;
+  line-height: 1.7;
+  margin: 0 0 20px 0;
+}
+
+.valdex-modal-subtitle strong {
+  color: #93C5FD;
+  font-weight: 700;
+}
+
+.valdex-modal-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.valdex-modal-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.valdex-modal-step-num {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #60A5FA;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.valdex-modal-step div {
+  flex: 1;
+}
+
+.valdex-modal-step strong {
+  display: block;
+  font-size: 13.5px;
+  color: #E2E8F0;
+  margin-bottom: 3px;
+}
+
+.valdex-modal-step p {
+  font-size: 12.5px;
+  color: #64748B;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.valdex-modal-email-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(16, 185, 129, 0.07);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #6EE7B7;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.valdex-modal-email-notice svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.valdex-modal-btn {
+  width: 100%;
+  padding: 13px 20px;
+  background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+}
+
+.valdex-modal-btn:hover {
+  background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+/* ══════════════════════════════
    Valdex Special Banner
 ══════════════════════════════ */
 .auth-valdex-banner {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(37, 99, 235, 0.02) 100%);
-  border: 1px solid rgba(59, 130, 246, 0.25);
-  border-radius: 12px;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 20px 16px 20px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(30, 58, 138, 0.06) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 14px;
   margin-bottom: 24px;
   animation: authFadeIn 0.4s ease both;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 24px rgba(59, 130, 246, 0.08), 0 0 0 1px rgba(59, 130, 246, 0.05);
   position: relative;
   overflow: hidden;
   direction: rtl;
@@ -783,18 +968,24 @@
   right: 0;
   bottom: 0;
   width: 4px;
-  background: #3B82F6;
-  border-radius: 0 12px 12px 0;
-  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+  background: linear-gradient(180deg, #3B82F6 0%, #1D4ED8 100%);
+  border-radius: 0 14px 14px 0;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.6);
+}
+
+.auth-valdex-banner-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .auth-valdex-icon {
   flex-shrink: 0;
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background: rgba(59, 130, 246, 0.15);
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: rgba(59, 130, 246, 0.18);
+  border: 1px solid rgba(59, 130, 246, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -805,13 +996,16 @@
 .auth-valdex-content {
   flex: 1;
   text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .auth-valdex-title {
   font-size: 15px;
   font-weight: 800;
   color: #DBEAFE;
-  margin: 0 0 4px 0;
+  margin: 0;
   line-height: 1.4;
   letter-spacing: 0.01em;
 }
@@ -819,8 +1013,65 @@
 .auth-valdex-text {
   font-size: 13.5px;
   color: #93C5FD;
-  line-height: 1.6;
+  line-height: 1.7;
   margin: 0;
+}
+
+.auth-valdex-text strong {
+  color: #BFDBFE;
+  font-weight: 700;
+}
+
+.auth-valdex-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-valdex-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: #BAC8FF;
+  line-height: 1.6;
+  text-align: right;
+}
+
+.auth-valdex-step-num {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.25);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #60A5FA;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.auth-valdex-email-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  color: #6EE7B7;
+  line-height: 1.6;
+  text-align: right;
+}
+
+.auth-valdex-email-icon {
+  flex-shrink: 0;
+  font-size: 15px;
+  margin-top: 1px;
 }
 
 /* ══════════════════════════════
@@ -1019,14 +1270,25 @@
 
   /* Valdex banner */
   .auth-valdex-banner {
-    flex-direction: column;
     gap: 10px;
     padding: 14px 16px;
   }
 
+  .auth-valdex-banner-header {
+    gap: 10px;
+  }
+
   .auth-valdex-icon {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
+  }
+
+  .auth-valdex-step {
+    font-size: 12px;
+  }
+
+  .auth-valdex-email-notice {
+    font-size: 12px;
   }
 }
 
