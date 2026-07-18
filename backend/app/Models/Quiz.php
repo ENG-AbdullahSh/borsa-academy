@@ -7,9 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['course_id', 'lesson_id', 'title', 'description', 'passing_score', 'is_active'])]
 class Quiz extends Model
 {
+    protected $fillable = ['course_id', 'lesson_id', 'title', 'description', 'passing_score', 'is_active']; 
     protected static function booted(): void
     {
         static::deleted(function (Quiz $quiz) {

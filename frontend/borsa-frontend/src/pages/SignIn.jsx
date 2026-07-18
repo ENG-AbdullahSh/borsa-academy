@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth';
-import GoogleLoginButton from '../components/GoogleLoginButton';
 import { useSettings } from '../context/SettingsContext';
 import { FieldError } from '../components/FormValidation';
 import { hasValidationErrors, invalidClass, invalidProps, normalizeLaravelErrors, validateFields, validators } from '../utils/validation';
@@ -78,7 +77,7 @@ const getRedirectPath = (role, fromPath) => {
 export default function SignIn() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, googleLogin } = useAuth();
+  const { login } = useAuth();
   const { settings } = useSettings();
 
   const [email, setEmail]       = useState('');
@@ -204,12 +203,18 @@ export default function SignIn() {
             <>
               {/* Header */}
               <div className="auth-form-header">
-                <img 
-                  src={settings.logo_path ? `http://127.0.0.1:8000/storage/${settings.logo_path}` : borsaLogo} 
-                  alt={settings.academy_name || "Borsa Academy"} 
-                  className="mx-auto mb-4" 
-                  style={{ maxHeight: '55px', borderRadius: '8px', filter: 'drop-shadow(0 0 12px rgba(0, 230, 118, 0.25))' }} 
-                />
+                <div className="auth-logo-img-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '36px', flexDirection: 'row-reverse', marginBottom: '0' }}>
+                  <img
+                    src={settings.logo_path ? `http://127.0.0.1:8000/storage/${settings.logo_path}` : borsaLogo}
+                    alt={settings.academy_name || 'بورصة أكاديمي'}
+                    className="auth-logo-img brand-logo-animated"
+                    style={{ borderRadius: '8px' }}
+                  />
+                  <span className="brand-text-glowing" style={{ fontSize: '28px', fontFamily: 'var(--font-sans)' }}>
+                    {settings.academy_name || 'بورصة أكاديمي'}
+                  </span>
+                </div>
+                <div className="auth-logo-underline" style={{ marginRight: 'auto', marginLeft: 0 }} />
                 <h1 className="auth-form-title">مرحباً بك مجدداً</h1>
                 <p className="auth-form-subtitle">
                   الرجاء إدخال بياناتك للوصول إلى حسابك
@@ -316,26 +321,6 @@ export default function SignIn() {
                 </button>
 
               </form>
-
-              <div className="auth-divider">أو</div>
-              <GoogleLoginButton 
-                text="signin_with" 
-                onSuccess={async (credential) => {
-                  setError('');
-                  setLoading(true);
-                  try {
-                    const result = await googleLogin({ credential });
-                    const redirectPath = getRedirectPath(result.user?.role, location.state?.from?.pathname);
-                    setLoading(false);
-                    setSuccess(true);
-                    setTimeout(() => navigate(redirectPath, { replace: true }), 700);
-                  } catch (err) {
-                    setLoading(false);
-                    setError(getLoginErrorMessage(err));
-                  }
-                }}
-                onError={(err) => setError(err.message || 'تعذر تسجيل الدخول باستخدام جوجل.')}
-              />
 
               {/* Switch to Sign Up */}
               <p className="auth-switch">

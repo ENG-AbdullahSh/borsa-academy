@@ -33,35 +33,46 @@ class CourseController extends Controller
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ]);
 
-        $courses = Course::query()
-            ->published()
-            ->when($filters['search'] ?? null, function ($query, string $search): void {
-                $query->where('title', 'like', "%{$search}%");
-            })
-            ->when($filters['level'] ?? null, function ($query, string $level): void {
-                $query->where('level', $level);
-            })
-            ->when($filters['category'] ?? null, function ($query, string $category): void {
-                $query->where('category', $category);
-            })
-            ->when(array_key_exists('min_price', $filters), function ($query) use ($filters): void {
-                $query->where('price', '>=', $filters['min_price']);
-            })
-            ->when(array_key_exists('max_price', $filters), function ($query) use ($filters): void {
-                $query->where('price', '<=', $filters['max_price']);
-            })
-            ->latest()
-            ->paginate($filters['per_page'] ?? 10)
-            ->withQueryString();
+        // Generate a unique cache key based on query parameters
+        $cacheKey = 'courses.index.' . md5(json_encode(request()->query()));
+
+        $courses = \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addMinutes(10), function () use ($filters) {
+            return Course::query()
+                ->with('instructor.user') // Eager load to fix N+1
+                ->published()
+                ->when($filters['search'] ?? null, function ($query, string $search): void {
+                    $query->where('title', 'like', "%{$search}%");
+                })
+                ->when($filters['level'] ?? null, function ($query, string $level): void {
+                    $query->where('level', $level);
+                })
+                ->when($filters['category'] ?? null, function ($query, string $category): void {
+                    $query->where('category', $category);
+                })
+                ->when(array_key_exists('min_price', $filters), function ($query) use ($filters): void {
+                    $query->where('price', '>=', $filters['min_price']);
+                })
+                ->when(array_key_exists('max_price', $filters), function ($query) use ($filters): void {
+                    $query->where('price', '<=', $filters['max_price']);
+                })
+                ->latest()
+                ->paginate($filters['per_page'] ?? 10)
+                ->withQueryString()
+                ->toArray();
+        });
 
         return response()->json($courses);
     }
 
     public function show(int $id): JsonResponse
     {
-        $course = Course::query()
-            ->published()
-            ->findOrFail($id);
+        $cacheKey = "courses.show.{$id}";
+        $course = \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addMinutes(10), function () use ($id) {
+            return Course::query()
+                ->with('instructor.user') // Eager load
+                ->published()
+                ->findOrFail($id);
+        });
 
         return response()->json([
             'data' => $course,
@@ -79,6 +90,7 @@ class CourseController extends Controller
         ]);
 
         $courses = Course::query()
+            ->with('instructor.user') // Eager load
             ->when($filters['search'] ?? null, function ($query, string $search): void {
                 $query->where(function ($query) use ($search): void {
                     $query
@@ -106,7 +118,7 @@ class CourseController extends Controller
     public function adminShow(int $id): JsonResponse
     {
         return response()->json([
-            'data' => Course::findOrFail($id),
+            'data' => Course::with('instructor.user')->findOrFail($id),
         ]);
     }
 

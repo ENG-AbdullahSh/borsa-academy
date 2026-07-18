@@ -429,7 +429,7 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
       refreshCurriculum();
       onLessonCreated?.(response.data?.data);
     } catch (error) {
-      console.error(error);
+      console.error('Lesson create error:', error);
       const serverErrors = normalizeLaravelErrors(error);
       if (Object.keys(serverErrors).length) {
         setLessonErrors(serverErrors);
@@ -442,13 +442,41 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
           video: true,
           pdf: true,
         });
+        const firstErr = Object.values(serverErrors)[0];
+        showMessage('error', firstErr || 'تعذر إضافة الدرس.');
         return;
       }
-      const errorMsg = error.response ? validationMessage(error.response, 'تعذر إضافة الدرس.') : 'تعذر إضافة الدرس.';
+      const errorData = error.response?.data || error.data || {};
+      const errorMsg = errorData.message || error.message || 'تعذر إضافة الدرس.';
       showMessage('error', errorMsg);
     } finally {
       setSubmitting(false);
       setUploadProgress(null);
+    }
+  };
+
+  const publishLesson = async (lessonId) => {
+    setSubmitting(true);
+
+    try {
+      const response = await fetch(`${apiScope}/lessons/${lessonId}`, {
+        method: 'PUT',
+        headers: apiHeaders(token, true),
+        body: JSON.stringify({ is_published: true }),
+      });
+      const payload = await readJsonResponse(response);
+      showMessage('success', 'تم نشر الدرس بنجاح! سيظهر الآن للطلاب.');
+      refreshCurriculum();
+      return payload;
+    } catch (error) {
+      const errData = error.data || {};
+      if (errData.message && errData.message.includes('quiz')) {
+        showMessage('error', 'يجب إضافة اختبار مكتمل للدرس أولاً قبل نشره.');
+      } else {
+        showMessage('error', errData.message || error.message || 'تعذر نشر الدرس.');
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -989,12 +1017,13 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
                         <th className="text-center">المدة</th>
                         <th className="text-center">معاينة</th>
                         <th className="text-center">الترتيب</th>
+                        <th className="text-center">الحالة</th>
                         <th className="text-center">إجراءات</th>
                       </tr>
                     </thead>
                     <tbody>
                       {(section.lessons || []).length === 0 ? (
-                        <tr><td colSpan="5" className="text-center text-muted py-4">لا توجد دروس داخل هذا القسم.</td></tr>
+                        <tr><td colSpan="6" className="text-center text-muted py-4">لا توجد دروس داخل هذا القسم.</td></tr>
                       ) : (section.lessons || []).map((lesson, index) => (
                         <tr key={lesson.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                           <td>
@@ -1036,34 +1065,6 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
                               <div className="d-flex flex-column">
                                 <div className="d-flex align-items-center gap-2 mb-1">
                                   <span className="text-white fw-bold">{lesson.title}</span>
-                                  {lesson.is_published ? (
-                                    <span
-                                      className="px-2 py-0.5 rounded-pill"
-                                      style={{
-                                        color: '#75ff9e',
-                                        background: 'rgba(117,255,158,0.08)',
-                                        border: '1px solid rgba(117,255,158,0.2)',
-                                        fontSize: '10px',
-                                        fontWeight: '600'
-                                      }}
-                                    >
-                                      منشور
-                                    </span>
-                                  ) : (
-                                    <span
-                                      className="px-2 py-0.5 rounded-pill"
-                                      style={{
-                                        color: '#ffd54f',
-                                        background: 'rgba(255,213,79,0.08)',
-                                        border: '1px solid rgba(255,213,79,0.2)',
-                                        fontSize: '10px',
-                                        fontWeight: '600'
-                                      }}
-                                      title="يحتاج إضافة اختبار وتفعيله ليتم نشره للطلاب"
-                                    >
-                                      مسودة
-                                    </span>
-                                  )}
                                 </div>
                                 <span className="text-muted mb-2" style={{ fontSize: '12px' }}>{lesson.description || 'لا يوجد وصف.'}</span>
                                 <div className="d-flex gap-2 mt-1">
@@ -1123,6 +1124,46 @@ export default function AdminCurriculum({ courseId: fixedCourseId = '', scope = 
                               />
                             ) : (
                               <span className="font-mono-data text-muted">{lesson.order}</span>
+                            )}
+                          </td>
+                          <td className="text-center">
+                            {lesson.is_published ? (
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  padding: '3px 10px',
+                                  borderRadius: '20px',
+                                  fontSize: '11px',
+                                  fontWeight: '600',
+                                  color: '#75ff9e',
+                                  background: 'rgba(117,255,158,0.10)',
+                                  border: '1px solid rgba(117,255,158,0.25)',
+                                }}
+                              >
+                                ✓ منشور
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={submitting}
+                                onClick={() => publishLesson(lesson.id)}
+                                title="نشر الدرس ليظهر للطلاب (يتطلب اختباراً مكتملاً)"
+                                style={{
+                                  padding: '3px 10px',
+                                  borderRadius: '20px',
+                                  fontSize: '11px',
+                                  fontWeight: '600',
+                                  color: '#ffd54f',
+                                  background: 'rgba(255,213,79,0.10)',
+                                  border: '1px solid rgba(255,213,79,0.30)',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease',
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,213,79,0.22)'; e.currentTarget.style.color = '#fff'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,213,79,0.10)'; e.currentTarget.style.color = '#ffd54f'; }}
+                              >
+                                ⬆ نشر
+                              </button>
                             )}
                           </td>
                           <td>

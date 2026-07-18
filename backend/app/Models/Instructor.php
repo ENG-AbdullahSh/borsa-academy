@@ -7,15 +7,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable([
+class Instructor extends Model
+{
+     protected $fillable = [
     'user_id',
     'name',
     'bio',
     'specialization',
     'profile_image_path',
-])]
-class Instructor extends Model
-{
+];
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

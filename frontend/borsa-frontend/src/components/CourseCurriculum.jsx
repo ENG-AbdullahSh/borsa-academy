@@ -43,7 +43,6 @@ export default function CourseCurriculum({
   const { token } = useAuth();
   const [expandedSections, setExpandedSections] = useState({});
   const [isCertificateOpen, setIsCertificateOpen] = useState(false);
-  const [certificateSectionId, setCertificateSectionId] = useState(null);
   const [updatingLessonId, setUpdatingLessonId] = useState(null);
   const [progressError, setProgressError] = useState('');
 
@@ -322,19 +321,7 @@ export default function CourseCurriculum({
                         </div>
                       );
                     })}
-                    {section.certificate_status?.certificate_unlocked && (
-                      <button
-                        type="button"
-                        className="btn btn-primary-cta w-100 py-2 mt-2 fw-semibold"
-                        style={{ fontSize: '12px' }}
-                        onClick={() => {
-                          setCertificateSectionId(section.id);
-                          setIsCertificateOpen(true);
-                        }}
-                      >
-                        شهادة القسم
-                      </button>
-                    )}
+
                   </div>
                 </div>
               </div>
@@ -363,10 +350,7 @@ export default function CourseCurriculum({
         )}
         <button
           type="button"
-          onClick={() => {
-            setCertificateSectionId(null);
-            setIsCertificateOpen(true);
-          }}
+          onClick={() => setIsCertificateOpen(true)}
           disabled={!certificateUnlocked}
           className="btn w-100 py-2 d-flex align-items-center justify-content-center gap-2 fw-semibold btn-primary-cta interactive"
           style={{ fontSize: '13px', fontFamily: 'var(--font-sans)', borderRadius: '8px', opacity: certificateUnlocked ? 1 : 0.55 }}
@@ -380,7 +364,7 @@ export default function CourseCurriculum({
         isOpen={isCertificateOpen}
         onClose={() => setIsCertificateOpen(false)}
         courseId={courseId}
-        sectionId={certificateSectionId}
+        sectionId={null}
       />
     </div>
   );

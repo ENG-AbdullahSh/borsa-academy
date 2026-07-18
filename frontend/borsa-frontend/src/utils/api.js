@@ -1,3 +1,8 @@
+// Re-export the centralised Axios instance so callers can use either style:
+//   import { axiosClient } from '../utils/api'        ← Axios (recommended)
+//   import { apiHeaders, readJsonResponse } from ...  ← fetch-based (legacy)
+export { default as axiosClient } from './axiosClient';
+
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
 
 export function apiHeaders(token, includeJson = false) {

@@ -130,6 +130,9 @@ export const NotificationProvider = ({ children }) => {
 
   // ── Poll the lightweight unread-count endpoint every 60 s ───────────────
   useEffect(() => {
+    // Don't start polling at all if there's no auth token (guest)
+    if (!getToken()) return;
+
     fetchNotifications(1); // initial load
 
     const pollCount = async () => {

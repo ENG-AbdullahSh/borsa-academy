@@ -45,6 +45,8 @@ export default function CinemaVideoPlayer({ videoUrl, src, courseId = 'default',
       autoplay: false,
       // Disable Plyr's own YouTube/Vimeo detection to keep it in 'video' mode
       youtube: { noCookie: true },
+      // Prevent fetching blank.mp4 from external CDN to avoid CORS issues
+      blankVideo: '',
     };
 
     // Initialise Plyr on the native <video> element
@@ -163,9 +165,10 @@ export default function CinemaVideoPlayer({ videoUrl, src, courseId = 'default',
               className="w-full h-full"
               playsInline
               controls
-              preload="none"
+              preload="metadata"
+              crossOrigin={finalUrl && (finalUrl.includes('/stream') || finalUrl.includes('api')) ? 'use-credentials' : undefined}
+              src={finalUrl}
             >
-              <source src={finalUrl} type="video/mp4" />
               متصفحك لا يدعم تشغيل الفيديو.
             </video>
           </div>

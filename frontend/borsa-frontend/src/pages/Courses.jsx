@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import CourseCard from '../components/CourseCard';
 
 const COURSES_API_URL = 'http://127.0.0.1:8000/api/courses';
@@ -96,12 +97,7 @@ export default function Courses() {
   const [selectedLevel, setSelectedLevel] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [sortOption, setSortOption] = useState('الأكثر شيوعا');
-  const [courses, setCourses] = useState([]);
-  const [pagination, setPagination] = useState(DEFAULT_PAGINATION);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -112,60 +108,52 @@ export default function Courses() {
     return () => window.clearTimeout(timeout);
   }, [search]);
 
-  useEffect(() => {
-    const controller = new AbortController();
+  const fetchCourses = async ({ queryKey }) => {
+    const [_key, { page, search, level, category }] = queryKey;
+    const params = new URLSearchParams({
+      page: String(page),
+      per_page: String(PER_PAGE),
+    });
 
-    const fetchCourses = async () => {
-      setLoading(true);
-      setError('');
+    if (search) params.set('search', search);
+    if (level) params.set('level', level);
+    if (category) params.set('category', category);
 
-      const params = new URLSearchParams({
-        page: String(page),
-        per_page: String(PER_PAGE),
-      });
+    const response = await fetch(`${COURSES_API_URL}?${params.toString()}`, {
+      headers: { Accept: 'application/json' },
+    });
 
-      if (debouncedSearch) params.set('search', debouncedSearch);
-      if (selectedLevel) params.set('level', selectedLevel);
-      if (selectedCategory) params.set('category', selectedCategory);
+    if (!response.ok) {
+      throw new Error(`Courses API returned ${response.status}`);
+    }
 
-      try {
-        const response = await fetch(`${COURSES_API_URL}?${params.toString()}`, {
-          headers: { Accept: 'application/json' },
-          signal: controller.signal,
-        });
+    return response.json();
+  };
 
-        if (!response.ok) {
-          throw new Error(`Courses API returned ${response.status}`);
-        }
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ['courses', { page, search: debouncedSearch, level: selectedLevel, category: selectedCategory }],
+    queryFn: fetchCourses,
+    placeholderData: keepPreviousData,
+  });
 
-        const payload = await response.json();
-        const apiCourses = Array.isArray(payload.data) ? payload.data : [];
+  const courses = useMemo(() => {
+    if (!data?.data) return [];
+    return (Array.isArray(data.data) ? data.data : []).map(normalizeCourse);
+  }, [data]);
 
-        setCourses(apiCourses.map(normalizeCourse));
-        setPagination({
-          current_page: payload.current_page ?? page,
-          last_page: payload.last_page ?? 1,
-          total: payload.total ?? apiCourses.length,
-          from: payload.from ?? null,
-          to: payload.to ?? null,
-        });
-      } catch (fetchError) {
-        if (fetchError.name !== 'AbortError') {
-          setCourses([]);
-          setPagination(DEFAULT_PAGINATION);
-          setError('تعذر تحميل الكورسات. تأكد من تشغيل Laravel API.');
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-      }
+  const pagination = useMemo(() => {
+    if (!data) return DEFAULT_PAGINATION;
+    return {
+      current_page: data.current_page ?? page,
+      last_page: data.last_page ?? 1,
+      total: data.total ?? (data.data?.length || 0),
+      from: data.from ?? null,
+      to: data.to ?? null,
     };
+  }, [data, page]);
 
-    fetchCourses();
-
-    return () => controller.abort();
-  }, [debouncedSearch, page, retryKey, selectedCategory, selectedLevel]);
+  const loading = isLoading;
+  const error = isError ? 'تعذر تحميل الكورسات. تأكد من تشغيل Laravel API.' : '';
 
   const visibleCourses = useMemo(() => {
     const sorted = [...courses];
@@ -287,7 +275,7 @@ export default function Courses() {
                 <div className="col-12 py-5 text-center">
                   <span className="material-symbols-outlined text-muted" style={{ fontSize: '64px' }}>cloud_off</span>
                   <h5 className="text-muted mt-3" style={{ fontFamily: 'var(--font-sans)' }}>{error}</h5>
-                  <button className="btn mt-3 px-4 py-2 fw-semibold border" onClick={() => setRetryKey((current) => current + 1)}
+                  <button className="btn mt-3 px-4 py-2 fw-semibold border" onClick={() => refetch()}
                     style={{ borderColor: '#75ff9e', color: '#75ff9e', borderRadius: '4px', fontSize: '13px', fontFamily: 'var(--font-sans)' }}>
                     حاول مرة أخرى
                   </button>

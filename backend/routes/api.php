@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\SocialLoginController;
 use App\Http\Controllers\Api\VideoStreamController;
 use App\Http\Controllers\UploadController;
 use Illuminate\Support\Facades\Route;
+use App\Services\TelegramService;
 
 Route::get('/courses', [CourseController::class, 'index']);
 Route::get('/courses/{id}', [CourseController::class, 'show'])->whereNumber('id');
@@ -180,5 +181,15 @@ Route::middleware('auth:sanctum')->group(function (): void {
         // ── Admin Monitoring ────────────────────────────────────────────
         Route::get('/admin/activity', [\App\Http\Controllers\Api\AdminActivityController::class, 'index'])->middleware('admin');
     });
+
+});
+
+
+Route::any('/telegram-test', function (TelegramService $telegram) {
+
+    return $telegram->sendMessage(
+        'BorsaAcademy_bot',
+        'test@gmail.com'
+    );
 
 });

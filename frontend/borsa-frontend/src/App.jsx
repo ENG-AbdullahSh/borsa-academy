@@ -1,32 +1,36 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
 import Navbar from './components/Navbar';
 import Ticker from './components/Ticker';
 import CursorGlow from './components/CursorGlow';
 import Footer from './components/Footer';
 import ScrollToTop from "./components/ScrollToTop";
+import PageLoader from './components/PageLoader';
 
-// Pages
-import Home from './pages/Home';
-import Courses from './pages/Courses';
-import CourseDetail from './pages/CourseDetail';
-import AboutContact from './pages/AboutContact';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminReviews from './pages/AdminReviews';
-import SignIn from './pages/SignIn';
-import SignUp from './pages/SignUp';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import NotificationsPage from './pages/NotificationsPage';
-import MyCourses from './pages/MyCourses';
-import StudentDashboard from './pages/StudentDashboard';
-import Certificates from './pages/Certificates';
-import CertificateDetails from './pages/CertificateDetails';
-import ProfilePage from './pages/ProfilePage';
-import InstructorDashboard from './pages/InstructorDashboard';
-import InstructorCourses from './pages/InstructorCourses';
-import InstructorCourseDetails from './pages/InstructorCourseDetails';
-import InstructorCourseStudents from './pages/InstructorCourseStudents';
-import InstructorQuizResults from './pages/InstructorQuizResults';
+// Pages (Lazy Loaded for Code Splitting)
+const Home = lazy(() => import('./pages/Home'));
+const Courses = lazy(() => import('./pages/Courses'));
+const CourseDetail = lazy(() => import('./pages/CourseDetail'));
+const AboutContact = lazy(() => import('./pages/AboutContact'));
+const TermsPrivacy = lazy(() => import('./pages/TermsPrivacy'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminReviews = lazy(() => import('./pages/AdminReviews'));
+const SignIn = lazy(() => import('./pages/SignIn'));
+const SignUp = lazy(() => import('./pages/SignUp'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const MyCourses = lazy(() => import('./pages/MyCourses'));
+const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
+const Certificates = lazy(() => import('./pages/Certificates'));
+const CertificateDetails = lazy(() => import('./pages/CertificateDetails'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const InstructorDashboard = lazy(() => import('./pages/InstructorDashboard'));
+const InstructorCourses = lazy(() => import('./pages/InstructorCourses'));
+const InstructorCourseDetails = lazy(() => import('./pages/InstructorCourseDetails'));
+const InstructorCourseStudents = lazy(() => import('./pages/InstructorCourseStudents'));
+const InstructorQuizResults = lazy(() => import('./pages/InstructorQuizResults'));
+
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
 import ProtectedAuthenticatedRoute from './components/ProtectedAuthenticatedRoute';
 import ProtectedStudentRoute from './components/ProtectedStudentRoute';
@@ -63,123 +67,126 @@ function AppShell() {
       )}
 
       <div className="grow">
-        <Routes>
-          {/* Main pages */}
-          <Route path="/"           element={<Home />} />
-          <Route path="/courses"    element={<ProtectedAuthenticatedRoute><Courses /></ProtectedAuthenticatedRoute>} />
-          <Route path="/courses/:id" element={<ProtectedAuthenticatedRoute><CourseDetail /></ProtectedAuthenticatedRoute>} />
-          <Route path="/about"      element={<ProtectedAuthenticatedRoute><AboutContact /></ProtectedAuthenticatedRoute>} />
-          <Route
-            path="/admin"
-            element={(
-              <ProtectedAdminRoute>
-                <AdminDashboard />
-              </ProtectedAdminRoute>
-            )}
-          />
-          <Route
-            path="/admin/reviews"
-            element={(
-              <ProtectedAdminRoute>
-                <AdminReviews />
-              </ProtectedAdminRoute>
-            )}
-          />
-          <Route
-            path="/student-dashboard"
-            element={(
-              <ProtectedStudentRoute>
-                <StudentDashboard />
-              </ProtectedStudentRoute>
-            )}
-          />
-          <Route
-            path="/my-courses"
-            element={(
-              <ProtectedStudentRoute>
-                <MyCourses />
-              </ProtectedStudentRoute>
-            )}
-          />
-          <Route
-            path="/certificates"
-            element={(
-              <ProtectedStudentRoute>
-                <Certificates />
-              </ProtectedStudentRoute>
-            )}
-          />
-          <Route
-            path="/certificates/:id"
-            element={(
-              <ProtectedStudentRoute>
-                <CertificateDetails />
-              </ProtectedStudentRoute>
-            )}
-          />
-          <Route
-            path="/notifications"
-            element={(
-              <ProtectedAuthenticatedRoute>
-                <NotificationsPage />
-              </ProtectedAuthenticatedRoute>
-            )}
-          />
-          <Route
-            path="/instructor-dashboard"
-            element={(
-              <ProtectedInstructorRoute>
-                <InstructorDashboard />
-              </ProtectedInstructorRoute>
-            )}
-          />
-          <Route
-            path="/instructor/courses"
-            element={(
-              <ProtectedInstructorRoute>
-                <InstructorCourses />
-              </ProtectedInstructorRoute>
-            )}
-          />
-          <Route
-            path="/instructor/courses/:id"
-            element={(
-              <ProtectedInstructorRoute>
-                <InstructorCourseDetails />
-              </ProtectedInstructorRoute>
-            )}
-          />
-          <Route
-            path="/instructor/courses/:id/students"
-            element={(
-              <ProtectedInstructorRoute>
-                <InstructorCourseStudents />
-              </ProtectedInstructorRoute>
-            )}
-          />
-          <Route
-            path="/instructor/courses/:id/quiz-results"
-            element={(
-              <ProtectedInstructorRoute>
-                <InstructorQuizResults />
-              </ProtectedInstructorRoute>
-            )}
-          />
-          <Route
-            path="/profile"
-            element={(
-              <ProtectedAuthenticatedRoute>
-                <ProfilePage />
-              </ProtectedAuthenticatedRoute>
-            )}
-          />
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            {/* Main pages */}
+            <Route path="/"           element={<Home />} />
+            <Route path="/courses"    element={<ProtectedAuthenticatedRoute><Courses /></ProtectedAuthenticatedRoute>} />
+            <Route path="/courses/:id" element={<ProtectedAuthenticatedRoute><CourseDetail /></ProtectedAuthenticatedRoute>} />
+            <Route path="/about"      element={<ProtectedAuthenticatedRoute><AboutContact /></ProtectedAuthenticatedRoute>} />
+            <Route path="/terms"      element={<TermsPrivacy />} />
+            <Route
+              path="/admin"
+              element={(
+                <ProtectedAdminRoute>
+                  <AdminDashboard />
+                </ProtectedAdminRoute>
+              )}
+            />
+            <Route
+              path="/admin/reviews"
+              element={(
+                <ProtectedAdminRoute>
+                  <AdminReviews />
+                </ProtectedAdminRoute>
+              )}
+            />
+            <Route
+              path="/student-dashboard"
+              element={(
+                <ProtectedStudentRoute>
+                  <StudentDashboard />
+                </ProtectedStudentRoute>
+              )}
+            />
+            <Route
+              path="/my-courses"
+              element={(
+                <ProtectedStudentRoute>
+                  <MyCourses />
+                </ProtectedStudentRoute>
+              )}
+            />
+            <Route
+              path="/certificates"
+              element={(
+                <ProtectedStudentRoute>
+                  <Certificates />
+                </ProtectedStudentRoute>
+              )}
+            />
+            <Route
+              path="/certificates/:id"
+              element={(
+                <ProtectedStudentRoute>
+                  <CertificateDetails />
+                </ProtectedStudentRoute>
+              )}
+            />
+            <Route
+              path="/notifications"
+              element={(
+                <ProtectedAuthenticatedRoute>
+                  <NotificationsPage />
+                </ProtectedAuthenticatedRoute>
+              )}
+            />
+            <Route
+              path="/instructor-dashboard"
+              element={(
+                <ProtectedInstructorRoute>
+                  <InstructorDashboard />
+                </ProtectedInstructorRoute>
+              )}
+            />
+            <Route
+              path="/instructor/courses"
+              element={(
+                <ProtectedInstructorRoute>
+                  <InstructorCourses />
+                </ProtectedInstructorRoute>
+              )}
+            />
+            <Route
+              path="/instructor/courses/:id"
+              element={(
+                <ProtectedInstructorRoute>
+                  <InstructorCourseDetails />
+                </ProtectedInstructorRoute>
+              )}
+            />
+            <Route
+              path="/instructor/courses/:id/students"
+              element={(
+                <ProtectedInstructorRoute>
+                  <InstructorCourseStudents />
+                </ProtectedInstructorRoute>
+              )}
+            />
+            <Route
+              path="/instructor/courses/:id/quiz-results"
+              element={(
+                <ProtectedInstructorRoute>
+                  <InstructorQuizResults />
+                </ProtectedInstructorRoute>
+              )}
+            />
+            <Route
+              path="/profile"
+              element={(
+                <ProtectedAuthenticatedRoute>
+                  <ProfilePage />
+                </ProtectedAuthenticatedRoute>
+              )}
+            />
 
-          {/* Auth pages — full-screen, no chrome */}
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-        </Routes>
+            {/* Auth pages — full-screen, no chrome */}
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+          </Routes>
+        </Suspense>
       </div>
 
       {!isAuth && <Footer />}

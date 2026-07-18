@@ -12,31 +12,85 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
-
+use App\Services\TelegramService;
 class AuthController extends Controller
 {
-    public function register(RegisterRequest $request): JsonResponse
-    {
-        $validated = $request->validated();
+public function register(
+    RegisterRequest $request,
+    TelegramService $telegramService
+): JsonResponse {
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role' => 'student',
-            'status' => 'active',
-        ]);
+    $validated = $request->validated();
 
-        $admins = User::where('role', 'admin')->get();
-        \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\NewUserRegisteredAdminNotification($user));
+    // فحص الإيميل عن طريق بايثون
+    $result = $telegramService->checkEmail(
+        $validated['email']
+    );
 
+
+    // فشل الاتصال بالخدمة
+    if (!$result['success']) {
         return response()->json([
-            'message' => 'Registered successfully.',
-            'user' => $user,
-            'token' => $user->createToken('api-token')->plainTextToken,
-            'token_type' => 'Bearer',
-        ], 201);
+            'message' => 'حدث خطأ أثناء التحقق من البريد الإلكتروني.'
+        ], 422);
     }
+
+
+    // الإيميل غير مسجل في فالدكس
+    if (!$result['registered']) {
+        return response()->json([
+            'message' => 'يرجى التسجيل في شركة فالدكس أولاً، وبعدها قم بالتسجيل هنا للحصول على الكورسات.'
+        ], 422);
+    }
+
+
+    // الإيميل مسجل في فالدكس -> إنشاء الحساب
+    $user = User::create([
+        'name' => $validated['name'],
+        'email' => $validated['email'],
+        'password' => Hash::make($validated['password']),
+        'role' => 'student',
+        'status' => 'active',
+    ]);
+
+
+    $admins = User::where('role', 'admin')->get();
+
+    Notification::send(
+        $admins,
+        new \App\Notifications\NewUserRegisteredAdminNotification($user)
+    );
+
+
+    return response()->json([
+        'message' => 'Registered successfully.',
+        'user' => $user,
+        'token' => $user->createToken('api-token')->plainTextToken,
+        'token_type' => 'Bearer',
+    ], 201);
+}
+    // public function register(RegisterRequest $request): JsonResponse
+    // {
+    //     $validated = $request->validated();
+
+    //     $user = User::create([
+    //         'name' => $validated['name'],
+    //         'email' => $validated['email'],
+    //         'password' => Hash::make($validated['password']),
+    //         'role' => 'student',
+    //         'status' => 'active',
+    //     ]);
+
+    //     $admins = User::where('role', 'admin')->get();
+    //     \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\NewUserRegisteredAdminNotification($user));
+
+    //     return response()->json([
+    //         'message' => 'Registered successfully.',
+    //         'user' => $user,
+    //         'token' => $user->createToken('api-token')->plainTextToken,
+    //         'token_type' => 'Bearer',
+    //     ], 201);
+    // }
 
     public function login(LoginRequest $request): JsonResponse
     {

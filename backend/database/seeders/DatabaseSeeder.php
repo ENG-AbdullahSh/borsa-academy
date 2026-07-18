@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
                 'role' => 'admin',
                 'status' => 'active',
             ],
-        );
+        ); 
 
         User::updateOrCreate(
             ['email' => 'test@example.com'],

@@ -11,7 +11,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable([
+
+class Course extends Model
+{
+     protected $fillable = [
     'title',
     'slug',
     'short_description',
@@ -25,9 +28,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'instructor_id',
     'duration_hours',
     'status',
-])]
-class Course extends Model
-{
+];
     use HasFactory;
     public const LEVELS = ['beginner', 'intermediate', 'advanced'];
 

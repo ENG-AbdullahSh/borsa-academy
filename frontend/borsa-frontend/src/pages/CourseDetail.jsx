@@ -39,6 +39,8 @@ export default function CourseDetail() {
   const [quizStatusLoading, setQuizStatusLoading] = useState(false);
   // Tracks which lesson the video player is currently showing
   const [activeLesson, setActiveLesson] = useState(null);
+  // Active tab below video player
+  const [activeTab, setActiveTab] = useState('about');
 
   const courseId = Number(id);
   const isCourseIdValid = Number.isFinite(courseId) && courseId > 0;
@@ -69,6 +71,25 @@ export default function CourseDetail() {
 
   // Resolved lesson shown in the player — falls back to first playable
   const currentLesson = activeLesson || firstPlayableLesson;
+
+  // Prev/Next lesson navigation
+  const currentLessonIndex = useMemo(() =>
+    currentLesson ? allPlayableLessons.findIndex((l) => l.id === currentLesson.id) : -1,
+  [currentLesson, allPlayableLessons]);
+
+  const prevLesson = currentLessonIndex > 0 ? allPlayableLessons[currentLessonIndex - 1] : null;
+  const nextLesson = currentLessonIndex >= 0 && currentLessonIndex < allPlayableLessons.length - 1
+    ? allPlayableLessons[currentLessonIndex + 1]
+    : null;
+
+  // Total lessons count across all sections
+  const totalLessonsCount = useMemo(() =>
+    sections.reduce((sum, s) => sum + (s.lessons?.length || 0), 0),
+  [sections]);
+
+  const completedLessonsCount = useMemo(() =>
+    sections.reduce((sum, s) => sum + (s.lessons?.filter((l) => l.completed).length || 0), 0),
+  [sections]);
 
   const fetchEnrollment = useCallback(async (signal) => {
     if (!isAuthenticated || !token || !courseId) {
@@ -446,148 +467,195 @@ export default function CourseDetail() {
   }
 
   return (
-    <div className="min-vh-100" style={{ paddingTop: '64px' }}>
-      <main className="py-4 px-4" style={{ maxWidth: '1440px', margin: '0 auto' }}>
-        <div className="d-flex align-items-center gap-1 font-mono-data text-muted mb-4" style={{ fontSize: '11px', direction: 'rtl' }}>
-          <Link to="/courses" className="text-decoration-none text-muted">الكورسات</Link>
+    <div className="min-vh-100" style={{ paddingTop: '64px', direction: 'rtl' }}>
+      <main className="py-4 px-3 px-lg-4" style={{ maxWidth: '1600px', margin: '0 auto' }}>
+
+        {/* ── Breadcrumb ── */}
+        <div className="d-flex align-items-center gap-1 font-mono-data text-muted mb-3" style={{ fontSize: '11px' }}>
+          <Link to="/courses" className="text-decoration-none text-muted" style={{ transition: 'color 0.2s' }}
+            onMouseEnter={(e) => (e.target.style.color = '#75ff9e')}
+            onMouseLeave={(e) => (e.target.style.color = '')}>
+            الكورسات
+          </Link>
           <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>chevron_left</span>
-          <span style={{ color: '#75ff9e' }}>{course.title}</span>
+          <span style={{ color: '#75ff9e' }} className="text-truncate" title={course.title}>{course.title}</span>
         </div>
 
+        {/* ── Notice banner ── */}
         {notice && (
-          <div className="alert mb-4 border-0" role="status" style={{ backgroundColor: 'rgba(117,255,158,0.1)', color: '#75ff9e' }}>
+          <div className="alert mb-3 border-0 d-flex align-items-center gap-2" role="status"
+            style={{ backgroundColor: 'rgba(117,255,158,0.1)', color: '#75ff9e', borderRadius: '8px', borderRight: '3px solid #75ff9e' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check_circle</span>
             {notice}
           </div>
         )}
 
+        {/* ── Enhanced Progress Bar ── */}
         {canAccessCourse && (
-          <section className="mb-4" aria-label="تقدم الدورة" style={{ direction: 'rtl' }}>
+          <section className="mb-4 glass-card p-3 rounded-3" aria-label="تقدم الدورة"
+            style={{ borderRight: progressPercentage >= 100 ? '3px solid #75ff9e' : '3px solid rgba(117,255,158,0.3)', transition: 'border-color 0.4s' }}>
             <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-              <span className="text-white fw-semibold" style={{ fontFamily: 'var(--font-sans)', fontSize: '14px' }}>
-                تقدم الدورة
-              </span>
+              <div className="d-flex align-items-center gap-2">
+                <span className="material-symbols-outlined" style={{ color: '#75ff9e', fontSize: '18px' }}>
+                  {progressPercentage >= 100 ? 'emoji_events' : 'school'}
+                </span>
+                <span className="text-white fw-semibold" style={{ fontFamily: 'var(--font-sans)', fontSize: '14px' }}>
+                  {progressPercentage >= 100 ? '🏆 تم إكمال الدورة بنجاح!' : 'تقدمك في الدورة'}
+                </span>
+              </div>
               <div className="d-flex align-items-center gap-3">
-                {progressPercentage >= 100 && (
-                  <span style={{ color: '#75ff9e', fontSize: '13px' }}>🏆 تم إكمال الدورة</span>
+                {totalLessonsCount > 0 && (
+                  <span className="font-mono-data" style={{ color: '#bacbb9', fontSize: '12px' }}>
+                    {completedLessonsCount} / {totalLessonsCount} درس
+                  </span>
                 )}
-                <span className="font-mono-data" style={{ color: '#75ff9e', fontSize: '13px' }}>
-                  {progressPercentage}% مكتمل
+                <span className="font-mono-data fw-bold" style={{ color: '#75ff9e', fontSize: '16px' }}>
+                  {progressPercentage}%
                 </span>
               </div>
             </div>
-            <div
-              role="progressbar"
-              aria-valuenow={progressPercentage}
-              aria-valuemin="0"
-              aria-valuemax="100"
-              style={{ height: '8px', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: '999px', overflow: 'hidden' }}
-            >
-              <div
-                style={{
-                  width: `${progressPercentage}%`,
-                  height: '100%',
-                  backgroundColor: '#75ff9e',
-                  borderRadius: '999px',
-                  transition: 'width 0.35s ease',
-                }}
-              />
+            <div role="progressbar" aria-valuenow={progressPercentage} aria-valuemin="0" aria-valuemax="100"
+              style={{ height: '6px', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: '999px', overflow: 'hidden' }}>
+              <div style={{
+                width: `${progressPercentage}%`, height: '100%', borderRadius: '999px',
+                background: progressPercentage >= 100
+                  ? 'linear-gradient(90deg, #00ff7f, #75ff9e)'
+                  : 'linear-gradient(90deg, #3ddc84, #75ff9e)',
+                transition: 'width 0.5s cubic-bezier(0.4,0,0.2,1)',
+                boxShadow: '0 0 8px rgba(117,255,158,0.5)',
+              }} />
             </div>
           </section>
         )}
 
+        {/* ── Main Layout: Video + Sidebar ── */}
         <div className="row g-4">
-          <div className="col-12 col-lg-8 d-flex flex-column gap-4">
-            <div className="row g-3">
-              <div className="col-12 col-xl-8">
-                <section className="position-relative glass-card rounded-3 overflow-hidden h-100" style={{ minHeight: '380px', borderRadius: '12px' }}>
-                  {canAccessCourse ? (
-                    <CinemaVideoPlayer
-                      key={currentLesson?.id ?? 'default'}
-                      innerRef={videoRef}
-                      src={currentLesson?.video_url || SAMPLE_VIDEO}
-                      courseId={String(course.id)}
-                      lessonId={String(currentLesson?.id || '1_1')}
-                      onVideoEnded={handleVideoEnded}
-                    />
-                  ) : (
-                    <div className="h-100 d-flex flex-column align-items-center justify-content-center text-center p-4" style={{ minHeight: '380px' }}>
-                      <span className="material-symbols-outlined mb-3" style={{ color: '#75ff9e', fontSize: '56px' }}>lock</span>
-                      <h2 className="h5 text-white fw-bold mb-2" style={{ fontFamily: 'var(--font-sans)' }}>
-                        {accessLoading ? 'جاري التحقق من الاشتراك...' : ACCESS_REQUIRED_MESSAGE}
-                      </h2>
-                      <p className="text-muted mb-4" style={{ maxWidth: '420px', lineHeight: 1.8 }}>
-                        اشترك في الدورة لفتح المحاضرات، الملاحظات، الاختبارات، والمواد التعليمية.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleEnroll}
-                        disabled={enrolling || authLoading || accessLoading}
-                        className="btn btn-primary-cta px-4 py-2 fw-bold d-flex align-items-center gap-2"
-                        style={{ borderRadius: '8px', fontFamily: 'var(--font-sans)' }}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>school</span>
-                        {enrolling ? 'جاري الاشتراك...' : 'اشترك الآن'}
-                      </button>
-                      {accessMessage && !accessLoading && (
-                        <p className="text-muted mt-3 mb-0" style={{ fontSize: '13px' }}>{accessMessage}</p>
-                      )}
-                    </div>
-                  )}
-                </section>
-              </div>
-              <div className="col-12 col-xl-4">
-                {canAccessCourse ? (
-                  <VideoNotesSidebar videoRef={videoRef} courseId={String(course.id)} lessonId={String(currentLesson?.id || '1_1')} />
-                ) : (
-                  <div className="glass-card p-4 rounded-3 h-100 d-flex flex-column justify-content-center">
-                    <img src={courseImage(course)} alt={course.title} className="w-100 rounded-3 object-cover mb-3" style={{ height: '180px' }} />
-                    <h3 className="h6 text-white fw-bold mb-2" style={{ fontFamily: 'var(--font-sans)' }}>{course.title}</h3>
-                    <p className="text-muted m-0" style={{ fontSize: '13px', lineHeight: 1.8 }}>{course.short_description}</p>
-                  </div>
-                )}
-              </div>
-            </div>
 
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-end gap-3">
-              <div>
-                <h1 className="fw-bold text-white mb-1" style={{ fontSize: '28px', fontFamily: 'var(--font-sans)' }}>{course.title}</h1>
-                <p className="text-muted m-0" style={{ fontSize: '14px', fontFamily: 'var(--font-sans)', lineHeight: 1.8 }}>{course.short_description}</p>
-              </div>
-              <div className="d-flex gap-2 flex-wrap">
-                {canAccessCourse ? (
-                  <>
-                    {progressPercentage >= 100 && quizStatus?.has_active_quiz && (
-                      <button
-                        onClick={() => {
-                          setQuizLesson(null);
-                          setIsQuizOpen(true);
-                        }}
-                        disabled={quizStatusLoading || quizStatus.quiz_passed || !quizStatus.quiz_ready}
-                        className="btn px-4 py-2 fw-bold interactive btn-primary-cta d-flex align-items-center gap-2"
-                        style={{ borderRadius: '8px', fontSize: '13px', fontFamily: 'var(--font-sans)', opacity: quizStatus.quiz_passed ? 0.7 : 1 }}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                          {quizStatus.quiz_passed ? 'verified' : 'quiz'}
+          {/* ── LEFT COLUMN: Video Player + Tabs ── */}
+          <div className="col-12 col-lg-8 col-xl-9 d-flex flex-column gap-3">
+
+            {/* Lesson Header */}
+            <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+              <div className="d-flex align-items-center gap-2 flex-grow-1" style={{ minWidth: 0 }}>
+                {canAccessCourse && currentLesson && (
+                  <span className="material-symbols-outlined flex-shrink-0" style={{ color: '#75ff9e', fontSize: '20px' }}>play_circle</span>
+                )}
+                <div style={{ minWidth: 0 }}>
+                  <h1 className="fw-bold text-white mb-0 text-truncate"
+                    style={{ fontSize: 'clamp(16px, 2.5vw, 24px)', fontFamily: 'var(--font-sans)', lineHeight: 1.3 }}>
+                    {canAccessCourse && currentLesson ? currentLesson.title : course.title}
+                  </h1>
+                  {canAccessCourse && currentLesson && (
+                    <p className="text-muted mb-0 mt-1" style={{ fontSize: '12px', fontFamily: 'var(--font-sans)' }}>
+                      {course.title}
+                      {currentLessonIndex >= 0 && (
+                        <span className="ms-2 font-mono-data" style={{ color: '#75ff9e', fontSize: '11px' }}>
+                          · الدرس {currentLessonIndex + 1} من {allPlayableLessons.length}
                         </span>
-                        {quizStatus.quiz_passed ? 'تم اجتياز الاختبار' : 'ابدأ الاختبار'}
-                      </button>
-                    )}
-                    <button className="btn px-4 py-2 fw-semibold" style={{ backgroundColor: '#75ff9e', color: '#003918', borderRadius: '4px', fontSize: '13px', fontFamily: 'var(--font-sans)', boxShadow: '0 0 15px rgba(117,255,158,0.12)' }}>
-                      متابعة التعلم
+                      )}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Prev / Next + Action Buttons */}
+              <div className="d-flex align-items-center gap-2 flex-shrink-0">
+                {canAccessCourse && (
+                  <>
+                    <button
+                      onClick={() => prevLesson && setActiveLesson(prevLesson)}
+                      disabled={!prevLesson}
+                      title="الدرس السابق"
+                      className="btn d-flex align-items-center gap-1"
+                      style={{
+                        backgroundColor: 'rgba(255,255,255,0.05)', color: prevLesson ? '#bacbb9' : '#3a4a3a',
+                        border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px',
+                        fontSize: '12px', fontFamily: 'var(--font-sans)', padding: '6px 12px',
+                        transition: 'all 0.2s',
+                      }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chevron_right</span>
+                      <span className="d-none d-sm-inline">السابق</span>
+                    </button>
+                    <button
+                      onClick={() => nextLesson && setActiveLesson(nextLesson)}
+                      disabled={!nextLesson}
+                      title="الدرس التالي"
+                      className="btn d-flex align-items-center gap-1"
+                      style={{
+                        backgroundColor: nextLesson ? 'rgba(117,255,158,0.12)' : 'rgba(255,255,255,0.04)',
+                        color: nextLesson ? '#75ff9e' : '#3a4a3a',
+                        border: `1px solid ${nextLesson ? 'rgba(117,255,158,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                        borderRadius: '8px', fontSize: '12px', fontFamily: 'var(--font-sans)', padding: '6px 12px',
+                        transition: 'all 0.2s',
+                      }}>
+                      <span className="d-none d-sm-inline">التالي</span>
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chevron_left</span>
                     </button>
                   </>
-                ) : (
-                  <button onClick={handleEnroll} disabled={enrolling || authLoading} className="btn px-4 py-2 fw-semibold" style={{ backgroundColor: '#75ff9e', color: '#003918', borderRadius: '4px', fontSize: '13px', fontFamily: 'var(--font-sans)', boxShadow: '0 0 15px rgba(117,255,158,0.12)' }}>
-                    {enrolling ? 'جاري الاشتراك...' : 'اشترك الآن'}
-                  </button>
                 )}
-                <button onClick={() => setIsBookmarked(!isBookmarked)} className="btn px-3 py-2 fw-semibold d-flex align-items-center gap-1 text-white border" style={{ borderColor: 'rgba(255,255,255,0.1)', borderRadius: '4px', backgroundColor: 'rgba(255,255,255,0.02)', fontSize: '13px' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px', color: isBookmarked ? '#75ff9e' : 'white', fontVariationSettings: isBookmarked ? "'FILL' 1" : "'FILL' 0" }}>bookmark</span>
-                  {isBookmarked ? 'محفوظ' : 'حفظ'}
+                <button
+                  onClick={() => setIsBookmarked(!isBookmarked)}
+                  title={isBookmarked ? 'إلغاء الحفظ' : 'حفظ الكورس'}
+                  className="btn d-flex align-items-center gap-1"
+                  style={{
+                    backgroundColor: isBookmarked ? 'rgba(117,255,158,0.1)' : 'rgba(255,255,255,0.04)',
+                    color: isBookmarked ? '#75ff9e' : '#bacbb9',
+                    border: `1px solid ${isBookmarked ? 'rgba(117,255,158,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                    borderRadius: '8px', fontSize: '12px', padding: '6px 12px', transition: 'all 0.2s',
+                  }}>
+                  <span className="material-symbols-outlined"
+                    style={{ fontSize: '16px', fontVariationSettings: isBookmarked ? "'FILL' 1" : "'FILL' 0" }}>
+                    bookmark
+                  </span>
+                  <span className="d-none d-sm-inline">{isBookmarked ? 'محفوظ' : 'حفظ'}</span>
                 </button>
               </div>
             </div>
 
+            {/* ── Video Player ── */}
+            <section className="glass-card rounded-3 overflow-hidden position-relative"
+              style={{ borderRadius: '14px', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}>
+              {canAccessCourse ? (
+                <CinemaVideoPlayer
+                  key={currentLesson?.id ?? 'default'}
+                  innerRef={videoRef}
+                  src={currentLesson?.video_url || SAMPLE_VIDEO}
+                  courseId={String(course.id)}
+                  lessonId={String(currentLesson?.id || '1_1')}
+                  onVideoEnded={handleVideoEnded}
+                />
+              ) : (
+                <div className="d-flex flex-column align-items-center justify-content-center text-center p-5"
+                  style={{ minHeight: '380px', background: 'linear-gradient(135deg, rgba(0,20,10,0.8), rgba(0,40,20,0.6))' }}>
+                  <div style={{
+                    width: '80px', height: '80px', borderRadius: '50%', marginBottom: '20px',
+                    background: 'rgba(117,255,158,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: '2px solid rgba(117,255,158,0.3)',
+                  }}>
+                    <span className="material-symbols-outlined" style={{ color: '#75ff9e', fontSize: '40px' }}>lock</span>
+                  </div>
+                  <h2 className="h5 text-white fw-bold mb-2" style={{ fontFamily: 'var(--font-sans)' }}>
+                    {accessLoading ? 'جاري التحقق من الاشتراك...' : ACCESS_REQUIRED_MESSAGE}
+                  </h2>
+                  <p className="text-muted mb-4" style={{ maxWidth: '380px', lineHeight: 1.8, fontSize: '14px' }}>
+                    اشترك في الدورة لفتح المحاضرات، الملاحظات، الاختبارات، والمواد التعليمية.
+                  </p>
+                  <button
+                    type="button" onClick={handleEnroll}
+                    disabled={enrolling || authLoading || accessLoading}
+                    className="btn btn-primary-cta px-5 py-2 fw-bold d-flex align-items-center gap-2"
+                    style={{ borderRadius: '10px', fontFamily: 'var(--font-sans)', fontSize: '15px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>school</span>
+                    {enrolling ? 'جاري الاشتراك...' : 'اشترك الآن مجاناً'}
+                  </button>
+                  {accessMessage && !accessLoading && (
+                    <p className="text-muted mt-3 mb-0" style={{ fontSize: '13px' }}>{accessMessage}</p>
+                  )}
+                </div>
+              )}
+            </section>
+
+            {/* ── CourseQuiz Modal ── */}
             <CourseQuiz
               isOpen={isQuizOpen}
               onClose={() => setIsQuizOpen(false)}
@@ -597,73 +665,187 @@ export default function CourseDetail() {
               onPassed={handleQuizPassed}
             />
 
-            <div className="row g-4">
-              <div className="col-12 col-md-8">
-                <div className="glass-card p-4 rounded-3 h-100">
-                  <h3 className="h5 fw-bold mb-3 d-flex align-items-center gap-2" style={{ color: '#75ff9e', fontFamily: 'var(--font-sans)' }}>
-                    <span className="material-symbols-outlined" style={{ color: '#75ff9e', fontSize: '20px' }}>info</span> عن هذه الدورة
-                  </h3>
-                  <p className="text-muted mb-3" style={{ fontSize: '14px', lineHeight: 1.85, fontFamily: 'var(--font-sans)' }}>
-                    {course.description}
-                  </p>
-                  <div className="pt-3 border-top" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-                    <h4 className="font-mono-data text-white text-uppercase mb-3" style={{ fontSize: '11px', letterSpacing: '0.08em' }}>تفاصيل سريعة</h4>
-                    <div className="row g-2">
-                      {courseMeta.map((item) => (
-                        <div key={item.icon} className="col-6 d-flex align-items-center gap-1 text-muted" style={{ fontSize: '12px', fontFamily: 'var(--font-sans)' }}>
-                          <span className="material-symbols-outlined" style={{ color: '#75ff9e', fontSize: '14px' }}>{item.icon}</span> {item.label}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+            {/* ── Quiz / Continue Buttons ── */}
+            {canAccessCourse && (
+              <div className="d-flex align-items-center gap-2 flex-wrap">
+                {progressPercentage >= 100 && quizStatus?.has_active_quiz && (
+                  <button
+                    onClick={() => { setQuizLesson(null); setIsQuizOpen(true); }}
+                    disabled={quizStatusLoading || quizStatus.quiz_passed || !quizStatus.quiz_ready}
+                    className="btn px-4 py-2 fw-bold d-flex align-items-center gap-2"
+                    style={{
+                      background: quizStatus.quiz_passed
+                        ? 'rgba(117,255,158,0.15)' : 'linear-gradient(135deg, #00cc55, #75ff9e)',
+                      color: quizStatus.quiz_passed ? '#75ff9e' : '#003918',
+                      border: quizStatus.quiz_passed ? '1px solid rgba(117,255,158,0.3)' : 'none',
+                      borderRadius: '10px', fontSize: '13px', fontFamily: 'var(--font-sans)',
+                    }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                      {quizStatus.quiz_passed ? 'verified' : 'quiz'}
+                    </span>
+                    {quizStatus.quiz_passed ? 'تم اجتياز الاختبار ✓' : 'ابدأ الاختبار النهائي'}
+                  </button>
+                )}
+                <button
+                  onClick={() => nextLesson && setActiveLesson(nextLesson)}
+                  disabled={!nextLesson}
+                  className="btn px-4 py-2 fw-semibold d-flex align-items-center gap-2"
+                  style={{
+                    backgroundColor: '#75ff9e', color: '#003918',
+                    borderRadius: '10px', fontSize: '13px', fontFamily: 'var(--font-sans)',
+                    boxShadow: nextLesson ? '0 0 20px rgba(117,255,158,0.25)' : 'none',
+                    opacity: nextLesson ? 1 : 0.5,
+                    transition: 'all 0.2s',
+                  }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>play_arrow</span>
+                  متابعة التعلم
+                </button>
               </div>
-              <div className="col-12 col-md-4">
-                <div className="glass-card p-4 rounded-3 text-center h-100 d-flex flex-column align-items-center justify-content-between">
-                  <div className="rounded-circle border p-1 mb-3" style={{ width: '96px', height: '96px', borderColor: '#75ff9e' }}>
-                    <img alt={course.instructor_name} className="w-100 h-100 object-cover rounded-circle" src={courseImage(course)} />
-                  </div>
-                  <h3 className="h6 text-white fw-bold m-0" style={{ fontFamily: 'var(--font-sans)' }}>{course.instructor_name}</h3>
-                  <p className="font-mono-data text-uppercase my-2" style={{ color: '#75ff9e', fontSize: '9px' }}>مدرب الدورة</p>
-                  <p className="text-muted mb-3" style={{ fontSize: '12px', lineHeight: 1.7, fontFamily: 'var(--font-sans)' }}>
-                    يقدم محتوى عملياً يساعدك على تحويل مفاهيم التداول إلى خطوات قابلة للتطبيق.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {canAccessCourse && currentLesson?.pdf_url && (
-              <LessonPdfViewer lesson={currentLesson} />
             )}
 
-            {/* Course Reviews Section */}
-            <div className="mt-4 pt-4 border-top" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-              <CourseReviews 
-                courseId={courseId} 
-                enrollment={enrollment} 
-                canReview={canAccessCourse} 
-              />
+            {/* ── Tabs ── */}
+            <div>
+              {/* Tab Headers */}
+              <div className="d-flex gap-0 border-bottom" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                {[
+                  { key: 'about', icon: 'info', label: 'عن الدورة' },
+                  ...(canAccessCourse ? [{ key: 'notes', icon: 'sticky_note_2', label: 'الملاحظات' }] : []),
+                  { key: 'instructor', icon: 'person', label: 'المدرب' },
+                  { key: 'reviews', icon: 'star', label: 'التقييمات' },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className="btn d-flex align-items-center gap-1 px-3 py-2"
+                    style={{
+                      borderRadius: '0', fontSize: '13px', fontFamily: 'var(--font-sans)',
+                      color: activeTab === tab.key ? '#75ff9e' : '#7a8a7a',
+                      borderBottom: activeTab === tab.key ? '2px solid #75ff9e' : '2px solid transparent',
+                      backgroundColor: 'transparent',
+                      transition: 'all 0.2s',
+                      marginBottom: '-1px',
+                    }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>{tab.icon}</span>
+                    <span className="d-none d-sm-inline">{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Tab Content */}
+              <div className="pt-4">
+
+                {/* About Tab */}
+                {activeTab === 'about' && (
+                  <div className="glass-card p-4 rounded-3" style={{ animation: 'fadeIn 0.25s ease' }}>
+                    <h3 className="h5 fw-bold mb-3 d-flex align-items-center gap-2"
+                      style={{ color: '#75ff9e', fontFamily: 'var(--font-sans)' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>info</span>
+                      عن هذه الدورة
+                    </h3>
+                    <p className="text-muted mb-4" style={{ fontSize: '14px', lineHeight: 2, fontFamily: 'var(--font-sans)' }}>
+                      {course.description}
+                    </p>
+                    <div className="pt-3 border-top" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+                      <h4 className="font-mono-data text-uppercase mb-3" style={{ color: '#75ff9e', fontSize: '10px', letterSpacing: '0.1em' }}>
+                        تفاصيل سريعة
+                      </h4>
+                      <div className="row g-3">
+                        {courseMeta.map((item) => (
+                          <div key={item.icon} className="col-6 col-sm-3">
+                            <div className="d-flex align-items-center gap-2 p-2 rounded-2"
+                              style={{ backgroundColor: 'rgba(117,255,158,0.06)', border: '1px solid rgba(117,255,158,0.1)' }}>
+                              <span className="material-symbols-outlined" style={{ color: '#75ff9e', fontSize: '18px' }}>{item.icon}</span>
+                              <span className="text-muted" style={{ fontSize: '12px', fontFamily: 'var(--font-sans)' }}>{item.label}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {canAccessCourse && currentLesson?.pdf_url && (
+                      <div className="mt-4 pt-3 border-top" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+                        <LessonPdfViewer lesson={currentLesson} />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Notes Tab */}
+                {activeTab === 'notes' && canAccessCourse && (
+                  <div style={{ animation: 'fadeIn 0.25s ease' }}>
+                    <VideoNotesSidebar
+                      videoRef={videoRef}
+                      courseId={String(course.id)}
+                      lessonId={String(currentLesson?.id || '1_1')}
+                    />
+                  </div>
+                )}
+
+                {/* Instructor Tab */}
+                {activeTab === 'instructor' && (
+                  <div className="glass-card p-4 rounded-3" style={{ animation: 'fadeIn 0.25s ease' }}>
+                    <div className="d-flex align-items-center gap-4 flex-wrap">
+                      <div className="flex-shrink-0">
+                        <div className="rounded-circle d-flex align-items-center justify-content-center"
+                          style={{ width: '100px', height: '100px', border: '2px solid #75ff9e', background: 'rgba(117,255,158,0.08)', overflow: 'hidden' }}>
+                          <img
+                            alt={course.instructor_name}
+                            src={courseImage(course)}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="h5 text-white fw-bold mb-1" style={{ fontFamily: 'var(--font-sans)' }}>
+                          {course.instructor_name}
+                        </h3>
+                        <p className="font-mono-data text-uppercase mb-2" style={{ color: '#75ff9e', fontSize: '10px', letterSpacing: '0.1em' }}>
+                          {course.instructor?.specialization || 'مدرب الدورة'}
+                        </p>
+                        <p className="text-muted mb-0" style={{ fontSize: '13px', lineHeight: 1.8, fontFamily: 'var(--font-sans)', maxWidth: '500px' }}>
+                          {course.instructor?.bio || 'يقدم محتوى عملياً يساعدك على تحويل مفاهيم التداول إلى خطوات قابلة للتطبيق في الأسواق المالية.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Reviews Tab */}
+                {activeTab === 'reviews' && (
+                  <div style={{ animation: 'fadeIn 0.25s ease' }}>
+                    <CourseReviews
+                      courseId={courseId}
+                      enrollment={enrollment}
+                      canReview={canAccessCourse}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
+            <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }`}</style>
           </div>
 
-          <aside className="col-12 col-lg-4">
-            <CourseCurriculum
-              sections={sections}
-              isEnrolled={canAccessCourse}
-              loading={curriculumLoading}
-              error={curriculumError}
-              progressPercent={progressPercentage}
-              courseId={courseId}
-              quizStatus={quizStatus}
-              onStartQuiz={(lesson) => {
-                setQuizLesson(lesson || null);
-                setIsQuizOpen(true);
-              }}
-              onLessonProgressChange={handleLessonProgressChange}
-              activeLessonId={currentLesson?.id || null}
-              onLessonSelect={handleLessonSelect}
-            />
+          {/* ── RIGHT COLUMN: Curriculum Sidebar (Sticky) ── */}
+          <aside className="col-12 col-lg-4 col-xl-3">
+            <div style={{ position: 'sticky', top: '80px' }}>
+              <CourseCurriculum
+                sections={sections}
+                isEnrolled={canAccessCourse}
+                loading={curriculumLoading}
+                error={curriculumError}
+                progressPercent={progressPercentage}
+                courseId={courseId}
+                quizStatus={quizStatus}
+                onStartQuiz={(lesson) => {
+                  setQuizLesson(lesson || null);
+                  setIsQuizOpen(true);
+                }}
+                onLessonProgressChange={handleLessonProgressChange}
+                activeLessonId={currentLesson?.id || null}
+                onLessonSelect={handleLessonSelect}
+              />
+            </div>
           </aside>
+
         </div>
       </main>
     </div>

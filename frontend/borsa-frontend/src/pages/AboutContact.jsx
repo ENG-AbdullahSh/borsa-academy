@@ -239,7 +239,7 @@ export default function AboutContact() {
                 {[
                   { icon: 'mail',  label: 'نقطة دعم الكم',    value: 'terminal@borsa.academy', href: null },
                   { Icon: FaWhatsapp, label: 'واتساب', value: '+970 598 341 135', href: 'https://wa.me/970598341135' },
-                  { Icon: FaTelegram, label: 'قناة التلي غرام', value: 'قناة بورصة أكاديمي على تليغرام', href: null },
+                  { Icon: FaTelegram, label: 'قناة التلي غرام', value: 'قناة بورصة أكاديمي على تليغرام', href: 'https://t.me/BorsaAcademy' },
                   { Icon: FaInstagram, label: 'الانستغرام', value: '@bors_aacademy', href: 'https://www.instagram.com/bors_aacademy?igsh=OXpjaDl4dmk1eTU0' },
                 ].map((item, i) => (
                   <div key={i} className="d-flex align-items-center gap-3">

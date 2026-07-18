@@ -758,6 +758,72 @@
 }
 
 /* ══════════════════════════════
+   Valdex Special Banner
+══════════════════════════════ */
+.auth-valdex-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(37, 99, 235, 0.02) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 12px;
+  margin-bottom: 24px;
+  animation: authFadeIn 0.4s ease both;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+  direction: rtl;
+}
+
+.auth-valdex-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 4px;
+  background: #3B82F6;
+  border-radius: 0 12px 12px 0;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.auth-valdex-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #60A5FA;
+  box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.1);
+}
+
+.auth-valdex-content {
+  flex: 1;
+  text-align: right;
+}
+
+.auth-valdex-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #DBEAFE;
+  margin: 0 0 4px 0;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+}
+
+.auth-valdex-text {
+  font-size: 13.5px;
+  color: #93C5FD;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ══════════════════════════════
    Success State
 ══════════════════════════════ */
 .auth-success {
@@ -793,58 +859,240 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   RESPONSIVE — Stack to single column on mobile (≤ 768px)
+   RESPONSIVE — Tablet, Mobile, Small Mobile
    ═══════════════════════════════════════════════════════════════════ */
-@media (max-width: 768px) {
-  .auth-wrapper {
-    grid-template-columns: 1fr;
-    overflow-y: auto;
-  }
 
-  /* Identity panel becomes compact header on mobile */
+/* ── Tablet (≤ 960px) — keep two columns but tighten spacing ── */
+@media (max-width: 960px) {
   .auth-identity {
-    padding: 2.5rem 1.5rem;
-    align-items: flex-end;
-    text-align: right;
+    padding: 3rem 2rem;
   }
 
   .auth-identity-inner {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
+    max-width: 360px;
   }
 
-  .auth-logo-underline {
-    margin-left: auto;
-    margin-right: 0;
+  .auth-tagline {
+    font-size: 13.5px;
+    margin-bottom: 28px;
   }
 
-  .auth-identity::after {
-    width: 280px;
-    height: 280px;
-    top: -80px;
-    right: -60px;
-  }
-
-  .auth-feature-item {
-    justify-content: center;
+  .auth-feature-text {
+    font-size: 13.5px;
   }
 
   .auth-form-panel {
-    padding: 2.5rem 1.25rem 3rem;
+    padding: 2.5rem 1.75rem;
   }
 
-  .auth-form-panel::before { display: none; }
-
-  .auth-logo-img      { height: 56px; max-height: 56px; }
-  .auth-form-title    { font-size: 26px; }
-  .auth-tagline       { font-size: 14px; margin-bottom: 28px; }
-  .auth-cta-btn       { font-size: 15px; padding: 13px; }
+  .auth-form-title {
+    font-size: 26px;
+  }
 }
 
-@media (max-width: 400px) {
-  .auth-identity    { padding: 2rem 1rem 1.5rem; }
-  .auth-form-panel  { padding: 2rem 1rem 3rem; }
-  .auth-logo-img    { height: 48px; max-height: 48px; }
-  .auth-form-title  { font-size: 22px; }
+/* ── Mobile (≤ 768px) — single column, identity becomes slim header ── */
+@media (max-width: 768px) {
+  /* Switch to single column */
+  .auth-wrapper {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    overflow-y: auto;
+    min-height: 100svh;
+  }
+
+  /* Identity panel → compact branded strip */
+  .auth-identity {
+    padding: 20px 20px 18px;
+    justify-content: flex-start;
+    align-items: stretch;
+    animation: authFadeIn 0.5s ease both;
+    /* reduce height on mobile — just a top bar */
+    min-height: unset;
+  }
+
+  /* Hide the animated grid + orb on mobile (saves paint) */
+  .auth-identity::before,
+  .auth-identity::after {
+    display: none;
+  }
+
+  .auth-identity-inner {
+    max-width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  /* Logo row stays horizontal, smaller */
+  .auth-logo-img-wrapper {
+    margin: 0;
+    direction: rtl;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-direction: row;
+  }
+
+  .auth-logo-img {
+    height: 42px;
+    max-height: 42px;
+    border-radius: 10px;
+  }
+
+  .brand-text-glowing {
+    font-size: 18px !important;
+    white-space: nowrap;
+  }
+
+  /* Hide features, tagline, dividers on mobile — keep it slim */
+  .auth-tagline,
+  .auth-features,
+  .auth-logo-underline,
+  .auth-identity-divider,
+  .auth-identity-brand-sub {
+    display: none;
+  }
+
+  /* Separator on right side of form panel → gone on mobile */
+  .auth-form-panel::before {
+    display: none;
+  }
+
+  /* Form panel fills the rest of the screen */
+  .auth-form-panel {
+    padding: 28px 20px 40px;
+    min-height: unset;
+    flex: 1;
+    justify-content: flex-start;
+    overflow-y: visible;
+  }
+
+  .auth-form-box {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  /* Hide logo inside form header on mobile (shown in top bar already) */
+  .auth-form-header img {
+    display: none;
+  }
+
+  .auth-form-header {
+    margin-bottom: 24px;
+  }
+
+  .auth-form-title {
+    font-size: 24px;
+    margin-bottom: 6px;
+  }
+
+  .auth-form-subtitle {
+    font-size: 13px;
+  }
+
+  /* Inputs */
+  .auth-input {
+    font-size: 15px;
+    padding: 13px 14px;
+  }
+
+  .auth-field {
+    margin-bottom: 16px;
+  }
+
+  /* CTA button */
+  .auth-cta-btn {
+    font-size: 15px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+  }
+
+  /* Remember / forgot row */
+  .auth-utils-row {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  /* Valdex banner */
+  .auth-valdex-banner {
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+
+  .auth-valdex-icon {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* ── Small mobile (≤ 480px) ── */
+@media (max-width: 480px) {
+  .auth-identity {
+    padding: 16px;
+  }
+
+  .auth-logo-img {
+    height: 36px;
+    max-height: 36px;
+  }
+
+  .brand-text-glowing {
+    font-size: 16px !important;
+  }
+
+  .auth-form-panel {
+    padding: 22px 16px 36px;
+  }
+
+  .auth-form-title {
+    font-size: 22px;
+  }
+
+  .auth-cta-btn {
+    font-size: 14.5px;
+    padding: 13px 14px;
+    border-radius: 10px;
+  }
+
+  .auth-input {
+    font-size: 14px;
+    padding: 12px 13px;
+  }
+
+  .auth-label {
+    font-size: 10px;
+  }
+}
+
+/* ── Extra small (≤ 360px) ── */
+@media (max-width: 360px) {
+  .auth-identity {
+    padding: 14px 12px;
+  }
+
+  .brand-text-glowing {
+    font-size: 14px !important;
+  }
+
+  .auth-logo-img {
+    height: 32px;
+    max-height: 32px;
+  }
+
+  .auth-form-panel {
+    padding: 18px 12px 32px;
+  }
+
+  .auth-form-title {
+    font-size: 20px;
+  }
+
+  .auth-form-subtitle {
+    font-size: 12px;
+  }
 }

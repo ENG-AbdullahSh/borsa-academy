@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'course_id', 'lesson_id', 'completed', 'completed_at'])]
 class LessonProgress extends Model
 {
+    protected $fillable = ['user_id', 'course_id', 'lesson_id', 'completed', 'completed_at'];
     protected $table = 'lesson_progress';
 
     /**

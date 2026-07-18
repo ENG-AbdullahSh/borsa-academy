@@ -9,7 +9,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable([
+class Lesson extends Model
+{
+     protected $fillable = [
     'section_id',
     'title',
     'description',
@@ -22,10 +24,8 @@ use Illuminate\Support\Facades\Storage;
     'order',
     'is_preview',
     'is_published',
-])]
-class Lesson extends Model
-{
-    /**
+];
+/**
      * Get the video URL.
      *
      * For uploaded videos, we serve the file directly from public storage
@@ -40,8 +40,7 @@ class Lesson extends Model
     public function getVideoUrlAttribute(?string $value): ?string
     {
         if (!empty($this->video_path)) {
-            // Return a direct public-storage URL — no PHP processing involved.
-            return asset('storage/' . $this->video_path);
+            return url("/api/lessons/{$this->id}/stream");
         }
         return $value;
     }

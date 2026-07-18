@@ -118,7 +118,7 @@ export default function ForgotPassword() {
 
   const handleDigitChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
-    
+
     const newDigits = [...codeDigits];
     newDigits[index] = value.slice(-1);
     setCodeDigits(newDigits);
@@ -154,7 +154,7 @@ export default function ForgotPassword() {
     e.preventDefault();
     setError('');
     setTouched({ token: true });
-    
+
     const fullCode = codeDigits.join('');
 
     if (fullCode.length < 6) {
@@ -391,10 +391,10 @@ export default function ForgotPassword() {
                         يمكنك إعادة إرسال الكود بعد <span className="text-[#00E676] font-bold">{resendTimer}</span> ثانية
                       </p>
                     ) : (
-                      <button 
-                        type="button" 
-                        className="text-sm text-[#00E676] hover:text-white transition-colors bg-transparent border-none cursor-pointer" 
-                        onClick={sendCode} 
+                      <button
+                        type="button"
+                        className="text-sm text-[#00E676] hover:text-white transition-colors bg-transparent border-none cursor-pointer"
+                        onClick={sendCode}
                         disabled={loading}
                       >
                         إعادة إرسال الكود

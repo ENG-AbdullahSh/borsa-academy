@@ -7,19 +7,20 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable([
-    'user_id',
-    'quiz_id',
-    'course_id',
-    'lesson_id',
-    'score',
-    'total_points',
-    'percentage',
-    'passed',
-    'submitted_at',
-])]
+
 class QuizAttempt extends Model
 {
+    protected $fillable = [
+        'user_id',
+        'quiz_id',
+        'course_id',
+        'lesson_id',
+        'score',
+        'total_points',
+        'percentage',
+        'passed',
+        'submitted_at',
+    ];
     protected function casts(): array
     {
         return [

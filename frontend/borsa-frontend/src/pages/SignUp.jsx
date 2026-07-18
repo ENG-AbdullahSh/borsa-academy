@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiInfo } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth';
-import GoogleLoginButton from '../components/GoogleLoginButton';
 import { useSettings } from '../context/SettingsContext';
 import { FieldError } from '../components/FormValidation';
 import { hasValidationErrors, invalidClass, invalidProps, normalizeLaravelErrors, validateFields, validators } from '../utils/validation';
@@ -67,7 +66,7 @@ const getRegisterErrorMessage = (requestError) => {
 ═══════════════════════════════════════════════════════════════════ */
 export default function SignUp() {
   const navigate = useNavigate();
-  const { register, googleLogin } = useAuth();
+  const { register } = useAuth();
   const { settings } = useSettings();
 
   const [fullName, setFullName]         = useState('');
@@ -244,12 +243,18 @@ export default function SignUp() {
             <>
               {/* Header */}
               <div className="auth-form-header">
-                <img 
-                  src={settings.logo_path ? `http://127.0.0.1:8000/storage/${settings.logo_path}` : borsaLogo} 
-                  alt={settings.academy_name || "Borsa Academy"} 
-                  className="mx-auto mb-4" 
-                  style={{ maxHeight: '55px', borderRadius: '8px', filter: 'drop-shadow(0 0 12px rgba(0, 230, 118, 0.25))' }} 
-                />
+                <div className="auth-logo-img-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '36px', flexDirection: 'row-reverse', marginBottom: '0' }}>
+                  <img
+                    src={settings.logo_path ? `http://127.0.0.1:8000/storage/${settings.logo_path}` : borsaLogo}
+                    alt={settings.academy_name || 'بورصة أكاديمي'}
+                    className="auth-logo-img brand-logo-animated"
+                    style={{ borderRadius: '8px' }}
+                  />
+                  <span className="brand-text-glowing" style={{ fontSize: '28px', fontFamily: 'var(--font-sans)' }}>
+                    {settings.academy_name || 'بورصة أكاديمي'}
+                  </span>
+                </div>
+                <div className="auth-logo-underline" style={{ marginRight: 'auto', marginLeft: 0 }} />
                 <h1 className="auth-form-title">إنشاء حساب جديد</h1>
                 <p className="auth-form-subtitle">
                   انضم إلى آلاف المتداولين المحترفين على منصتنا
@@ -258,7 +263,19 @@ export default function SignUp() {
 
               {/* Error */}
               {error && (
-                <div className="auth-error-banner">{error}</div>
+                error.includes('شركة فالدكس') ? (
+                  <div className="auth-valdex-banner">
+                    <div className="auth-valdex-icon">
+                      <FiInfo size={22} />
+                    </div>
+                    <div className="auth-valdex-content">
+                      <h4 className="auth-valdex-title">تنبيه هام</h4>
+                      <p className="auth-valdex-text">{error}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="auth-error-banner">{error}</div>
+                )
               )}
 
               <form onSubmit={handleSubmit} noValidate>
@@ -452,9 +469,9 @@ export default function SignUp() {
                   />
                   <span className="auth-terms-label text-[13px] text-slate-400 leading-relaxed">
                     أوافق على{' '}
-                    <a href="#terms" onClick={e => e.preventDefault()} className="text-[#00E676] font-bold no-underline hover:text-[#5effe8] transition-colors">شروط الخدمة</a>
+                    <Link to="/terms" target="_blank" rel="noopener noreferrer" className="text-[#00E676] font-bold no-underline hover:text-[#5effe8] transition-colors">شروط الخدمة</Link>
                     {' '}و{' '}
-                    <a href="#privacy" onClick={e => e.preventDefault()} className="text-[#00E676] font-bold no-underline hover:text-[#5effe8] transition-colors">سياسة الخصوصية</a>
+                    <Link to="/terms" target="_blank" rel="noopener noreferrer" className="text-[#00E676] font-bold no-underline hover:text-[#5effe8] transition-colors">سياسة الخصوصية</Link>
                   </span>
                 </label>
                 <FieldError id="signup-terms-error" message={touched.agreed && fieldErrors.agreed} />
@@ -471,25 +488,6 @@ export default function SignUp() {
                 </button>
 
               </form>
-
-              <div className="auth-divider">أو</div>
-              <GoogleLoginButton 
-                text="signup_with" 
-                onSuccess={async (credential) => {
-                  setError('');
-                  setLoading(true);
-                  try {
-                    await googleLogin({ credential });
-                    setLoading(false);
-                    setSuccess(true);
-                    setTimeout(() => navigate('/student-dashboard', { replace: true }), 700);
-                  } catch (err) {
-                    setLoading(false);
-                    setError(getRegisterErrorMessage(err));
-                  }
-                }}
-                onError={(err) => setError(err.message || 'تعذر إنشاء حساب باستخدام جوجل.')}
-              />
 
               {/* Switch to Sign In */}
               <p className="auth-switch">
