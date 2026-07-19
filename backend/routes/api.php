@@ -23,9 +23,11 @@ use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\SocialLoginController;
 use App\Http\Controllers\Api\VideoStreamController;
 use App\Http\Controllers\UploadController;
+use App\Http\Controllers\Api\PerformanceMetricController;
 use Illuminate\Support\Facades\Route;
 use App\Services\TelegramService;
 
+Route::get('/courses/best-sellers', [CourseController::class, 'bestSellers']);
 Route::get('/courses', [CourseController::class, 'index']);
 Route::get('/courses/{id}', [CourseController::class, 'show'])->whereNumber('id');
 Route::get('/courses/{id}/curriculum', [CourseCurriculumController::class, 'show'])->whereNumber('id');
@@ -45,6 +47,7 @@ Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkE
 Route::post('/verify-reset-code', [PasswordResetController::class, 'verifyCode']);
 Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 Route::post('/upload', [UploadController::class, 'uploadFile']);
+Route::post('/performance-metrics', [PerformanceMetricController::class, 'store']);
 
 // ── Contact Form ────────────────────────────────────────────────────────
 // Public route — rate-limited to 5 submissions per minute per IP
@@ -185,11 +188,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
 });
 
 
+// ── Telegram Test Endpoint (dev/debug only) ────────────────────
+// Uses checkEmail() — the only method available in TelegramService
 Route::any('/telegram-test', function (TelegramService $telegram) {
-
-    return $telegram->sendMessage(
-        'BorsaAcademy_bot',
-        'test@gmail.com'
-    );
-
+    return $telegram->checkEmail('test@gmail.com');
 });

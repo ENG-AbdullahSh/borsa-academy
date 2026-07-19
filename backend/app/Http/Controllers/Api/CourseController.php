@@ -9,6 +9,7 @@ use App\Models\Course;
 use App\Models\Instructor;
 use App\Notifications\InstructorAssignedToCourseNotification;
 use App\Services\NotificationRecipientService;
+use App\Services\CourseCacheService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -20,8 +21,12 @@ class CourseController extends Controller
 {
     public function __construct(
         private readonly NotificationRecipientService $notificationRecipients,
+        private readonly CourseCacheService $courseCache,
     ) {}
 
+    /**
+     * Get list of published courses (cached).
+     */
     public function index(Request $request): JsonResponse
     {
         $filters = $request->validate([
@@ -33,49 +38,35 @@ class CourseController extends Controller
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ]);
 
-        // Generate a unique cache key based on query parameters
-        $cacheKey = 'courses.index.' . md5(json_encode(request()->query()));
-
-        $courses = \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addMinutes(10), function () use ($filters) {
-            return Course::query()
-                ->with('instructor.user') // Eager load to fix N+1
-                ->published()
-                ->when($filters['search'] ?? null, function ($query, string $search): void {
-                    $query->where('title', 'like', "%{$search}%");
-                })
-                ->when($filters['level'] ?? null, function ($query, string $level): void {
-                    $query->where('level', $level);
-                })
-                ->when($filters['category'] ?? null, function ($query, string $category): void {
-                    $query->where('category', $category);
-                })
-                ->when(array_key_exists('min_price', $filters), function ($query) use ($filters): void {
-                    $query->where('price', '>=', $filters['min_price']);
-                })
-                ->when(array_key_exists('max_price', $filters), function ($query) use ($filters): void {
-                    $query->where('price', '<=', $filters['max_price']);
-                })
-                ->latest()
-                ->paginate($filters['per_page'] ?? 10)
-                ->withQueryString()
-                ->toArray();
-        });
+        $perPage = (int) ($filters['per_page'] ?? 10);
+        $courses = $this->courseCache->getCachedIndex($filters, $perPage);
 
         return response()->json($courses);
     }
 
+    /**
+     * Get a single published course details (cached).
+     */
     public function show(int $id): JsonResponse
     {
-        $cacheKey = "courses.show.{$id}";
-        $course = \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addMinutes(10), function () use ($id) {
-            return Course::query()
-                ->with('instructor.user') // Eager load
-                ->published()
-                ->findOrFail($id);
-        });
+        $course = $this->courseCache->getCachedShow($id);
 
         return response()->json([
             'data' => $course,
+        ]);
+    }
+
+    /**
+     * Get list of best selling courses (cached).
+     */
+    public function bestSellers(Request $request): JsonResponse
+    {
+        $limit = (int) $request->input('limit', 6);
+        $courses = $this->courseCache->getBestSellers($limit);
+
+        return response()->json([
+            'success' => true,
+            'data' => $courses
         ]);
     }
 
@@ -132,6 +123,10 @@ class CourseController extends Controller
 
         $course = Course::create($validated);
         $course->load('instructor.user');
+        
+        // Invalidate course caches so the new course appears instantly
+        $this->courseCache->invalidate();
+
         $this->notifyAssignedInstructor($course);
 
         return response()->json([
@@ -158,6 +153,9 @@ class CourseController extends Controller
         $course->update($validated);
         $course->refresh()->load('instructor.user');
 
+        // Invalidate course caches to clear old data
+        $this->courseCache->invalidate($course->id);
+
         if (
             array_key_exists('instructor_id', $validated)
             && (int) $validated['instructor_id'] !== (int) $previousInstructorId
@@ -175,6 +173,9 @@ class CourseController extends Controller
     {
         $course = Course::findOrFail($id);
         $course->delete();
+
+        // Invalidate course caches
+        $this->courseCache->invalidate($id);
 
         return response()->json([
             'message' => 'Course deleted successfully.',

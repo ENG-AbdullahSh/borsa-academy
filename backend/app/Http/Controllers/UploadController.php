@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ImageOptimizerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class UploadController extends Controller
 {
+    public function __construct(
+        protected ImageOptimizerService $imageOptimizer
+    ) {}
+
     public function uploadFile(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -26,12 +31,15 @@ class UploadController extends Controller
 
         if ($request->hasFile('file')) {
             $file = $request->file('file');
-            $path = $file->store($folderPath, 'public');
+            
+            // Pass through our image optimizer service
+            $result = $this->imageOptimizer->optimizeAndStore($file, $folderPath);
 
             return response()->json([
                 'success' => true,
-                'url' => asset('storage/' . $path),
-                'path' => $path
+                'url' => asset('storage/' . $result['path']),
+                'path' => $result['path'],
+                'optimized' => $result['success']
             ]);
         }
 

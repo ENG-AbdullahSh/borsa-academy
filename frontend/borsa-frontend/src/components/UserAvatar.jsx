@@ -107,6 +107,7 @@ export default function UserAvatar({
         <img
           src={avatarUrl}
           alt={name || 'User avatar'}
+          loading="lazy"
           // ── KEY: If this fires (404/network error), flip imgFailed
           //    to true. React re-renders → falls into BRANCH B below.
           onError={() => setImgFailed(true)}

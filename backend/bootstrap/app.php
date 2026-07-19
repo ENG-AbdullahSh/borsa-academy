@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureUserHasRole::class,
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
             'subscribed' => \App\Http\Middleware\CheckActiveSubscription::class,
+            'cache.headers' => \App\Http\Middleware\AddCacheHeadersMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
