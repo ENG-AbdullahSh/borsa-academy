@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AdminUserController;
-use App\Http\Controllers\Api\PasswordResetController;
+use App\Http\Controllers\Api\ForgotPasswordController;
 use App\Http\Controllers\Api\AdminCertificateController;
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AdminQuizController;
@@ -43,9 +43,9 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle']);
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
 Route::post('/auth/google', [SocialLoginController::class, 'google']);
-Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail']);
-Route::post('/verify-reset-code', [PasswordResetController::class, 'verifyCode']);
-Route::post('/reset-password', [PasswordResetController::class, 'reset']);
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendOtp']);
+Route::post('/verify-reset-code', [ForgotPasswordController::class, 'verifyOtp']);
+Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
 Route::post('/upload', [UploadController::class, 'uploadFile']);
 Route::post('/performance-metrics', [PerformanceMetricController::class, 'store']);
 
