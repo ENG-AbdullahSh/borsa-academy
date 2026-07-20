@@ -19,6 +19,7 @@ const SignIn = lazy(() => import('./pages/SignIn'));
 const SignUp = lazy(() => import('./pages/SignUp'));
 const ForgotPassword = lazy(() => import('./pages/Auth/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/Auth/ResetPassword'));
+const VerifyEmail = lazy(() => import('./pages/Auth/VerifyEmail'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 const MyCourses = lazy(() => import('./pages/MyCourses'));
 const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
@@ -43,7 +44,7 @@ import { SettingsProvider } from './context/SettingsContext';
    Navbar / Ticker / Footer chrome — we detect them by pathname. */
 import { useLocation } from 'react-router-dom';
 
-const AUTH_PATHS = ['/signin', '/signup', '/forgot-password', '/reset-password'];
+const AUTH_PATHS = ['/signin', '/signup', '/forgot-password', '/reset-password', '/verify-email'];
 
 function AppShell() {
   const { pathname } = useLocation();
@@ -180,11 +181,11 @@ function AppShell() {
               )}
             />
 
-            {/* Auth pages — full-screen, no chrome */}
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
           </Routes>
         </Suspense>
       </div>

@@ -38,6 +38,9 @@ const getLoginErrorMessage = (error) => {
   }
 
   if (error?.status === 403) {
+    if (error?.data?.code === 'EMAIL_NOT_VERIFIED') {
+      return '__EMAIL_NOT_VERIFIED__';
+    }
     return error?.data?.message || 'هذا الحساب غير مفعل أو موقوف';
   }
 
@@ -136,6 +139,14 @@ export default function SignIn() {
       setTimeout(() => navigate(redirectPath, { replace: true }), 700);
     } catch (err) {
       setLoading(false);
+      // Handle unverified email: redirect to verification screen
+      if (err?.status === 403 && err?.data?.code === 'EMAIL_NOT_VERIFIED') {
+        navigate('/verify-email', {
+          state: { email: email.trim() },
+          replace: false,
+        });
+        return;
+      }
       if (err?.status === 422) {
         const serverErrors = normalizeLaravelErrors(err);
         if (Object.keys(serverErrors).length) {

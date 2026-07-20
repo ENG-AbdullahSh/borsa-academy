@@ -39,6 +39,8 @@ Route::get('/settings', [SettingController::class, 'getSettings']);
 Route::get('/lessons/{lesson}/stream', [VideoStreamController::class, 'stream'])->whereNumber('lesson');
 
 Route::post('/register', [AuthController::class, 'register']);
+Route::post('/verify-email', [AuthController::class, 'verifyEmail']);
+Route::post('/resend-verification-otp', [AuthController::class, 'resendVerificationOtp']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle']);
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);

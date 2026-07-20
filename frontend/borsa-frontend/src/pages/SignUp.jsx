@@ -168,7 +168,10 @@ export default function SignUp() {
 
       setLoading(false);
       setSuccess(true);
-      window.setTimeout(() => navigate('/student-dashboard', { replace: true }), 700);
+      window.setTimeout(() => navigate('/verify-email', {
+        replace: true,
+        state: { email: email.trim() },
+      }), 700);
     } catch (requestError) {
       setLoading(false);
       if (requestError?.status === 422) {

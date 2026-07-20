@@ -110,6 +110,9 @@ export function AuthProvider({ children }) {
   }, [clearAuth, saveAuth]);
 
   // ── register ─────────────────────────────────────────────────────────────
+  // New flow: backend creates the user but does NOT return a token until
+  // the email is verified via OTP. We just return the email so the caller
+  // can redirect to /verify-email.
   const register = useCallback(async ({ name, email, password, password_confirmation }) => {
     setLoading(true);
     try {
@@ -117,16 +120,13 @@ export function AuthProvider({ children }) {
         name, email, password, password_confirmation,
       });
 
-      if (!data.token || !data.user) {
-        throw new Error('Registration did not return an authenticated user.');
-      }
-
-      saveAuth(data.token, data.user);
-      return { token: data.token, user: data.user };
+      // The new API returns { success, message, email } — no token yet.
+      // Return enough info for SignUp to redirect to /verify-email.
+      return { email: data.email || email, message: data.message };
     } finally {
       setLoading(false);
     }
-  }, [saveAuth]);
+  }, []);
 
   // ── login ─────────────────────────────────────────────────────────────────
   const login = useCallback(async ({ email, password }) => {
